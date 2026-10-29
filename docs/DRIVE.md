@@ -76,7 +76,7 @@ Contiene la base de datos completa, con datos personales de contactos: **nadie m
 
 ## Crear las unidades
 
-Con la cuenta técnica `sistemas@africadirecto.org`, en <https://drive.google.com>:
+Con la cuenta técnica `gestion@africadirecto.org`, en <https://drive.google.com>:
 
 1. **Unidades compartidas** (menú izquierdo) **› Nueva** → `AD · Proyectos`. Repite con `AD · Plantillas` y `AD · Sistema`.
 2. En `AD · Plantillas`, crea a mano las carpetas `ONG`, `Donantes` e `Imágenes`. En las otras dos no hace falta crear nada.
@@ -98,7 +98,7 @@ Asignación recomendada (en cada unidad, **Gestionar miembros**):
 
 | Miembro | `AD · Proyectos` | `AD · Plantillas` | `AD · Sistema` |
 | --- | --- | --- | --- |
-| `sistemas@` (cuenta técnica) | Gestor | Gestor | Gestor |
+| `gestion@` (cuenta técnica) | Gestor | Gestor | Gestor |
 | `coordinacion@` (grupo de administradores) | Gestor | Gestor | Gestor |
 | `voluntarios-proyectos@` (grupo) | **Colaborador** | Lector | — |
 | Cuenta de servicio de la app | **Gestor de contenido** | Lector (Colaborador en la fase 3) | **Gestor de contenido** |
@@ -144,13 +144,13 @@ Solo se da acceso a esas dos unidades, así que si la clave se filtrara, el dañ
 
 ### Opción 2: delegación de dominio
 
-La cuenta de servicio actúa **en nombre de** `sistemas@africadirecto.org`. No hace falta añadirla a las unidades ni abrir el uso compartido externo, y los archivos aparecen como creados por `sistemas@`.
+La cuenta de servicio actúa **en nombre de** `gestion@africadirecto.org`. No hace falta añadirla a las unidades ni abrir el uso compartido externo, y los archivos aparecen como creados por `gestion@`.
 
 1. En el JSON de la clave, copia `client_id` (un número largo).
 2. Consola de Workspace **› Seguridad › Acceso y control de datos › Controles de API › Gestionar la delegación de todo el dominio › Añadir nuevo**:
    - ID de cliente: el `client_id`.
    - Ámbito: `https://www.googleapis.com/auth/drive`.
-3. En Vercel, añade `GOOGLE_DRIVE_USUARIO=sistemas@africadirecto.org` y vuelve a desplegar.
+3. En Vercel, añade `GOOGLE_DRIVE_USUARIO=gestion@africadirecto.org` y vuelve a desplegar.
 
 > ⚠️ Con la delegación de dominio, **quien tenga la clave de la cuenta de servicio puede actuar sobre el Drive de cualquier usuario** del dominio, no solo sobre estas unidades. La clave solo debe estar en Vercel y en el gestor de contraseñas. Usa esta opción únicamente si la opción 1 no es posible.
 

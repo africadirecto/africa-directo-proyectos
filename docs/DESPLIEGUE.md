@@ -55,10 +55,10 @@ Todo en <https://admin.google.com>, con una cuenta de superadministrador.
 
 Es la dueña de todos los servicios (Firebase, Vercel, OpenAI, GitHub y las unidades compartidas). Así nada depende del correo personal de un voluntario que se va.
 
-1. **Directorio › Usuarios › Añadir usuario nuevo.**
-2. Nombre: `Sistemas Africa Directo`. Correo principal: `sistemas@africadirecto.org`.
-3. Pon una contraseña larga y guárdala en el gestor de contraseñas.
-4. Entra una vez con esa cuenta en <https://myaccount.google.com/security>:
+La cuenta técnica es **`gestion@africadirecto.org`**, que ya existe y es superadministradora de Workspace. Asegúrate de que:
+
+1. Su contraseña está en el gestor de contraseñas compartido.
+2. En <https://myaccount.google.com/security>:
    - Activa la **verificación en dos pasos** con una llave o una app de autenticación que tengan al menos dos administradores (por ejemplo, el gestor de contraseñas compartido).
    - Añade como correo de recuperación el de otro administrador.
 
@@ -106,7 +106,7 @@ En **Aplicaciones › Google Workspace › Drive y Documentos**:
 
 ### 2.1. Organización
 
-1. Con la cuenta técnica, crea una cuenta en <https://github.com> (`sistemas@africadirecto.org`, usuario `africadirecto-sistemas`).
+1. Con la cuenta técnica, crea una cuenta en <https://github.com> (`gestion@africadirecto.org`, usuario `africadirecto-sistemas`).
 2. **Your organizations › New organization › Free**. Nombre: `africadirecto`.
 3. Invita como **Owner** a al menos dos voluntarios con su propia cuenta de GitHub. Activa la verificación en dos pasos obligatoria: **Settings › Authentication security › Require two-factor authentication**.
 4. Opcional: solicita GitHub for Nonprofits, gratis con el plan Team.
@@ -125,11 +125,11 @@ La opción A es la más sencilla. **Antes de hacerla pública, comprueba que no 
 
 ### 2.3. Subir el código
 
-1. En la organización: **New repository** → nombre `gestion-proyectos`, sin README (ya lo tiene).
+1. En la organización: **New repository** → nombre `africa-directo-proyectos`, sin README (ya lo tiene).
 2. Desde la carpeta del proyecto, en el ordenador de quien lo tenga:
 
    ```bash
-   git remote add origin https://github.com/africadirecto/gestion-proyectos.git
+   git remote add origin https://github.com/africadirecto/africa-directo-proyectos.git
    ```
 
    ```bash
@@ -142,7 +142,7 @@ La opción A es la más sencilla. **Antes de hacerla pública, comprueba que no 
 
 ## Paso 3. Firebase y Google Cloud
 
-Un solo proyecto de Google Cloud, creado desde Firebase, con la cuenta técnica. Entra en <https://console.firebase.google.com> como `sistemas@africadirecto.org`.
+Un solo proyecto de Google Cloud, creado desde Firebase, con la cuenta técnica. Entra en <https://console.firebase.google.com> como `gestion@africadirecto.org`.
 
 ### 3.1. Crear el proyecto
 
@@ -163,8 +163,8 @@ Un solo proyecto de Google Cloud, creado desde Firebase, con la cuenta técnica.
 ### 3.3. Authentication (entrar con Google)
 
 1. **Compilación › Authentication › Comenzar**.
-2. Pestaña **Método de acceso › Google › Habilitar**. Correo de asistencia: `sistemas@africadirecto.org`. Guardar.
-3. Pestaña **Configuración › Dominios autorizados › Añadir dominio**: añade `proyectos.africadirecto.org` y, cuando lo tengas, el dominio de Vercel (`gestion-proyectos.vercel.app`). `localhost` viene ya incluido.
+2. Pestaña **Método de acceso › Google › Habilitar**. Correo de asistencia: `gestion@africadirecto.org`. Guardar.
+3. Pestaña **Configuración › Dominios autorizados › Añadir dominio**: añade `proyectos.africadirecto.org` y, cuando lo tengas, el dominio de Vercel (`africa-directo-proyectos.vercel.app`). `localhost` viene ya incluido.
 
 La app solo deja pasar cuentas `@africadirecto.org` con el correo verificado. Se comprueba en el servidor, no solo en la pantalla.
 
@@ -230,7 +230,7 @@ En el panel del DNS, añade:
 | --- | --- | --- | --- |
 | MX | `correo` | `smtp.google.com` | 1 |
 | TXT (SPF) | `correo` | `v=spf1 include:_spf.google.com ~all` | — |
-| TXT (DMARC) | `_dmarc.correo` | `v=DMARC1; p=none; rua=mailto:sistemas@africadirecto.org` | — |
+| TXT (DMARC) | `_dmarc.correo` | `v=DMARC1; p=none; rua=mailto:gestion@africadirecto.org` | — |
 
 Después, en la consola de Workspace, **Aplicaciones › Google Workspace › Gmail**, activa Gmail para `correo.africadirecto.org` si lo pide.
 
@@ -283,7 +283,7 @@ Apps Script envía los correos de la app (formulario, cambios pedidos, rechazo, 
 
 **¿Con qué cuenta?**
 - Si hiciste el paso 4: con `proyectos@correo.africadirecto.org`. Los correos salen desde el subdominio, con SPF y DKIM correctos.
-- Si no: con `sistemas@africadirecto.org`. Los correos saldrán de `@africadirecto.org` y probablemente lleguen como spam, porque el SPF del dominio es del hosting. Mientras tanto, usa el botón de la app que copia el texto del correo y envíalo desde el buzón de siempre. Más detalles en [CORREO.md](CORREO.md#correos-que-envía-la-app).
+- Si no: con `gestion@africadirecto.org`. Los correos saldrán de `@africadirecto.org` y probablemente lleguen como spam, porque el SPF del dominio es del hosting. Mientras tanto, usa el botón de la app que copia el texto del correo y envíalo desde el buzón de siempre. Más detalles en [CORREO.md](CORREO.md#correos-que-envía-la-app).
 
 **Pasos:**
 
@@ -328,7 +328,7 @@ La app avisa en un espacio de Chat de los accesos pendientes, las solicitudes re
 
 La IA traduce y resume las solicitudes y traduce los comentarios del revisor. En la fase 3 redactará borradores de informes.
 
-1. Crea una cuenta en <https://platform.openai.com> con `sistemas@africadirecto.org`. Organización: "Africa Directo".
+1. Crea una cuenta en <https://platform.openai.com> con `gestion@africadirecto.org`. Organización: "Africa Directo".
 2. **Settings › Organization › Members**: invita a un segundo administrador.
 3. **Settings › Billing**: añade una tarjeta y compra **10 $ de crédito prepago**. Desactiva la **recarga automática**: así nunca se gasta más de lo cargado. El crédito caduca al año.
 4. **Projects › Create project** → "Gestión de proyectos".
@@ -358,7 +358,7 @@ Sin `OPENAI_API_KEY`, la app funciona igual: no traduce, y el resumen es el prin
 
 ### 9.2. Importar el proyecto
 
-1. **Add New › Project › Import** el repositorio `africadirecto/gestion-proyectos`.
+1. **Add New › Project › Import** el repositorio `africadirecto/africa-directo-proyectos`.
 2. Framework: **Next.js**, detectado solo. No cambies los comandos de compilación.
 3. Abre **Environment Variables** y añade todas las de la [tabla](#tabla-de-variables-de-entorno) para el entorno **Production**. Para la clave privada, pega el valor tal cual, con los `\n`.
 4. **Deploy**. Tarda 1–2 minutos.
@@ -464,7 +464,7 @@ Se ponen en Vercel (**Settings › Environment Variables**) y, para probar en lo
 | `FIREBASE_PROJECT_ID` | Paso 3.1 | No | `africa-directo-proyectos-1a2b3` |
 | `GOOGLE_SERVICE_ACCOUNT_EMAIL` | Paso 3.5 (`client_email`) | No | `firebase-adminsdk-xxxx@….iam.gserviceaccount.com` |
 | `GOOGLE_SERVICE_ACCOUNT_KEY` | Paso 3.5 (`private_key`) | **Sí** | `-----BEGIN PRIVATE KEY-----\n…` |
-| `GOOGLE_DRIVE_USUARIO` | Solo si se usa delegación de dominio ([DRIVE.md](DRIVE.md#acceso-de-la-app-a-drive)) | No | `sistemas@africadirecto.org` |
+| `GOOGLE_DRIVE_USUARIO` | Solo si se usa delegación de dominio ([DRIVE.md](DRIVE.md#acceso-de-la-app-a-drive)) | No | `gestion@africadirecto.org` |
 | `NEXT_PUBLIC_FIREBASE_API_KEY` | Paso 3.4 | No (pública) | `AIza…` |
 | `NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN` | Paso 3.4 | No | `….firebaseapp.com` |
 | `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Paso 3.4 | No | igual que `FIREBASE_PROJECT_ID` |
