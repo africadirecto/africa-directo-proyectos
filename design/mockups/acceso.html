@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Acceso · Africa Directo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F6F3}
+a{color:#B8360B}a:hover{color:#8F2A08}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:48px;padding:0 20px;border-radius:8px;font:inherit;font-size:16px;font-weight:600;text-decoration:none;cursor:pointer;border:1px solid transparent;width:100%;box-sizing:border-box}
+.btn-p{background:#D2400F;color:#FFFFFF}.btn-p:hover{background:#B8360B}
+.btn-s{background:#FFFFFF;color:#1B1B18;border-color:#D5D4CC}.btn-s:hover{background:#F0EFEA}
+</style>
+</head>
+<body>
+<div style="min-height: 100vh; background: #F6F6F3; font-family: 'Quicksand', system-ui, sans-serif; font-weight: 500; color: #1B1B18; display: flex; align-items: center; justify-content: center; padding: 24px; box-sizing: border-box">
+<main style="width: 100%; max-width: 420px; background: #FFFFFF; border: 1px solid #E3E2DC; border-radius: 16px; padding: 40px 32px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px">
+<img src="../assets/logo-africadirecto.png" alt="Africa Directo" style="height: 80px; width: auto; display: block">
+<span style="display: inline-block; background: #E54611; color: #FFFFFF; font-weight: 700; font-size: 20px; line-height: 1.1; padding: 8px 12px; border-radius: 4px; transform: rotate(-4deg)">el 100 %<br>llega</span>
+</div>
+
+<div data-state="login">
+<div style="display: flex; flex-direction: column; gap: 24px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h1 style="margin: 0; font-size: 26px; font-weight: 700">Gestión de proyectos</h1>
+<p style="margin: 0; font-size: 16px; line-height: 1.5; color: #5E5D57">Entra con tu cuenta de Google de la ONG.</p>
+</div>
+<button type="button" class="btn btn-p" data-action="entrar">
+<svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" style="stroke-width: 2"><circle cx="12" cy="12" r="9"></circle><path d="M12 8v4h4"></path></svg>
+Entrar con Google</button>
+<p style="margin: 0; font-size: 14px; line-height: 1.5; color: #5E5D57">Solo cuentas @[dominio de la ONG]. La primera vez, un administrador tiene que darte acceso.</p>
+</div>
+</div>
+
+<div data-state="pending" hidden>
+<div style="display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<h1 style="margin: 0; font-size: 26px; font-weight: 700">Acceso pendiente</h1>
+<p style="margin: 0; font-size: 16px; line-height: 1.5; color: #5E5D57">Hola, Pablo. Hemos avisado a los administradores. Te escribiremos a pablo.ruiz@[dominio] cuando puedas entrar.</p>
+</div>
+<div style="background: #F6F6F3; border-radius: 10px; padding: 14px 16px; font-size: 14px; line-height: 1.5; color: #3F3E39">Al principio tendrás acceso de <b>lectura</b>: podrás ver todos los proyectos, pero no cambiarlos.</div>
+<button type="button" class="btn btn-s" data-action="volver">Salir</button>
+</div>
+</div>
+</main>
+</div>
+<script>
+// Alterna entre "entrar" y "acceso pendiente" (solo demostración).
+function estado(s) { document.querySelectorAll('[data-state]').forEach(e => { e.hidden = e.dataset.state !== s; }); }
+document.querySelector('[data-action="entrar"]').addEventListener('click', () => estado('pending'));
+document.querySelector('[data-action="volver"]').addEventListener('click', () => estado('login'));
+</script>
+</body>
+</html>

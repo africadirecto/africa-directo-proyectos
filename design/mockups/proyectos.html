@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Proyectos · Africa Directo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F6F3}
+a{color:#B8360B}a:hover{color:#8F2A08}
+.nav a{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:8px;text-decoration:none;color:#3F3E39;font-weight:500;font-size:15px}
+.nav a:hover{background:#F0EFEA;color:#1B1B18}
+.nav a[aria-current="page"]{background:#FCE9E1;color:#9A2E09;font-weight:700}
+.count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#D2400F;color:#FFFFFF;font-size:12px;font-weight:600;box-sizing:border-box}
+.st{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:500;line-height:20px;white-space:nowrap}
+.st::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.s-sol{background:#EEEDE8;color:#4A4943}
+.s-rev{background:#FBEFD5;color:#7A4B00}
+.s-val{background:#E3EDFB;color:#1F4E8C}
+.s-fin{background:#EDE8FB;color:#4F3A99}
+.s-apr{background:#DDF0E5;color:#1D6B50}
+.s-eje{background:#D6EEF0;color:#0F5E66}
+.s-par{background:#FDE6E4;color:#B42318}
+.s-com{background:#E6E9EE;color:#334155}
+.s-cer{background:#EEEDE8;color:#5E5D57}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#5E5D57;padding:12px 16px;border-bottom:1px solid #E3E2DC;white-space:nowrap}
+.tbl td{padding:12px 16px;border-bottom:1px solid #EEEDE8;vertical-align:middle;color:#1B1B18}
+.tbl tbody tr:last-child td{border-bottom:0}
+.tbl tbody tr:hover td{background:#FAFAF7}
+.tbl td a{color:#1B1B18;font-weight:600;text-decoration:none}
+.tbl td a:hover{color:#B8360B;text-decoration:underline}
+.sub{display:block;font-size:13px;color:#5E5D57;margin-top:2px}
+.bar{height:6px;border-radius:3px;background:#E8E7E1;overflow:hidden;width:96px}
+.bar span{display:block;height:100%;background:#E54611;border-radius:3px}
+.warn{color:#B42318;font-weight:700}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:#3F3E39}
+.field input,.field select{font:inherit;font-size:15px;font-weight:400;color:#1B1B18;height:44px;padding:0 12px;border:1px solid #D5D4CC;border-radius:8px;background:#FFFFFF;box-sizing:border-box}
+.chip{display:inline-flex;align-items:center;gap:10px;min-height:44px;padding:0 16px;border:1px solid #E3E2DC;border-radius:10px;background:#FFFFFF;text-decoration:none;color:#1B1B18;font-size:14px}
+.chip:hover{border-color:#B9B8B0;color:#1B1B18}
+.chip b{font-size:18px}
+.dot{width:8px;height:8px;border-radius:50%;flex:none}
+.map .land{fill:#ECEBE5;stroke:#D2D1C9;stroke-width:1.5;stroke-linejoin:round}
+.map circle{stroke:#FFFFFF;stroke-width:2}
+.map .ring{fill:none;stroke:#0F5E66;stroke-width:2}
+.p-sol{fill:#6B6A63}.p-rev{fill:#B26B00}.p-val{fill:#1F4E8C}.p-fin{fill:#4F3A99}.p-apr{fill:#1D6B50}.p-eje{fill:#0F5E66}.p-par{fill:#C0281C}.p-com{fill:#334155}.p-cer{fill:#9A9992}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:8px;font:inherit;font-size:15px;font-weight:600;text-decoration:none;cursor:pointer;border:1px solid transparent}
+.btn-p{background:#D2400F;color:#FFFFFF}.btn-p:hover{background:#B8360B;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#1B1B18;border-color:#D5D4CC}.btn-s:hover{background:#F0EFEA;color:#1B1B18}
+</style>
+</head>
+<body>
+<div style="min-height: 100vh; background: #F6F6F3; font-family: 'Quicksand', system-ui, sans-serif; font-weight: 500; color: #1B1B18">
+
+<header style="background: #FFFFFF; border-bottom: 1px solid #E3E2DC">
+<div style="max-width: 1360px; margin: 0 auto; padding: 10px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 32px">
+<a href="proyectos.html" aria-label="Africa Directo: inicio" style="display: flex; align-items: center; min-height: 44px"><svg aria-hidden="true" viewBox="0 0 82.76 138.01" style="height: 44px; width: auto; display: block"><path fill="#1B1B18" transform="translate(-24.296825,-11.540485)" d="m 30.296825,149.26995 c -4.17356,-1.0495 -6,-4.43215 -6,-11.11228 0,-9.57076 1.70583,-10.91764 15.18299,-11.98806 6.37586,-0.5064 12.24762,-1.57588 13.04836,-2.37662 1.0523,-1.0523 1.04977,-4.34528 -0.009,-11.87894 -2.5902,-18.427963 -2.90386,-22.394463 -1.88641,-23.855073 0.54865,-0.787623 3.99754,-2.230726 7.66421,-3.206896 6.67296,-1.776529 10,-3.535926 10,-5.288174 0,-0.513658 -3.69455,-5.977668 -8.21011,-12.142244 -11.40805,-15.574021 -12.71021,-19.126185 -13.83754,-37.747359 -0.77261,-12.762001 -0.60297,-16.041301 0.87836,-16.979582 2.86657,-1.815694 16.78842,-1.403865 21.5454,0.637346 11.78156,5.055444 20.45142,20.331262 22.07979,38.9034 0.65036,7.417542 1.64426,11.955618 2.69516,12.305919 0.91567,0.305223 4.18126,2.469063 7.256875,4.808534 7.12987,5.42336 8.45555,11.863969 2.95759,14.369009 -2.40179,1.094333 -3.19498,2.225007 -2.57896,3.676247 2.20962,5.205479 2.03335,7.942535 -0.68668,10.662573 -2.216235,2.21623 -2.532785,3.37881 -1.463825,5.37617 1.896885,3.54434 1.703925,7.10029 -0.6279,11.57134 -1.09548,2.1005 -1.99548,5.14085 -2,6.75634 -0.022,7.87614 -6.38116,13.72237 -14.942,13.73684 -7.74637,0.0131 -14.13567,2.54367 -17.16546,6.79862 -1.58447,2.22518 -4.16033,4.52608 -5.72413,5.11311 -3.61913,1.35856 -24.64972,2.74668 -28.17662,1.85978 z m 47.07213,-87.28667 c 0.4638,-3.986413 -2.96659,-6.126324 -5.90779,-3.68534 -2.26861,1.882774 -2.33784,4.152912 -0.19209,6.29866 2.55437,2.55437 5.65309,1.226811 6.09988,-2.61332 z m -47.67789,3.581127 c -3.79234,-4.569494 1.43804,-12.294236 6.27243,-9.263732 4.75778,2.982485 3.04634,11.190343 -2.33334,11.190343 -1.28708,0 -3.05967,-0.866975 -3.93909,-1.926611 z"></path></svg></a>
+<nav class="nav" aria-label="Principal" style="display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 auto">
+<a href="proyectos.html" aria-current="page">Proyectos</a>
+<a href="solicitudes.html">Solicitudes <span class="count">4</span></a>
+<a href="admin.html">Administración</a>
+</nav>
+<div style="display: flex; align-items: center; gap: 10px">
+<span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 50%; background: #FCE9E1; color: #9A2E09; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center">AL</span>
+<span style="display: flex; flex-direction: column; font-size: 14px; line-height: 1.25"><span style="font-weight: 600">Ana López</span><span style="color: #5E5D57; font-size: 13px">Administración</span></span>
+</div>
+</div>
+</header>
+
+<main style="max-width: 1360px; margin: 0 auto; padding: 28px 24px 48px; display: flex; flex-direction: column; gap: 24px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px">
+<div>
+<h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em">Proyectos</h1>
+<p style="margin: 6px 0 0; color: #5E5D57; font-size: 15px">9 proyectos · 6 activos en 7 países</p>
+</div>
+<a class="btn btn-p" href="solicitudes.html">Nueva solicitud</a>
+</div>
+
+<section aria-labelledby="atencion-titulo" style="display: flex; flex-direction: column; gap: 10px">
+<h2 id="atencion-titulo" style="margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: #5E5D57">Requiere atención</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<a class="chip" href="proyecto.html"><span class="dot" style="background: #C0281C"></span><b>2</b> sin noticias en más de 30 días</a>
+<a class="chip" href="proyecto.html"><span class="dot" style="background: #B26B00"></span><b>1</b> informe vence el 15 nov</a>
+<a class="chip" href="solicitudes.html"><span class="dot" style="background: #1F4E8C"></span><b>1</b> solicitud por revisar</a>
+<a class="chip" href="solicitudes.html"><span class="dot" style="background: #6B6A63"></span><b>3</b> correos sin asignar</a>
+</div>
+</section>
+
+<form aria-label="Filtros" style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; background: #FFFFFF; border: 1px solid #E3E2DC; border-radius: 12px; padding: 16px">
+<label class="field" style="flex: 3 1 260px">Buscar<input type="search" placeholder="Nombre, código o contraparte"></label>
+<label class="field" style="flex: 1 1 160px">Estado<select><option>Activos</option><option>Todos</option><option>Solicitud</option><option>En revisión</option><option>Validada</option><option>Financiación</option><option>Aprobado</option><option>En ejecución</option><option>Parado</option><option>Completado</option><option>Cerrado</option></select></label>
+<label class="field" style="flex: 1 1 160px">País<select><option>Todos</option><option>Burkina Faso</option><option>Camerún</option><option>Etiopía</option><option>Kenia</option><option>Malaui</option><option>Mozambique</option><option>RD Congo</option><option>Togo</option></select></label>
+<label class="field" style="flex: 1 1 120px">Año<select><option>Todos</option><option>2026</option><option>2025</option></select></label>
+<label style="display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 15px; color: #1B1B18; flex: 0 0 auto"><input type="checkbox" style="width: 18px; height: 18px; accent-color: #D2400F">Solo los míos</label>
+<button type="reset" class="btn btn-s" style="flex: 0 0 auto">Limpiar</button>
+</form>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+<section aria-label="Lista de proyectos" style="flex: 999 1 640px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E2DC; border-radius: 12px; overflow: hidden">
+<div style="overflow-x: auto">
+<table class="tbl">
+<thead><tr><th scope="col">Proyecto</th><th scope="col">Ubicación</th><th scope="col">Estado</th><th scope="col" style="text-align: right">Presupuesto</th><th scope="col">Financiado</th><th scope="col">Última noticia</th></tr></thead>
+<tbody>
+<tr><td><a href="proyecto.html">Aula escuela primaria</a><span class="sub">P-2026-014 · Educación</span></td><td>Kinshasa<span class="sub">RD Congo</span></td><td><span class="st s-eje">En ejecución</span></td><td style="text-align: right">18.000 €</td><td><div style="display: flex; align-items: center; gap: 10px"><div class="bar"><span style="width: 100%"></span></div>100 %</div></td><td>24 oct<span class="sub">hace 5 días</span></td></tr>
+<tr><td><a href="proyecto.html">Placas solares del hospital</a><span class="sub">P-2026-006 · Energía</span></td><td>Bukavu<span class="sub">RD Congo</span></td><td><span class="st s-par">Parado</span></td><td style="text-align: right">31.000 €</td><td><div style="display: flex; align-items: center; gap: 10px"><div class="bar"><span style="width: 100%"></span></div>100 %</div></td><td><span class="warn">12 sep</span><span class="sub">hace 47 días</span></td></tr>
+<tr><td><a href="proyecto.html">Paritorio del dispensario</a><span class="sub">P-2026-009 · Salud</span></td><td>Bamenda<span class="sub">Camerún</span></td><td><span class="st s-apr">Aprobado</span></td><td style="text-align: right">24.000 €</td><td><div style="display: flex; align-items: center; gap: 10px"><div class="bar"><span style="width: 100%"></span></div>100 %</div></td><td><span class="warn">17 sep</span><span class="sub">hace 42 días</span></td></tr>
+<tr><td><a href="proyecto.html">Pozo y depósito de agua</a><span class="sub">P-2026-011 · Agua</span></td><td>Kara<span class="sub">Togo</span></td><td><span class="st s-fin">Financiación</span></td><td style="text-align: right">9.500 €</td><td><div style="display: flex; align-items: center; gap: 10px"><div class="bar"><span style="width: 40%"></span></div>40 %</div></td><td>20 oct<span class="sub">hace 9 días</span></td></tr>
+<tr><td><a href="proyecto.html">Dormitorio del internado</a><span class="sub">P-2026-015 · Educación</span></td><td>Meru<span class="sub">Kenia</span></td><td><span class="st s-val">Validada</span></td><td style="text-align: right">21.000 €</td><td><div style="display: flex; align-items: center; gap: 10px"><div class="bar"><span style="width: 0%"></span></div>0 %</div></td><td>22 oct<span class="sub">hace 7 días</span></td></tr>
+<tr><td><a href="solicitudes.html">Comedor escolar</a><span class="sub">P-2026-017 · Educación</span></td><td>Uagadugú<span class="sub">Burkina Faso</span></td><td><span class="st s-rev">En revisión</span></td><td style="text-align: right">12.300 €</td><td><span style="color: #5E5D57">—</span></td><td>27 oct<span class="sub">hace 2 días</span></td></tr>
+<tr><td><a href="solicitudes.html">Ampliación de aulas</a><span class="sub">P-2026-018 · Educación</span></td><td>Adís Abeba<span class="sub">Etiopía</span></td><td><span class="st s-sol">Solicitud</span></td><td style="text-align: right"><span style="color: #5E5D57">—</span></td><td><span style="color: #5E5D57">—</span></td><td>28 oct<span class="sub">ayer</span></td></tr>
+<tr><td><a href="proyecto.html">Taller de costura</a><span class="sub">P-2026-003 · Formación</span></td><td>Lilongüe<span class="sub">Malaui</span></td><td><span class="st s-com">Completado</span></td><td style="text-align: right">6.800 €</td><td><div style="display: flex; align-items: center; gap: 10px"><div class="bar"><span style="width: 100%"></span></div>100 %</div></td><td>2 oct<span class="sub">hace 27 días</span></td></tr>
+<tr><td><a href="proyecto.html">Biblioteca escolar</a><span class="sub">P-2025-021 · Educación</span></td><td>Beira<span class="sub">Mozambique</span></td><td><span class="st s-cer">Cerrado</span></td><td style="text-align: right">8.200 €</td><td><div style="display: flex; align-items: center; gap: 10px"><div class="bar"><span style="width: 100%"></span></div>100 %</div></td><td>15 jul<span class="sub">cerrado</span></td></tr>
+</tbody>
+</table>
+</div>
+<p style="margin: 0; padding: 12px 16px; border-top: 1px solid #EEEDE8; font-size: 13px; color: #5E5D57">Mostrando 9 de 9 proyectos</p>
+</section>
+
+<aside aria-labelledby="mapa-titulo" style="flex: 1 1 380px; min-width: 0; background: #FFFFFF; border: 1px solid #E3E2DC; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; justify-content: space-between; align-items: baseline">
+<h2 id="mapa-titulo" style="margin: 0; font-size: 17px; font-weight: 600">Mapa</h2>
+<span style="font-size: 13px; color: #5E5D57">Muestra los proyectos filtrados</span>
+</div>
+<svg class="map" viewBox="0 0 440 450" role="img" aria-label="Mapa de África con 9 proyectos; seleccionado: Aula escuela primaria en Kinshasa" style="width: 100%; height: auto; background: #F4F7F8; border-radius: 8px">
+<path class="land" d="M84 12 L180 6 L186 30 L240 42 L270 36 L312 42 L324 60 L342 96 L354 132 L378 156 L426 156 L414 180 L396 210 L366 240 L360 288 L360 318 L330 372 L318 390 L300 414 L276 432 L240 438 L228 420 L210 384 L192 336 L192 300 L198 264 L174 234 L174 204 L150 192 L126 192 L90 198 L72 204 L48 186 L24 156 L18 138 L18 102 L42 66 L60 48 Z"></path>
+<path class="land" d="M384 300 L420 318 L402 378 L384 372 Z"></path>
+<circle class="p-fin" cx="127" cy="171" r="7"></circle>
+<circle class="p-apr" cx="181" cy="192" r="7"></circle>
+<circle class="p-rev" cx="111" cy="154" r="7"></circle>
+<circle class="p-par" cx="293" cy="243" r="7"></circle>
+<circle class="p-com" cx="323" cy="312" r="7"></circle>
+<circle class="p-cer" cx="329" cy="347" r="7"></circle>
+<circle class="p-val" cx="346" cy="228" r="7"></circle>
+<circle class="p-sol" cx="352" cy="174" r="7"></circle>
+<circle class="ring" cx="213" cy="254" r="13"></circle>
+<circle class="p-eje" cx="213" cy="254" r="8"></circle>
+</svg>
+<div style="border: 1px solid #E3E2DC; border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap">
+<span style="font-weight: 600; font-size: 15px">Aula escuela primaria</span><span class="st s-eje">En ejecución</span>
+</div>
+<span style="font-size: 14px; color: #5E5D57">Kinshasa, RD Congo · 18.000 € · financiado al 100 %</span>
+<a href="proyecto.html" style="font-size: 14px; font-weight: 600">Abrir proyecto →</a>
+</div>
+<p style="margin: 0; font-size: 13px; color: #5E5D57">Pulsa un punto para ver el proyecto; el color es su estado.</p>
+</aside>
+
+</div>
+</main>
+</div>
+</body>
+</html>

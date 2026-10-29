@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Administración · Africa Directo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F6F3}
+a{color:#B8360B}a:hover{color:#8F2A08}
+.nav a{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:8px;text-decoration:none;color:#3F3E39;font-weight:500;font-size:15px}
+.nav a:hover{background:#F0EFEA;color:#1B1B18}
+.nav a[aria-current="page"]{background:#FCE9E1;color:#9A2E09;font-weight:700}
+.count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#D2400F;color:#FFFFFF;font-size:12px;font-weight:600;box-sizing:border-box}
+.side a{display:flex;align-items:center;min-height:44px;padding:0 14px;border-radius:8px;text-decoration:none;color:#3F3E39;font-size:15px;font-weight:500}
+.side a:hover{background:#F0EFEA;color:#1B1B18}
+.side a[aria-current="page"]{background:#FFFFFF;color:#1B1B18;font-weight:600;box-shadow:inset 0 0 0 1px #E3E2DC}
+.card{background:#FFFFFF;border:1px solid #E3E2DC;border-radius:12px;padding:20px}
+.h2{margin:0;font-size:18px;font-weight:600}
+.meta{font-size:13px;color:#5E5D57}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:40px;padding:0 16px;border-radius:8px;font:inherit;font-size:14px;font-weight:600;text-decoration:none;cursor:pointer;border:1px solid transparent;white-space:nowrap}
+.btn-p{background:#D2400F;color:#FFFFFF}.btn-p:hover{background:#B8360B;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#1B1B18;border-color:#D5D4CC}.btn-s:hover{background:#F0EFEA}
+.btn-d{background:#FFFFFF;color:#B42318;border-color:#F1B9B4}.btn-d:hover{background:#FDE6E4}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#5E5D57;padding:10px 12px;border-bottom:1px solid #E3E2DC;white-space:nowrap}
+.tbl td{padding:10px 12px;border-bottom:1px solid #EEEDE8;vertical-align:middle}
+.tbl tbody tr:last-child td{border-bottom:0}
+.tbl select{font:inherit;font-size:14px;color:#1B1B18;height:40px;padding:0 10px;border:1px solid #D5D4CC;border-radius:8px;background:#FFFFFF;min-width:150px}
+.req{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;padding:14px 0;border-bottom:1px solid #EEEDE8}
+.req:last-child{border-bottom:0}
+.perm{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.perm div{background:#F6F6F3;border-radius:10px;padding:14px}
+.perm b{display:block;font-size:15px;margin-bottom:4px}
+.perm p{margin:0;font-size:14px;line-height:1.5;color:#3F3E39}
+</style>
+</head>
+<body>
+<div style="min-height: 100vh; background: #F6F6F3; font-family: 'Quicksand', system-ui, sans-serif; font-weight: 500; color: #1B1B18">
+
+<header style="background: #FFFFFF; border-bottom: 1px solid #E3E2DC">
+<div style="max-width: 1360px; margin: 0 auto; padding: 10px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 32px">
+<a href="proyectos.html" aria-label="Africa Directo: inicio" style="display: flex; align-items: center; min-height: 44px"><svg aria-hidden="true" viewBox="0 0 82.76 138.01" style="height: 44px; width: auto; display: block"><path fill="#1B1B18" transform="translate(-24.296825,-11.540485)" d="m 30.296825,149.26995 c -4.17356,-1.0495 -6,-4.43215 -6,-11.11228 0,-9.57076 1.70583,-10.91764 15.18299,-11.98806 6.37586,-0.5064 12.24762,-1.57588 13.04836,-2.37662 1.0523,-1.0523 1.04977,-4.34528 -0.009,-11.87894 -2.5902,-18.427963 -2.90386,-22.394463 -1.88641,-23.855073 0.54865,-0.787623 3.99754,-2.230726 7.66421,-3.206896 6.67296,-1.776529 10,-3.535926 10,-5.288174 0,-0.513658 -3.69455,-5.977668 -8.21011,-12.142244 -11.40805,-15.574021 -12.71021,-19.126185 -13.83754,-37.747359 -0.77261,-12.762001 -0.60297,-16.041301 0.87836,-16.979582 2.86657,-1.815694 16.78842,-1.403865 21.5454,0.637346 11.78156,5.055444 20.45142,20.331262 22.07979,38.9034 0.65036,7.417542 1.64426,11.955618 2.69516,12.305919 0.91567,0.305223 4.18126,2.469063 7.256875,4.808534 7.12987,5.42336 8.45555,11.863969 2.95759,14.369009 -2.40179,1.094333 -3.19498,2.225007 -2.57896,3.676247 2.20962,5.205479 2.03335,7.942535 -0.68668,10.662573 -2.216235,2.21623 -2.532785,3.37881 -1.463825,5.37617 1.896885,3.54434 1.703925,7.10029 -0.6279,11.57134 -1.09548,2.1005 -1.99548,5.14085 -2,6.75634 -0.022,7.87614 -6.38116,13.72237 -14.942,13.73684 -7.74637,0.0131 -14.13567,2.54367 -17.16546,6.79862 -1.58447,2.22518 -4.16033,4.52608 -5.72413,5.11311 -3.61913,1.35856 -24.64972,2.74668 -28.17662,1.85978 z m 47.07213,-87.28667 c 0.4638,-3.986413 -2.96659,-6.126324 -5.90779,-3.68534 -2.26861,1.882774 -2.33784,4.152912 -0.19209,6.29866 2.55437,2.55437 5.65309,1.226811 6.09988,-2.61332 z m -47.67789,3.581127 c -3.79234,-4.569494 1.43804,-12.294236 6.27243,-9.263732 4.75778,2.982485 3.04634,11.190343 -2.33334,11.190343 -1.28708,0 -3.05967,-0.866975 -3.93909,-1.926611 z"></path></svg></a>
+<nav class="nav" aria-label="Principal" style="display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 auto">
+<a href="proyectos.html">Proyectos</a>
+<a href="solicitudes.html">Solicitudes <span class="count">4</span></a>
+<a href="admin.html" aria-current="page">Administración</a>
+</nav>
+<div style="display: flex; align-items: center; gap: 10px">
+<span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 50%; background: #FCE9E1; color: #9A2E09; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center">AL</span>
+<span style="display: flex; flex-direction: column; font-size: 14px; line-height: 1.25"><span style="font-weight: 600">Ana López</span><span style="color: #5E5D57; font-size: 13px">Administración</span></span>
+</div>
+</div>
+</header>
+
+
+
+
+<main style="max-width: 1360px; margin: 0 auto; padding: 28px 24px 48px; display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+
+<nav class="side" aria-label="Administración" style="flex: 1 1 220px; display: flex; flex-direction: column; gap: 4px">
+<a href="admin.html" aria-current="page">Usuarios y permisos</a>
+<a href="admin.html">Contrapartes</a>
+<a href="admin.html">Donantes</a>
+<a href="admin.html">Plantillas de informe</a>
+<a href="admin.html">Ajustes</a>
+</nav>
+
+<div style="flex: 999 1 680px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em">Usuarios y permisos</h1>
+
+<section class="card" aria-labelledby="pend-t">
+<h2 id="pend-t" class="h2">Accesos pendientes · 2</h2>
+<p class="meta" style="margin: 4px 0 4px">Personas de la ONG que han entrado con Google y esperan acceso.</p>
+<div class="req">
+<div><p style="margin: 0; font-weight: 600; font-size: 15px">Pablo Ruiz</p><p class="meta" style="margin: 2px 0 0">pablo.ruiz@[dominio] · pidió acceso el 28 oct</p></div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><button type="button" class="btn btn-p">Dar acceso de lectura</button><button type="button" class="btn btn-d">Rechazar</button></div>
+</div>
+<div class="req">
+<div><p style="margin: 0; font-weight: 600; font-size: 15px">Marta Sanz</p><p class="meta" style="margin: 2px 0 0">marta.sanz@[dominio] · pidió acceso el 27 oct</p></div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap"><button type="button" class="btn btn-p">Dar acceso de lectura</button><button type="button" class="btn btn-d">Rechazar</button></div>
+</div>
+</section>
+
+<section class="card" aria-labelledby="usr-t">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px">
+<h2 id="usr-t" class="h2">Usuarios · 5</h2>
+<button type="button" class="btn btn-s">Invitar por correo</button>
+</div>
+<div style="overflow-x: auto">
+<table class="tbl">
+<thead><tr><th scope="col">Nombre</th><th scope="col">Permiso</th><th scope="col">Último acceso</th><th scope="col"><span style="position: absolute; left: -9999px">Acciones</span></th></tr></thead>
+<tbody>
+<tr><td><span style="font-weight: 600">Ana López</span><span class="meta" style="display: block">ana.lopez@[dominio] · tú</span></td><td><label><span style="position: absolute; left: -9999px">Permiso de Ana López</span><select><option>Lectura</option><option>Edición</option><option selected="">Administración</option></select></label></td><td>Ahora</td><td></td></tr>
+<tr><td><span style="font-weight: 600">Luis Gómez</span><span class="meta" style="display: block">luis.gomez@[dominio]</span></td><td><label><span style="position: absolute; left: -9999px">Permiso de Luis Gómez</span><select><option>Lectura</option><option>Edición</option><option selected="">Administración</option></select></label></td><td>Ayer</td><td style="text-align: right"><button type="button" class="btn btn-d">Quitar acceso</button></td></tr>
+<tr><td><span style="font-weight: 600">Carmen Díaz</span><span class="meta" style="display: block">carmen.diaz@[dominio]</span></td><td><label><span style="position: absolute; left: -9999px">Permiso de Carmen Díaz</span><select><option>Lectura</option><option selected="">Edición</option><option>Administración</option></select></label></td><td>25 oct</td><td style="text-align: right"><button type="button" class="btn btn-d">Quitar acceso</button></td></tr>
+<tr><td><span style="font-weight: 600">Javier Moreno</span><span class="meta" style="display: block">javier.moreno@[dominio]</span></td><td><label><span style="position: absolute; left: -9999px">Permiso de Javier Moreno</span><select><option>Lectura</option><option selected="">Edición</option><option>Administración</option></select></label></td><td>20 oct</td><td style="text-align: right"><button type="button" class="btn btn-d">Quitar acceso</button></td></tr>
+<tr><td><span style="font-weight: 600">Elena Vidal</span><span class="meta" style="display: block">elena.vidal@[dominio]</span></td><td><label><span style="position: absolute; left: -9999px">Permiso de Elena Vidal</span><select><option selected="">Lectura</option><option>Edición</option><option>Administración</option></select></label></td><td>2 sep</td><td style="text-align: right"><button type="button" class="btn btn-d">Quitar acceso</button></td></tr>
+</tbody>
+</table>
+</div>
+</section>
+
+<section class="card" aria-labelledby="perm-t">
+<h2 id="perm-t" class="h2" style="margin-bottom: 12px">Qué permite cada permiso</h2>
+<div class="perm">
+<div><b>Lectura</b><p>Ver proyectos, solicitudes, archivos e informes. Es el permiso inicial.</p></div>
+<div><b>Edición</b><p>Además: revisar solicitudes, cambiar estados, añadir donantes y notas, generar y aprobar informes.</p></div>
+<div><b>Administración</b><p>Además: dar y quitar accesos, y gestionar contrapartes, donantes y plantillas.</p></div>
+</div>
+</section>
+</div>
+</main>
+
+</div>
+</body>
+</html>

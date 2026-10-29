@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Aula escuela primaria · Africa Directo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F6F6F3}
+a{color:#B8360B}a:hover{color:#8F2A08}
+.nav a{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:8px;text-decoration:none;color:#3F3E39;font-weight:500;font-size:15px}
+.nav a:hover{background:#F0EFEA;color:#1B1B18}
+.nav a[aria-current="page"]{background:#FCE9E1;color:#9A2E09;font-weight:700}
+.count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:#D2400F;color:#FFFFFF;font-size:12px;font-weight:600;box-sizing:border-box}
+.st{display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:999px;font-size:13px;font-weight:500;line-height:20px;white-space:nowrap}
+.st::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;flex:none}
+.s-eje{background:#D6EEF0;color:#0F5E66}
+.s-apr{background:#DDF0E5;color:#1D6B50}
+.s-rec{background:#DDF0E5;color:#1D6B50}
+.s-com{background:#EDE8FB;color:#4F3A99}
+.s-bor{background:#FBEFD5;color:#7A4B00}
+.s-env{background:#E6E9EE;color:#334155}
+.ev-av{background:#D6EEF0;color:#0F5E66}
+.ev-in{background:#FDE6E4;color:#B42318}
+.ev-ec{background:#EDE8FB;color:#4F3A99}
+.ev-es{background:#EEEDE8;color:#4A4943}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 18px;border-radius:8px;font:inherit;font-size:15px;font-weight:600;text-decoration:none;cursor:pointer;border:1px solid transparent;white-space:nowrap}
+.btn-p{background:#D2400F;color:#FFFFFF}.btn-p:hover{background:#B8360B;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#1B1B18;border-color:#D5D4CC}.btn-s:hover{background:#F0EFEA;color:#1B1B18}
+.steps{display:flex;flex-wrap:wrap;gap:6px;list-style:none;margin:0;padding:0}
+.steps li{display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 12px 6px 8px;border-radius:999px;background:#F6F6F3;color:#5E5D57}
+.steps li span{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:#E3E2DC;color:#5E5D57}
+.steps li.done{color:#1D6B50}.steps li.done span{background:#DDF0E5;color:#1D6B50}
+.steps li.now{background:#0F5E66;color:#FFFFFF;font-weight:600}.steps li.now span{background:#FFFFFF;color:#0F5E66}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;border-bottom:1px solid #E3E2DC}
+.tab{font:inherit;font-size:15px;font-weight:500;color:#5E5D57;background:none;border:0;border-bottom:3px solid transparent;min-height:48px;padding:0 14px;cursor:pointer;margin-bottom:-1px}
+.tab:hover{color:#1B1B18}
+.tab.on{color:#1B1B18;font-weight:700;border-bottom-color:#E54611}
+.card{background:#FFFFFF;border:1px solid #E3E2DC;border-radius:12px;padding:20px}
+.h3{margin:0 0 12px;font-size:16px;font-weight:600}
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 24px;margin:0}
+.kv dt{font-size:13px;color:#5E5D57}
+.kv dd{margin:2px 0 0;font-size:15px;font-weight:500}
+.tbl{width:100%;border-collapse:collapse;font-size:14px}
+.tbl th{text-align:left;font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#5E5D57;padding:10px 12px;border-bottom:1px solid #E3E2DC;white-space:nowrap}
+.tbl td{padding:12px;border-bottom:1px solid #EEEDE8;vertical-align:middle}
+.tbl tbody tr:last-child td{border-bottom:0}
+.ev{display:grid;grid-template-columns:88px minmax(0,1fr);gap:16px;padding:16px 0;border-bottom:1px solid #EEEDE8}
+.ev:last-child{border-bottom:0}
+.ev .d{font-size:14px;font-weight:600}
+.ev .d small{display:block;font-weight:400;color:#5E5D57;font-size:13px}
+.meta{font-size:13px;color:#5E5D57}
+.field{display:flex;flex-direction:column;gap:6px;font-size:13px;font-weight:500;color:#3F3E39}
+.field select,.field input{font:inherit;font-size:15px;font-weight:400;color:#1B1B18;height:44px;padding:0 12px;border:1px solid #D5D4CC;border-radius:8px;background:#FFFFFF;box-sizing:border-box}
+.ph{aspect-ratio:4/3;border-radius:8px;background:#ECEBE5;display:flex;align-items:center;justify-content:center;font-size:13px;color:#5E5D57}
+.folder{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:48px;padding:0 4px;border-bottom:1px solid #EEEDE8;font-size:15px}
+.folder:last-child{border-bottom:0}
+.bar{height:8px;border-radius:4px;background:#E8E7E1;overflow:hidden}
+.bar span{display:block;height:100%;background:#E54611;border-radius:4px}
+</style>
+</head>
+<body>
+<div style="min-height: 100vh; background: #F6F6F3; font-family: 'Quicksand', system-ui, sans-serif; font-weight: 500; color: #1B1B18">
+
+<header style="background: #FFFFFF; border-bottom: 1px solid #E3E2DC">
+<div style="max-width: 1360px; margin: 0 auto; padding: 10px 24px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 32px">
+<a href="proyectos.html" aria-label="Africa Directo: inicio" style="display: flex; align-items: center; min-height: 44px"><svg aria-hidden="true" viewBox="0 0 82.76 138.01" style="height: 44px; width: auto; display: block"><path fill="#1B1B18" transform="translate(-24.296825,-11.540485)" d="m 30.296825,149.26995 c -4.17356,-1.0495 -6,-4.43215 -6,-11.11228 0,-9.57076 1.70583,-10.91764 15.18299,-11.98806 6.37586,-0.5064 12.24762,-1.57588 13.04836,-2.37662 1.0523,-1.0523 1.04977,-4.34528 -0.009,-11.87894 -2.5902,-18.427963 -2.90386,-22.394463 -1.88641,-23.855073 0.54865,-0.787623 3.99754,-2.230726 7.66421,-3.206896 6.67296,-1.776529 10,-3.535926 10,-5.288174 0,-0.513658 -3.69455,-5.977668 -8.21011,-12.142244 -11.40805,-15.574021 -12.71021,-19.126185 -13.83754,-37.747359 -0.77261,-12.762001 -0.60297,-16.041301 0.87836,-16.979582 2.86657,-1.815694 16.78842,-1.403865 21.5454,0.637346 11.78156,5.055444 20.45142,20.331262 22.07979,38.9034 0.65036,7.417542 1.64426,11.955618 2.69516,12.305919 0.91567,0.305223 4.18126,2.469063 7.256875,4.808534 7.12987,5.42336 8.45555,11.863969 2.95759,14.369009 -2.40179,1.094333 -3.19498,2.225007 -2.57896,3.676247 2.20962,5.205479 2.03335,7.942535 -0.68668,10.662573 -2.216235,2.21623 -2.532785,3.37881 -1.463825,5.37617 1.896885,3.54434 1.703925,7.10029 -0.6279,11.57134 -1.09548,2.1005 -1.99548,5.14085 -2,6.75634 -0.022,7.87614 -6.38116,13.72237 -14.942,13.73684 -7.74637,0.0131 -14.13567,2.54367 -17.16546,6.79862 -1.58447,2.22518 -4.16033,4.52608 -5.72413,5.11311 -3.61913,1.35856 -24.64972,2.74668 -28.17662,1.85978 z m 47.07213,-87.28667 c 0.4638,-3.986413 -2.96659,-6.126324 -5.90779,-3.68534 -2.26861,1.882774 -2.33784,4.152912 -0.19209,6.29866 2.55437,2.55437 5.65309,1.226811 6.09988,-2.61332 z m -47.67789,3.581127 c -3.79234,-4.569494 1.43804,-12.294236 6.27243,-9.263732 4.75778,2.982485 3.04634,11.190343 -2.33334,11.190343 -1.28708,0 -3.05967,-0.866975 -3.93909,-1.926611 z"></path></svg></a>
+<nav class="nav" aria-label="Principal" style="display: flex; flex-wrap: wrap; gap: 4px; flex: 1 1 auto">
+<a href="proyectos.html" aria-current="page">Proyectos</a>
+<a href="solicitudes.html">Solicitudes <span class="count">4</span></a>
+<a href="admin.html">Administración</a>
+</nav>
+<div style="display: flex; align-items: center; gap: 10px">
+<span aria-hidden="true" style="width: 36px; height: 36px; border-radius: 50%; background: #FCE9E1; color: #9A2E09; font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center">AL</span>
+<span style="display: flex; flex-direction: column; font-size: 14px; line-height: 1.25"><span style="font-weight: 600">Ana López</span><span style="color: #5E5D57; font-size: 13px">Administración</span></span>
+</div>
+</div>
+</header>
+
+<main style="max-width: 1360px; margin: 0 auto; padding: 20px 24px 48px; display: flex; flex-direction: column; gap: 20px">
+
+<a href="proyectos.html" style="font-size: 14px; font-weight: 500; text-decoration: none; align-self: flex-start; min-height: 32px; display: inline-flex; align-items: center">← Todos los proyectos</a>
+
+<section class="card" style="display: flex; flex-direction: column; gap: 18px; padding: 24px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-start; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+<p style="margin: 0; font-size: 13px; color: #5E5D57">P-2026-014 · Educación</p>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px"><h1 style="margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.01em">Aula escuela primaria</h1><span class="st s-eje">En ejecución</span></div>
+<p style="margin: 0; font-size: 15px; color: #5E5D57">Kinshasa, RD Congo · Contraparte: congregación local [nombre] · Responsable: Ana López</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<a class="btn btn-s" href="proyecto.html">Carpeta en Drive ↗</a>
+<button type="button" class="btn btn-s">Cambiar estado</button>
+<button type="button" class="btn btn-p" data-goto="informes">Generar informe</button>
+</div>
+</div>
+<ol class="steps" aria-label="Fases del proyecto">
+<li class="done"><span aria-hidden="true">✓</span>Solicitud</li>
+<li class="done"><span aria-hidden="true">✓</span>Revisión</li>
+<li class="done"><span aria-hidden="true">✓</span>Validada</li>
+<li class="done"><span aria-hidden="true">✓</span>Financiación</li>
+<li class="done"><span aria-hidden="true">✓</span>Aprobado</li>
+<li class="now" aria-current="step"><span aria-hidden="true">6</span>En ejecución</li>
+<li><span aria-hidden="true">7</span>Completado</li>
+<li><span aria-hidden="true">8</span>Cerrado</li>
+</ol>
+<div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; background: #FBEFD5; border-radius: 10px; padding: 12px 16px">
+<p style="margin: 0; font-size: 15px; color: #3F3E39"><b style="color: #5C3900">Siguiente paso:</b> informe intermedio para la Fundación A antes del 15 nov.</p>
+<button type="button" class="btn btn-s" style="min-height: 40px" data-goto="informes">Preparar informe</button>
+</div>
+</section>
+
+<nav class="tabs" aria-label="Secciones del proyecto">
+<button type="button" class="tab on" aria-pressed="true" data-tab="resumen">Resumen</button>
+<button type="button" class="tab" aria-pressed="false" data-tab="seguimiento">Seguimiento</button>
+<button type="button" class="tab" aria-pressed="false" data-tab="financiacion">Financiación</button>
+<button type="button" class="tab" aria-pressed="false" data-tab="archivos">Archivos</button>
+<button type="button" class="tab" aria-pressed="false" data-tab="informes">Informes</button>
+<button type="button" class="tab" aria-pressed="false" data-tab="solicitud">Solicitud</button>
+</nav>
+
+<div data-panel="resumen">
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<section class="card">
+<h2 class="h3">Descripción</h2>
+<p style="margin: 0 0 18px; font-size: 15px; line-height: 1.6">Construcción de un aula nueva para la escuela primaria, que hoy da clase en turnos por falta de espacio. Incluye mobiliario para 45 alumnos.</p>
+<dl class="kv">
+<div><dt>Presupuesto aprobado</dt><dd>18.000 €</dd></div>
+<div><dt>Financiado</dt><dd>100 % · 2 donantes</dd></div>
+<div><dt>Inicio de obra</dt><dd>3 ago 2026</dd></div>
+<div><dt>Fin previsto</dt><dd>15 dic 2026</dd></div>
+<div><dt>Beneficiarios</dt><dd>45 alumnos</dd></div>
+<div><dt>Coordenadas</dt><dd>−4,33 · 15,31</dd></div>
+</dl>
+</section>
+<section class="card">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 4px"><h2 class="h3" style="margin: 0">Última actividad</h2><button type="button" class="tab" style="min-height: 36px; padding: 0; color: #B8360B; font-weight: 700" data-goto="seguimiento">Ver todo →</button></div>
+<div class="ev"><div class="d">24 oct<small>correo</small></div><div><span class="st ev-av">Avance</span><p style="margin: 8px 0 0; font-size: 15px">Muros terminados; la cubierta empieza la semana que viene.</p></div></div>
+<div class="ev"><div class="d">6 oct<small>nota</small></div><div><span class="st ev-ec">Económico</span><p style="margin: 8px 0 0; font-size: 15px">La contraparte confirma la segunda transferencia (6.000 €).</p></div></div>
+</section>
+</div>
+<aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 20px">
+<section class="card">
+<h2 class="h3">Contraparte</h2>
+<p style="margin: 0; font-size: 15px; font-weight: 600">Congregación local [nombre]</p>
+<p style="margin: 4px 0 12px; font-size: 14px; color: #5E5D57">Hna. [nombre] · escribe en francés</p>
+<p style="margin: 0; font-size: 14px"><a href="proyecto.html">[correo de contacto]</a></p>
+<p style="margin: 8px 0 0; font-size: 13px; color: #5E5D57">Dirección de este proyecto: proyectos+P-2026-014@[dominio]</p>
+</section>
+<section class="card">
+<h2 class="h3">Equipo</h2>
+<dl class="kv" style="grid-template-columns: minmax(0, 1fr)">
+<div><dt>Responsable</dt><dd>Ana López</dd></div>
+<div><dt>Revisó la propuesta</dt><dd>Luis Gómez · 18 jun</dd></div>
+</dl>
+</section>
+</aside>
+</div>
+</div>
+
+<div data-panel="seguimiento" hidden>
+<section class="card">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 4px">
+<h2 class="h3" style="margin: 0">Seguimiento</h2>
+<button type="button" class="btn btn-s">Añadir nota</button>
+</div>
+<p class="meta" style="margin: 0 0 8px">Correos y fotos de la contraparte, notas del equipo y cambios de estado. Los resúmenes los hace la IA.</p>
+<div class="ev"><div class="d">24 oct<small>correo</small></div><div><span class="st ev-av">Avance</span><p style="margin: 8px 0 6px; font-size: 15px">Muros terminados; la cubierta empieza la semana que viene.</p><p class="meta" style="margin: 0"><a href="proyecto.html">Correo original ↗</a> · <a href="proyecto.html">4 fotos ↗</a></p></div></div>
+<div class="ev"><div class="d">6 oct<small>nota · Ana</small></div><div><span class="st ev-ec">Económico</span><p style="margin: 8px 0 6px; font-size: 15px">La contraparte confirma la segunda transferencia (6.000 €).</p><p class="meta" style="margin: 0"><a href="proyecto.html">Justificante.pdf ↗</a></p></div></div>
+<div class="ev"><div class="d">2 oct<small>Luis Gómez</small></div><div><span class="st ev-es">Cambio de estado</span><p style="margin: 8px 0 0; font-size: 15px">Parado → En ejecución. Se reanuda la obra tras las lluvias.</p></div></div>
+<div class="ev"><div class="d">14 sep<small>correo</small></div><div><span class="st ev-in">Incidencia</span><p style="margin: 8px 0 6px; font-size: 15px">Las lluvias paran la obra y el cemento sube un 15 %.</p><p class="meta" style="margin: 0"><a href="proyecto.html">Correo original ↗</a> · <a href="proyecto.html">2 fotos ↗</a></p></div></div>
+<div class="ev"><div class="d">1 sep<small>correo</small></div><div><span class="st ev-av">Avance</span><p style="margin: 8px 0 0; font-size: 15px">Cimientos terminados.</p></div></div>
+</section>
+</div>
+
+<div data-panel="financiacion" hidden>
+<div style="display: flex; flex-direction: column; gap: 20px">
+<section class="card">
+<h2 class="h3">Financiación</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 16px">
+<div><p class="meta" style="margin: 0">Presupuesto</p><p style="margin: 2px 0 0; font-size: 22px; font-weight: 700">18.000 €</p></div>
+<div><p class="meta" style="margin: 0">Comprometido</p><p style="margin: 2px 0 0; font-size: 22px; font-weight: 700">18.000 €</p></div>
+<div><p class="meta" style="margin: 0">Enviado a la contraparte</p><p style="margin: 2px 0 0; font-size: 22px; font-weight: 700">12.000 €</p></div>
+</div>
+<div class="bar"><span style="width: 100%"></span></div>
+</section>
+<section class="card">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 8px"><h2 class="h3" style="margin: 0">Donantes</h2><button type="button" class="btn btn-s">Añadir aportación</button></div>
+<div style="overflow-x: auto">
+<table class="tbl">
+<thead><tr><th scope="col">Donante</th><th scope="col" style="text-align: right">Importe</th><th scope="col">Estado</th><th scope="col">Informes que pide</th><th scope="col">Convenio</th></tr></thead>
+<tbody>
+<tr><td style="font-weight: 600">Fundación A</td><td style="text-align: right">12.000 €</td><td><span class="st s-com">Comprometida</span></td><td>Intermedio (15 nov) y final · su plantilla</td><td><a href="proyecto.html">Convenio.pdf ↗</a></td></tr>
+<tr><td style="font-weight: 600">Fundación B</td><td style="text-align: right">6.000 €</td><td><span class="st s-rec">Recibida</span></td><td>Final · plantilla de la ONG</td><td><a href="proyecto.html">Carta.pdf ↗</a></td></tr>
+</tbody>
+</table>
+</div>
+</section>
+</div>
+</div>
+
+<div data-panel="archivos" hidden>
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section class="card" style="flex: 1 1 360px; min-width: 0">
+<div style="display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 4px"><h2 class="h3" style="margin: 0">Carpetas</h2><a href="proyecto.html" style="font-size: 14px; font-weight: 600">Abrir en Drive ↗</a></div>
+<div class="folder"><a href="proyecto.html">01 Solicitud</a><span class="meta">9 archivos</span></div>
+<div class="folder"><a href="proyecto.html">02 Propuesta</a><span class="meta">3 archivos</span></div>
+<div class="folder"><a href="proyecto.html">03 Financiación</a><span class="meta">5 archivos</span></div>
+<div class="folder"><a href="proyecto.html">04 Seguimiento</a><span class="meta">38 archivos</span></div>
+<div class="folder"><a href="proyecto.html">05 Informes</a><span class="meta">2 archivos</span></div>
+<div class="folder"><a href="proyecto.html">06 Económico</a><span class="meta">4 archivos</span></div>
+<div class="folder"><a href="proyecto.html">07 Cierre</a><span class="meta">vacía</span></div>
+</section>
+<section class="card" style="flex: 999 1 480px; min-width: 0">
+<h2 class="h3">Fotos recientes</h2>
+<p class="meta" style="margin: -6px 0 14px">Solo las marcadas como publicables aparecen en informes y presentaciones.</p>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px">
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px"><span class="ph">[foto 24 oct]</span><span style="display: flex; align-items: center; gap: 6px; min-height: 32px"><input type="checkbox" checked="" style="width: 18px; height: 18px; accent-color: #D2400F">Publicable</span></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px"><span class="ph">[foto 24 oct]</span><span style="display: flex; align-items: center; gap: 6px; min-height: 32px"><input type="checkbox" checked="" style="width: 18px; height: 18px; accent-color: #D2400F">Publicable</span></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 14px"><span class="ph">[foto 24 oct]</span><span style="display: flex; align-items: center; gap: 6px; min-height: 32px"><input type="checkbox" style="width: 18px; height: 18px; accent-color: #D2400F">Publicable</span></label>
+</div>
+</section>
+</div>
+</div>
+
+<div data-panel="informes" hidden>
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section class="card" style="flex: 999 1 560px; min-width: 0">
+<h2 class="h3">Informes y presentaciones</h2>
+<div style="overflow-x: auto">
+<table class="tbl">
+<thead><tr><th scope="col">Documento</th><th scope="col">Para</th><th scope="col">Estado</th><th scope="col"></th></tr></thead>
+<tbody>
+<tr><td style="font-weight: 600">Informe intermedio<span class="meta" style="display: block; font-weight: 400">ago–oct 2026 · creado hoy</span></td><td>Fundación A</td><td><span class="st s-bor">Borrador de IA</span></td><td style="text-align: right; white-space: nowrap"><a href="proyecto.html">Abrir en Docs ↗</a></td></tr>
+<tr><td style="font-weight: 600">Presentación de captación<span class="meta" style="display: block; font-weight: 400">20 jun 2026</span></td><td>4 donantes</td><td><span class="st s-env">Enviada</span></td><td style="text-align: right; white-space: nowrap"><a href="proyecto.html">Abrir en Slides ↗</a></td></tr>
+</tbody>
+</table>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px"><button type="button" class="btn btn-s">Marcar borrador como revisado</button><button type="button" class="btn btn-s">Exportar a PDF</button></div>
+
+</section>
+
+<section class="card" style="flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+<h2 class="h3" style="margin: 0">Generar documento</h2>
+<label class="field">Tipo<select><option>Informe de seguimiento</option><option>Informe final</option><option>Presentación para donantes</option><option>Ficha del proyecto (PDF)</option></select></label>
+<label class="field">Donante<select><option>Fundación A (usa su plantilla)</option><option>Fundación B (plantilla de la ONG)</option></select></label>
+<div style="display: flex; gap: 12px; flex-wrap: wrap"><label class="field" style="flex: 1 1 120px">Desde<input type="text" value="1 ago 2026"></label><label class="field" style="flex: 1 1 120px">Hasta<input type="text" value="31 oct 2026"></label></div>
+<button type="button" class="btn btn-p">Generar borrador</button>
+<p class="meta" style="margin: 0; line-height: 1.5">La IA solo usa los datos y el seguimiento del proyecto. Lo que no encuentre aparece como [PENDIENTE] para que lo completes en Google Docs.</p>
+</section>
+
+</div>
+</div>
+
+<div data-panel="solicitud" hidden>
+<section class="card" style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: flex-end; gap: 12px">
+<h2 class="h3" style="margin: 0">Solicitud de la contraparte</h2>
+<label class="field" style="flex: 0 1 260px">Versión<select><option>Versión 2 · 15 jun (vigente)</option><option>Versión 1 · 2 jun</option></select></label>
+</div>
+<p class="meta" style="margin: 0">Traducida del francés por IA. <a href="proyecto.html">Ver original</a> · <a href="proyecto.html">PDF de la solicitud ↗</a></p>
+<dl style="margin: 0; display: flex; flex-direction: column; gap: 16px">
+<div><dt style="font-size: 13px; font-weight: 600; color: #5E5D57">¿Qué necesitáis?</dt><dd style="margin: 4px 0 0; font-size: 15px; line-height: 1.6">Un aula más para dejar de dar clase en dos turnos.</dd></div>
+<div><dt style="font-size: 13px; font-weight: 600; color: #5E5D57">¿A cuántas personas beneficia?</dt><dd style="margin: 4px 0 0; font-size: 15px; line-height: 1.6">45 alumnos de 3.º y 4.º curso.</dd></div>
+<div><dt style="font-size: 13px; font-weight: 600; color: #5E5D57">Presupuesto</dt><dd style="margin: 4px 0 0; font-size: 15px; line-height: 1.6">18.000 €: materiales 11.500 €, mano de obra 4.700 €, mobiliario 1.800 €.</dd></div>
+<div><dt style="font-size: 13px; font-weight: 600; color: #5E5D57">¿Qué aportáis vosotros?</dt><dd style="margin: 4px 0 0; font-size: 15px; line-height: 1.6">El terreno y la supervisión de la obra.</dd></div>
+</dl>
+</section>
+</div>
+
+</main>
+</div>
+<script>
+// Cambio de pestaña en la maqueta (solo demostración).
+function abrir(id) {
+  document.querySelectorAll('[data-panel]').forEach(p => { p.hidden = p.dataset.panel !== id; });
+  document.querySelectorAll('[data-tab]').forEach(t => {
+    const on = t.dataset.tab === id;
+    t.classList.toggle('on', on);
+    t.setAttribute('aria-pressed', on);
+  });
+}
+document.querySelectorAll('[data-tab]').forEach(b => b.addEventListener('click', () => abrir(b.dataset.tab)));
+document.querySelectorAll('[data-goto]').forEach(b => b.addEventListener('click', () => abrir(b.dataset.goto)));
+</script>
+</body>
+</html>

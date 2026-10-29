@@ -1,0 +1,12 @@
+node_modules/
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Secretos y datos locales
+.env
+.env.local
+.env.*.local
+.datos/
+.vercel/
