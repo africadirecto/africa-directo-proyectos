@@ -42,7 +42,13 @@ export function BotonGoogle({ dominio }: { dominio: string }) {
       router.refresh();
     } catch (e) {
       const mensaje = e instanceof Error ? e.message : '';
-      setError(mensaje.includes('popup-closed') ? 'Has cerrado la ventana de Google.' : mensaje || 'No se pudo entrar.');
+      setError(
+        mensaje.includes('popup-closed')
+          ? 'Has cerrado la ventana de Google.'
+          : mensaje.includes('popup-blocked')
+            ? 'Tu navegador ha bloqueado la ventana de Google. Permite las ventanas emergentes para esta página y vuelve a pulsar el botón.'
+            : mensaje || 'No se pudo entrar.',
+      );
       setCargando(false);
     }
   };

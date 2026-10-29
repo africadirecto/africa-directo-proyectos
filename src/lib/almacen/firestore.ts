@@ -6,7 +6,10 @@ import { getFirestore, FieldPath, FieldValue, type Firestore, type DocumentRefer
 import { config } from '../config';
 import type { Almacen, Consulta, Datos, Transaccion } from './tipos';
 
-let db: Firestore | null = null;
+// En globalThis y no en el módulo: Next puede cargar este módulo más de una vez en el mismo
+// proceso (y lo recarga en desarrollo), la app de Firebase es la misma y settings() solo se
+// puede llamar una vez.
+const global = globalThis as { firestoreAD?: Firestore };
 
 export function appFirebase() {
   return (
@@ -23,11 +26,16 @@ export function appFirebase() {
 }
 
 function firestore(): Firestore {
-  if (!db) {
-    db = getFirestore(appFirebase());
-    db.settings({ ignoreUndefinedProperties: true });
+  if (!global.firestoreAD) {
+    const db = getFirestore(appFirebase());
+    try {
+      db.settings({ ignoreUndefinedProperties: true });
+    } catch {
+      // Ya lo configuró otra copia de este módulo (con estos mismos ajustes): se reutiliza.
+    }
+    global.firestoreAD = db;
   }
-  return db;
+  return global.firestoreAD;
 }
 
 const datosDe = (d: { data(): unknown }) => (d.data() ?? null) as Datos | null;

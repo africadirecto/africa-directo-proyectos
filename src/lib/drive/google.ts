@@ -197,7 +197,9 @@ export const driveGoogle: Drive = {
       const pdf = await api(`${API}/files/${id}/export?mimeType=application/pdf`);
       return await this.subir(carpetaId, `${nombre}.pdf`, 'application/pdf', Buffer.from(await pdf.arrayBuffer()));
     } finally {
-      await api(`${API}/files/${id}?${TODAS}`, { method: 'DELETE' }).catch(() => undefined);
+      // A la papelera y no DELETE: borrar del todo en una unidad compartida exige rol de Gestor,
+      // y la app es Gestor de contenido. La papelera se vacía sola a los 30 días.
+      await this.aPapelera(id).catch((e) => console.error('No se pudo quitar el Doc temporal', id, e));
     }
   },
 
