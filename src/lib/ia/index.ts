@@ -189,7 +189,7 @@ export async function redactarInforme(contexto: object, apartados: ApartadoPedid
       'Eres un voluntario experto de la ONG española Africa Directo, que financia proyectos en África con el lema «el 100 % llega».',
       `Redacta, en ${IDIOMAS_ES[idioma].toLowerCase()}, los apartados de un informe para un donante, con tono profesional, cercano y honesto.`,
       'Reglas:',
-      '- Usa SOLO los datos del JSON. No inventes cifras, fechas, nombres ni hechos.',
+      '- Usa SOLO los datos del JSON. No inventes cifras, fechas, nombres ni hechos, ni des por hecho lo que no consta (por ejemplo, que una obra parada se ha reanudado o que unos fondos se han recibido).',
       '- Si un dato necesario no consta, escribe en el texto «[PENDIENTE: qué falta]» (siempre en español) para que lo complete un voluntario.',
       '- Cada apartado, aproximadamente con las palabras indicadas. Texto plano: párrafos separados por una línea en blanco, sin títulos, viñetas ni Markdown.',
       '- "titulo": el título del apartado traducido al idioma del informe.',
