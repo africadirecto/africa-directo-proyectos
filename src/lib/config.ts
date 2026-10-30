@@ -29,8 +29,11 @@ export const config = {
   google: {
     proyectoId: texto('FIREBASE_PROJECT_ID'),
     cuentaServicio: texto('GOOGLE_SERVICE_ACCOUNT_EMAIL'),
-    // En Vercel la clave se pega con "\n" literales: se convierten a saltos de línea.
-    clavePrivada: texto('GOOGLE_SERVICE_ACCOUNT_KEY').replace(/\\n/g, '\n'),
+    // En Vercel la clave se pega con "\n" literales: se convierten a saltos de línea. Si al
+    // importar un .env se quedaron las comillas alrededor, se quitan.
+    clavePrivada: texto('GOOGLE_SERVICE_ACCOUNT_KEY')
+      .replace(/^"([\s\S]*)"$/, '$1')
+      .replace(/\\n/g, '\n'),
   },
   drive: {
     unidadProyectos: texto('DRIVE_UNIDAD_PROYECTOS_ID'),
