@@ -53,7 +53,14 @@ img { max-width: 100%; }
 .nav a:hover { background: #f0efea; color: var(--texto); }
 .nav a[aria-current='page'] { background: var(--activo-fondo); color: var(--activo-texto); font-weight: 700; }
 .count { display: inline-flex; align-items: center; justify-content: center; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 999px; background: var(--boton); color: #fff; font-size: 12px; font-weight: 600; }
-.yo { display: flex; align-items: center; gap: 10px; }
+.logo-google { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #fff; flex: none; }
+.perfil { position: relative; margin-left: auto; }
+.yo { display: flex; align-items: center; gap: 10px; font: inherit; color: var(--texto); text-align: left; background: none; border: 0; border-radius: 10px; padding: 4px 8px 4px 4px; min-height: 44px; cursor: pointer; }
+.yo:hover, .yo[aria-expanded='true'] { background: #f0efea; }
+.perfil-menu { position: absolute; right: 0; top: calc(100% + 6px); z-index: 1000; min-width: 240px; background: #fff; border: 1px solid var(--borde); border-radius: 10px; box-shadow: 0 10px 30px rgba(27, 27, 24, 0.14); padding: 6px; }
+.perfil-correo { margin: 0; padding: 8px 10px 10px; font-size: 13px; color: var(--texto-2); border-bottom: 1px solid var(--borde-suave); margin-bottom: 6px; overflow-wrap: anywhere; }
+.perfil-opcion { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 42px; padding: 0 10px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 15px; color: var(--texto); cursor: pointer; text-align: left; }
+.perfil-opcion:hover, .perfil-opcion:focus-visible { background: #f3f2ee; }
 .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--activo-fondo); color: var(--activo-texto); font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; flex: none; }
 .yo-datos { display: flex; flex-direction: column; font-size: 14px; line-height: 1.25; }
 .yo-datos b { font-weight: 600; }
@@ -99,10 +106,41 @@ img { max-width: 100%; }
 .field .ayuda { font-weight: 400; color: var(--texto-2); }
 .field[data-error] input, .field[data-error] select, .field[data-error] textarea { border-color: var(--error); }
 .field .error-campo { color: var(--error); font-weight: 600; }
+/* Pista bajo una casilla del formulario de la contraparte: explicación sencilla con un ejemplo. */
+.pista { margin: 0; font-size: 13px; font-weight: 400; line-height: 1.45; color: var(--texto-2); }
+.total-ppto { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; }
 .campos { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px 16px; }
 .campos .ancho { grid-column: 1 / -1; }
 .check { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 15px; color: var(--texto); }
 .check input { width: 18px; height: 18px; accent-color: var(--boton); flex: none; }
+
+/* Desplegable propio (componentes/Desplegable.tsx) */
+.desplegable { position: relative; width: 100%; min-width: 0; }
+.desplegable-boton { font: inherit; font-size: 15px; font-weight: 400; color: var(--texto); min-height: 44px; width: 100%; padding: 0 12px; border: 1px solid var(--borde-campo); border-radius: 8px; background: #fff; display: flex; align-items: center; gap: 8px; text-align: left; cursor: pointer; }
+.desplegable-boton:hover:not(:disabled) { border-color: #b9b8ae; }
+.desplegable-boton[aria-expanded='true'] { border-color: var(--acento); box-shadow: 0 0 0 1px var(--acento); }
+.desplegable-boton:disabled { background: var(--fondo); color: var(--texto-2); cursor: default; }
+.desplegable-texto { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.desplegable-placeholder { color: var(--texto-2); }
+.desplegable-flecha { flex: none; color: var(--texto-2); }
+.desplegable input.desplegable-requerido { position: absolute; left: 12px; bottom: 0; width: 1px; min-height: 0; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+.desplegable-panel { position: fixed; z-index: 1000; background: #fff; border: 1px solid var(--borde); border-radius: 10px; box-shadow: 0 10px 30px rgba(27, 27, 24, 0.14); display: flex; flex-direction: column; overflow: hidden; }
+.desplegable .desplegable-buscar { flex: none; margin: 8px 8px 4px; width: auto; min-height: 40px; padding: 0 10px; font: inherit; font-size: 15px; font-weight: 400; border: 1px solid var(--borde-campo); border-radius: 8px; background: var(--fondo); }
+.desplegable-atajos { flex: none; display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 8px 6px; border-bottom: 1px solid var(--borde-suave); }
+.desplegable-atajos button { font: inherit; font-size: 13px; font-weight: 600; min-height: 32px; padding: 0 12px; border-radius: 999px; border: 1px solid var(--borde-campo); background: #fff; color: var(--texto-3); cursor: pointer; }
+.desplegable-atajos button:hover { border-color: var(--acento); color: var(--activo-texto); }
+.desplegable-lista { list-style: none; margin: 0; padding: 4px; overflow-y: auto; overscroll-behavior: contain; }
+.desplegable-opcion { display: flex; align-items: center; gap: 10px; min-height: 42px; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: 400; color: var(--texto); }
+.desplegable-opcion[data-activa] { background: #f3f2ee; }
+.desplegable-opcion[aria-selected='true'] { color: var(--activo-texto); font-weight: 600; }
+.desplegable-opcion[aria-disabled='true'] { color: var(--texto-2); cursor: default; }
+.desplegable-marca { flex: none; color: var(--boton); font-weight: 700; }
+.desplegable-check { width: 18px; height: 18px; flex: none; border: 1.5px solid var(--borde-campo); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1; color: #fff; }
+.desplegable-opcion[aria-selected='true'] .desplegable-check { background: var(--boton); border-color: var(--boton); }
+.desplegable-vacio { padding: 12px 10px; color: var(--texto-2); font-size: 14px; font-weight: 400; }
+.desplegable-peq .desplegable-boton { min-height: 36px; font-size: 14px; padding: 0 10px; }
+.field[data-error] .desplegable-boton { border-color: var(--error); }
+.bandera { width: 20px; height: 15px; flex: none; border-radius: 2px; object-fit: cover; box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1); }
 
 .filtros { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; background: var(--superficie); border: 1px solid var(--borde); border-radius: 12px; padding: 16px; }
 
@@ -169,7 +207,12 @@ img { max-width: 100%; }
 .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
 .mapa-marco { flex: 1 1 380px; min-width: 0; background: #fff; border: 1px solid var(--borde); border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px; position: sticky; top: 16px; }
 .mapa { height: 460px; border-radius: 8px; background: #f4f7f8; z-index: 0; }
-.mapa-tarjeta { border: 1px solid var(--borde); border-radius: 10px; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px; }
+.mapa-popup .leaflet-popup-content-wrapper { border-radius: 10px; box-shadow: 0 8px 24px rgba(27, 27, 24, 0.18); }
+.mapa-popup .leaflet-popup-content { margin: 12px 14px; min-width: 180px; max-width: 240px; }
+.mapa-tarjeta { display: flex; flex-direction: column; align-items: flex-start; gap: 4px; font-family: var(--fuente), system-ui, sans-serif; }
+.mapa-tarjeta-titulo { font-size: 15px; font-weight: 700; line-height: 1.3; color: var(--texto); }
+.mapa-tarjeta-meta { font-size: 13px; color: var(--texto-2); margin-bottom: 6px; }
+.mapa-popup a.btn { color: #fff; }
 .leaflet-container { font-family: inherit; }
 
 /* ── Solicitudes ────────────────────────────────────────── */

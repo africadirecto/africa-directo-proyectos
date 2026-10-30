@@ -7,7 +7,8 @@ import { abrirEnlace, formularioEditable, leerBorrador, listarVersiones, marcarA
 import { leerContraparte } from '@/lib/dominio/contrapartes';
 import { VACIAS } from '@/lib/formulario/respuestas';
 import { esIdioma, IDIOMAS, SECTORES, TEXTOS } from '@/lib/formulario/textos';
-import { listaPaises, MONEDAS } from '@/lib/paises';
+import { MONEDA_DE_PAIS } from '@/lib/paises';
+import { tiposDeCambio } from '@/lib/cambio';
 import type { Idioma, RespuestasSolicitud } from '@/lib/tipos';
 import { FormularioSolicitud } from './FormularioSolicitud';
 
@@ -92,6 +93,7 @@ export default async function Formulario({
       titulo: '',
       sector: p.sector,
       pais: p.pais,
+      moneda: MONEDA_DE_PAIS[p.pais] ?? VACIAS.moneda,
     };
   }
 
@@ -106,8 +108,7 @@ export default async function Formulario({
         actualizado={borrador?.actualizado ?? ''}
         archivosIniciales={borrador?.archivos ?? []}
         sectores={Object.fromEntries(Object.entries(SECTORES).map(([k, v]) => [k, v[idioma]]))}
-        paises={listaPaises(idioma)}
-        monedas={MONEDAS}
+        cambio={await tiposDeCambio()}
         cambios={p.formulario.estado === 'cambios' ? (p.formulario.comentarios?.traducido || p.formulario.comentarios?.es || '') : ''}
       />
     </Marco>

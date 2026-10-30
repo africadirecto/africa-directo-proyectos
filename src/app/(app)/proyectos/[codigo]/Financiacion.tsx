@@ -2,7 +2,6 @@ import Link from 'next/link';
 import { aportacionesDeProyecto, ESTADOS_APORTACION } from '@/lib/dominio/aportaciones';
 import { listarDonantes, TIPOS_DONANTE } from '@/lib/dominio/donantes';
 import { dinero, porcentaje } from '@/lib/formato';
-import { MONEDAS } from '@/lib/paises';
 import { Barra, Etiqueta } from '@/componentes/Basicos';
 import { Dialogo } from '@/componentes/Dialogo';
 import { FormAportacion } from './FormAportacion';
@@ -54,7 +53,6 @@ export async function Financiacion({ p, editor }: { p: Proyecto; editor: boolean
               <FormAportacion
                 codigo={p.codigo}
                 monedaProyecto={p.moneda}
-                monedas={MONEDAS}
                 donantes={donantes.map((d) => ({ id: d.id, nombre: d.nombre }))}
                 tipos={TIPOS_DONANTE}
               />

@@ -2,7 +2,7 @@
 
 import { almacen } from '../almacen';
 import { config } from '../config';
-import { avisarChat, enviarCorreo } from '../avisos';
+import { avisarChat } from '../avisos';
 import type { Permiso, Usuario } from '../tipos';
 
 const ruta = (email: string) => `usuarios/${email.toLowerCase()}`;
@@ -54,11 +54,6 @@ export async function aprobarUsuario(email: string): Promise<void> {
   const u = await leerUsuario(email);
   if (!u) throw new Error('Usuario no encontrado');
   await (await almacen()).guardar(ruta(email), { estado: 'activo', permiso: 'lectura' }, { fusionar: true });
-  await enviarCorreo({
-    para: u.email,
-    asunto: 'Ya puedes entrar en la gestión de proyectos de Africa Directo',
-    texto: `Hola, ${u.nombre}:\n\nYa tienes acceso de lectura a la gestión de proyectos:\n${config.appUrl}\n\nUn saludo.`,
-  });
 }
 
 export async function cambiarPermiso(email: string, permiso: Permiso, yo: string): Promise<void> {
@@ -95,9 +90,4 @@ export async function invitarUsuario(email: string, permiso: Permiso, por: strin
     },
     { fusionar: true },
   );
-  await enviarCorreo({
-    para: limpio,
-    asunto: 'Te han dado acceso a la gestión de proyectos de Africa Directo',
-    texto: `Hola:\n\nYa puedes entrar con tu cuenta de Google de la ONG en:\n${config.appUrl}\n\nUn saludo.`,
-  });
 }

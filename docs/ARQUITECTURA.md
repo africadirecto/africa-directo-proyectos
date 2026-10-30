@@ -2,7 +2,7 @@
 
 ## En una frase
 
-Una aplicación web propia (Next.js en Vercel) organiza el trabajo y guarda los datos en Firestore. Google Drive guarda los archivos, Apps Script y Google Chat envían los avisos, y la IA de OpenAI traduce, resume y, más adelante, redacta borradores. Los voluntarios solo deciden y revisan.
+Una aplicación web propia (Next.js en Vercel) organiza el trabajo y guarda los datos en Firestore. Google Drive guarda los archivos, Google Chat avisa a los voluntarios, y la IA de OpenAI traduce, resume y, más adelante, redacta borradores. Los voluntarios solo deciden y revisan.
 
 ## Piezas
 
@@ -13,11 +13,10 @@ flowchart LR
   APP["App Next.js<br/>en Vercel"] --> FS[("Firestore<br/>datos")]
   APP --> DR["Google Drive<br/>archivos"]
   APP --> AI["OpenAI<br/>traducir y resumir"]
-  APP --> AS["Apps Script<br/>envía correos"]
   APP --> CH["Google Chat<br/>avisos"]
   C -. "navegador → Drive<br/>(subida directa)" .-> DR
   CRON["Cron de Vercel<br/>cada noche"] --> APP
-  AS --> M["Correo a las<br/>contrapartes"]
+  V -. "copia y envía los correos<br/>que prepara la app" .-> M["Correo a las<br/>contrapartes"]
 ```
 
 | Pieza | Qué hace | Coste | Límites que importan |
@@ -26,7 +25,6 @@ flowchart LR
 | **Firestore** (Firebase Spark) | Base de datos, en Europa. Solo la usa el servidor | Gratis | 50.000 lecturas y 20.000 escrituras al día |
 | **Firebase Auth** | Entrar con Google; solo cuentas `@africadirecto.org` | Gratis | — |
 | **Google Drive** (unidades compartidas) | Archivos de cada proyecto, plantillas y copias | Gratis (100 TB) | — |
-| **Apps Script** | Envía correos desde un buzón de Workspace. En la fase 2, leerá el buzón | Gratis | 1.500 destinatarios al día, 6 min por ejecución |
 | **Google Chat** (webhook) | Avisos a los voluntarios | Gratis | — |
 | **OpenAI** (API de Responses) | Traducir, resumir, señalar lo que falta; en la fase 3, redactar | ~1 $/mes | El límite de gasto que se ponga |
 
@@ -65,7 +63,7 @@ Qué ocurre por dentro en cada paso:
    - Se guarda la versión `vN`, se copian los datos a la ficha y el proyecto pasa a «En revisión».
    - Al terminar la respuesta, y sin hacer esperar a la contraparte, la IA traduce, resume y señala lo que falta, se genera el PDF en `01_Solicitud` y se avisa en Chat.
 4. **Revisión:** validar, pedir cambios o rechazar.
-   - Al pedir cambios, el comentario se traduce al idioma de la contraparte, el mismo enlace se reabre (y se alarga su caducidad) y se le envía el correo.
+   - Al pedir cambios, el comentario se traduce al idioma de la contraparte, el mismo enlace se reabre (y se alarga su caducidad) y la app prepara el correo para que el voluntario lo envíe. La app no envía correos.
 5. **Financiación:**
    - Cada aportación tiene donante, importe y estado: ofrecida → interesado → comprometida → recibida, o descartada.
    - Al cambiar una, se recalcula lo comprometido. La primera pasa el proyecto a «Financiación», y cuando lo comprometido cubre el presupuesto pasa solo a «Aprobado».
@@ -79,7 +77,7 @@ Firestore guarda documentos JSON en colecciones. Las fechas se guardan como text
 
 | Colección | Qué guarda |
 | --- | --- |
-| `proyectos/{código}` | Ficha del proyecto: estado, ubicación, presupuesto y totales, carpeta de Drive, contraparte (copia), responsable, estado del formulario y fechas |
+| `proyectos/{código}` | Ficha del proyecto: estado, ubicación, presupuesto y totales, carpeta de Drive, contraparte (copia), estado del formulario y fechas (inicio de obra, aprobación, cierre…) |
 | └ `solicitudes/borrador`, `solicitudes/v1…` | El borrador del formulario y cada versión enviada, con el análisis de la IA |
 | └ `revisiones/…` | Decisiones del revisor |
 | └ `eventos/…` | La cronología: estados, notas, solicitud, aportaciones (y correos en la fase 2) |

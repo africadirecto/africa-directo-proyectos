@@ -4,10 +4,9 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { after } from 'next/server';
 import { permitido, persona } from '../sesion';
-import { correoDisponible } from '../avisos';
 import { crearContraparte, leerContraparte } from '../dominio/contrapartes';
 import { crearProyecto } from '../dominio/proyectos';
-import { decidir, enviarInvitacion, procesarSolicitud, renovarEnlace } from '../dominio/solicitudes';
+import { decidir, procesarSolicitud, renovarEnlace } from '../dominio/solicitudes';
 import { PAISES } from '../paises';
 import { esIdioma, SECTORES } from '../formulario/textos';
 import { intentar, texto, type Resultado } from './resultado';
@@ -48,17 +47,12 @@ export async function nuevaSolicitud(_: Resultado, fd: FormData): Promise<Result
       contraparte,
       titulo: texto(fd, 'titulo', 200),
       sector: SECTORES[sector] ? sector : '',
-      responsable: persona(yo),
       autor: persona(yo),
     });
 
-    let enviado = false;
-    if (fd.get('enviar') === 'on' && correoDisponible() && proyecto.contraparte.correo) {
-      enviado = await enviarInvitacion(proyecto.codigo, persona(yo));
-    }
     revalidatePath('/', 'layout');
     const aviso = errorDrive ? '&drive=0' : '';
-    redirect(`/solicitudes?p=${proyecto.codigo}&nueva=${enviado ? 'enviada' : '1'}${aviso}`);
+    redirect(`/solicitudes?p=${proyecto.codigo}&nueva=1${aviso}`);
   });
 }
 
@@ -68,21 +62,13 @@ export async function decidirSolicitud(_: Resultado, fd: FormData): Promise<Resu
     const codigo = texto(fd, 'codigo', 20);
     const decision = texto(fd, 'decision', 20) as Decision;
     if (!['validar', 'cambios', 'rechazar'].includes(decision)) throw new Error('Decisión no válida.');
-    const { correoEnviado } = await decidir(codigo, decision, texto(fd, 'comentario', 4000), persona(yo));
+    await decidir(codigo, decision, texto(fd, 'comentario', 4000), persona(yo));
     revalidatePath('/', 'layout');
-    const base = { validar: 'Propuesta validada.', cambios: 'Cambios pedidos.', rechazar: 'Solicitud rechazada.' }[decision];
-    if (decision === 'validar') return base;
-    return correoEnviado ? `${base} Se ha enviado el correo a la contraparte.` : `${base} No se ha enviado ningún correo: copia el texto y envíalo tú.`;
-  });
-}
-
-export async function reenviarFormulario(_: Resultado, fd: FormData): Promise<Resultado> {
-  return intentar(async () => {
-    const yo = await permitido('edicion');
-    const ok = await enviarInvitacion(texto(fd, 'codigo', 20), persona(yo));
-    revalidatePath('/solicitudes');
-    if (!ok) throw new Error('No se pudo enviar el correo. Copia el enlace y envíalo tú.');
-    return 'Correo enviado a la contraparte.';
+    return {
+      validar: 'Propuesta validada.',
+      cambios: 'Cambios pedidos. Copia el correo para la contraparte (abajo) y envíaselo.',
+      rechazar: 'Solicitud rechazada. Copia el correo para la contraparte (abajo) y envíaselo.',
+    }[decision];
   });
 }
 

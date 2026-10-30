@@ -2,6 +2,7 @@ import { listarEventos } from '@/lib/dominio/eventos';
 import { fechaCorta } from '@/lib/formato';
 import { Dialogo } from '@/componentes/Dialogo';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
+import { Desplegable } from '@/componentes/Desplegable';
 import { anadirNota } from '@/lib/acciones/proyectos';
 import type { Evento, Proyecto } from '@/lib/tipos';
 
@@ -74,12 +75,16 @@ export async function Seguimiento({ p, editor }: { p: Proyecto; editor: boolean 
               <input type="hidden" name="codigo" value={p.codigo} />
               <label className="field">
                 Tipo
-                <select name="categoria" defaultValue="otro">
-                  <option value="otro">Nota</option>
-                  <option value="avance">Avance</option>
-                  <option value="incidencia">Incidencia</option>
-                  <option value="economico">Económico</option>
-                </select>
+                <Desplegable
+                  name="categoria"
+                  defaultValue="otro"
+                  opciones={[
+                    { valor: 'otro', texto: 'Nota' },
+                    { valor: 'avance', texto: 'Avance' },
+                    { valor: 'incidencia', texto: 'Incidencia' },
+                    { valor: 'economico', texto: 'Económico' },
+                  ]}
+                />
               </label>
               <label className="field">
                 Nota

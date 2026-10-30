@@ -5,7 +5,7 @@ import { almacen } from '../almacen';
 import { config } from '../config';
 import { drive, conFecha } from '../drive';
 import { idDeToken, nuevoIdEnlace, urlFormulario } from '../enlaces';
-import { aliasProyecto, avisarChat, enviarCorreo } from '../avisos';
+import { avisarChat } from '../avisos';
 import { analizarSolicitud, traducir } from '../ia';
 import { avisosAutomaticos, totalPresupuesto } from '../formulario/respuestas';
 import { CORREOS, nombreSector, IDIOMAS_ES } from '../formulario/textos';
@@ -89,26 +89,26 @@ async function alargarEnlace(enlaceId: string) {
   await (await almacen()).guardar(`enlaces/${enlaceId}`, { caduca }, { fusionar: true });
 }
 
-/** Envía a la contraparte el correo con el enlace al formulario. */
-export async function enviarInvitacion(codigo: string, autor: Persona): Promise<boolean> {
-  const p = await leerProyecto(codigo);
-  if (!p) throw new Error('Proyecto no encontrado');
-  if (!p.contraparte.correo) throw new Error('La contraparte no tiene correo.');
-  const ok = await enviarCorreo({ para: p.contraparte.correo, ...textoInvitacion(p), responderA: aliasProyecto(codigo) });
-  if (ok) {
-    await actualizarProyecto(codigo, { formulario: { ...p.formulario, enviadoEn: new Date().toISOString() } });
-    await anotarEvento(codigo, { tipo: 'sistema', autor, texto: `Formulario enviado por correo a ${p.contraparte.correo}.` });
-  }
-  return ok;
-}
-
-/** Correo con el enlace (o, si se han pedido cambios, con los comentarios), en el idioma de la contraparte. */
+/**
+ * Correo listo para copiar, en el idioma de la contraparte: con el enlace o, si se han
+ * pedido cambios, con los comentarios. La app no envía correos: lo envía el voluntario.
+ */
 export function textoInvitacion(p: Proyecto): { asunto: string; texto: string } {
   const datos = { nombre: saludo(p), codigo: p.codigo, enlace: enlaceDe(p) };
   const c = p.formulario.comentarios;
   return p.formulario.estado === 'cambios' && c
     ? CORREOS.cambios[p.contraparte.idioma]({ ...datos, comentarios: c.traducido || c.es })
     : CORREOS.invitacion[p.contraparte.idioma](datos);
+}
+
+/** Correo listo para copiar al rechazar, con el motivo (traducido si lo hay). */
+export function textoRechazo(p: Proyecto, r: Revision): { asunto: string; texto: string } {
+  return CORREOS.rechazo[p.contraparte.idioma]({
+    nombre: saludo(p),
+    codigo: p.codigo,
+    enlace: enlaceDe(p),
+    comentarios: r.comentarioTraducido || r.comentario,
+  });
 }
 
 // ── Borrador ────────────────────────────────────────────────────────────────
@@ -297,15 +297,16 @@ export async function listarRevisiones(codigo: string): Promise<Revision[]> {
 /**
  * Decisión del revisor sobre la versión vigente:
  * - validar: pasa a Validada.
- * - cambios: vuelve a Solicitud, reabre el mismo enlace y envía los comentarios traducidos.
- * - rechazar: pasa a Rechazada y, si hay comentario, se avisa a la contraparte.
+ * - cambios: vuelve a Solicitud y reabre el mismo enlace con los comentarios traducidos.
+ * - rechazar: pasa a Rechazada.
+ * La app no envía correos: el voluntario copia el texto que prepara (textoInvitacion, textoRechazo).
  */
 export async function decidir(
   codigo: string,
   decision: Decision,
   comentario: string,
   autor: Persona,
-): Promise<{ correoEnviado: boolean; traducido: string }> {
+): Promise<{ traducido: string }> {
   const p = await leerProyecto(codigo);
   if (!p) throw new Error('Proyecto no encontrado');
   if (p.estado !== 'revision') throw new Error('La solicitud no está en revisión.');
@@ -327,9 +328,6 @@ export async function decidir(
   };
   await (await almacen()).crear(`proyectos/${codigo}/revisiones`, { ...revision });
 
-  let correoEnviado = false;
-  const datosCorreo = { nombre: saludo(p), codigo, enlace: enlaceDe(p), comentarios: traducido || comentario };
-
   if (decision === 'validar') {
     await actualizarProyecto(codigo, { revisor: { ...autor, fecha: ahora }, formulario: { ...p.formulario, estado: 'cerrado', comentarios: null } });
     await cambiarEstado(codigo, 'validada', comentario.trim() ? `Validada: ${comentario.trim()}` : 'Propuesta validada.', autor);
@@ -339,17 +337,9 @@ export async function decidir(
       formulario: { ...p.formulario, estado: 'cambios', enviadoEn: ahora, comentarios: { es: comentario.trim(), traducido, idioma } },
     });
     await cambiarEstado(codigo, 'solicitud', `Se piden cambios: ${comentario.trim()}`, autor);
-    if (p.contraparte.correo) {
-      const c = CORREOS.cambios[idioma](datosCorreo);
-      correoEnviado = await enviarCorreo({ para: p.contraparte.correo, ...c, responderA: aliasProyecto(codigo) });
-    }
   } else {
     await actualizarProyecto(codigo, { revisor: { ...autor, fecha: ahora } });
     await cambiarEstado(codigo, 'rechazada', comentario.trim() ? `Rechazada: ${comentario.trim()}` : 'Solicitud rechazada.', autor);
-    if (p.contraparte.correo && comentario.trim()) {
-      const c = CORREOS.rechazo[idioma](datosCorreo);
-      correoEnviado = await enviarCorreo({ para: p.contraparte.correo, ...c, responderA: aliasProyecto(codigo) });
-    }
   }
-  return { correoEnviado, traducido };
+  return { traducido };
 }

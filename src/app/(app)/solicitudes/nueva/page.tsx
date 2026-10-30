@@ -2,8 +2,6 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { requiere } from '@/lib/sesion';
 import { listarContrapartes } from '@/lib/dominio/contrapartes';
-import { correoDisponible } from '@/lib/avisos';
-import { listaPaises, nombrePais } from '@/lib/paises';
 import { FormNueva } from './FormNueva';
 
 export const metadata: Metadata = { title: 'Nueva solicitud' };
@@ -24,9 +22,7 @@ export default async function NuevaSolicitud() {
         </div>
       </div>
       <FormNueva
-        contrapartes={contrapartes.map((c) => ({ id: c.id, nombre: c.nombre, pais: nombrePais(c.pais), correo: c.correos[0] ?? '', idioma: c.idioma }))}
-        paises={listaPaises('es')}
-        correoAutomatico={correoDisponible()}
+        contrapartes={contrapartes.map((c) => ({ id: c.id, nombre: c.nombre, pais: c.pais, correo: c.correos[0] ?? '', idioma: c.idioma }))}
       />
     </main>
   );

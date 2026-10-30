@@ -76,7 +76,6 @@ export interface Proyecto {
   beneficiarios: string;
   /** Copia de los datos de la contraparte que se usan a menudo (contacto: a quién se saluda en los correos). */
   contraparte: { id: string; nombre: string; contacto: string; idioma: Idioma; correo: string };
-  responsable: Persona | null;
   revisor: (Persona & { fecha: string }) | null;
   drive: { carpetaId: string; subcarpetas: Record<Subcarpeta, string> } | null;
   formulario: {
@@ -118,7 +117,8 @@ export interface FilaPanel {
   comprometido: number;
   contraparte: string;
   contraparteId: string;
-  responsableId: string | null;
+  /** Inicio de la ejecución (se pone solo al pasar a En ejecución; se puede corregir en la ficha). */
+  inicio: string | null;
   formulario: EstadoFormulario;
   formularioEnviadoEn: string;
   ultimaNoticia: string;

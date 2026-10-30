@@ -17,7 +17,7 @@ Guía para dejar la app funcionando con los servicios reales de la ONG. Está pe
 3. [Firebase y Google Cloud](#paso-3-firebase-y-google-cloud)
 4. [DNS: subdominio de correo (opcional, recomendado)](#paso-4-dns-subdominio-de-correo-opcional-recomendado)
 5. [Google Drive: unidades compartidas](#paso-5-google-drive-unidades-compartidas)
-6. [Apps Script: envío de correos](#paso-6-apps-script-envío-de-correos)
+6. [Correos a las contrapartes: no hay nada que configurar](#paso-6-correos-a-las-contrapartes-no-hay-nada-que-configurar)
 7. [Google Chat: avisos](#paso-7-google-chat-avisos)
 8. [OpenAI](#paso-8-openai)
 9. [Vercel: publicar la app](#paso-9-vercel-publicar-la-app)
@@ -206,7 +206,7 @@ En <https://console.cloud.google.com>, con el proyecto elegido arriba, entra en 
 
 ## Paso 4. DNS: subdominio de correo (opcional, recomendado)
 
-Solo si se elige la opción B de [CORREO.md](CORREO.md). Permite recibir automáticamente las respuestas de las contrapartes y que los correos que envía la app no acaben en spam, **sin tocar el correo actual** del dominio.
+Solo si se elige la opción B de [CORREO.md](CORREO.md). Permite recibir automáticamente las respuestas de las contrapartes (fase 2) **sin tocar el correo actual** del dominio.
 
 > ⚠️ **No cambies los registros MX de `africadirecto.org`**: el correo de todos seguiría yendo a Google y dejaría de llegar al hosting. Todo lo de este paso es para el subdominio `correo.africadirecto.org`.
 
@@ -277,39 +277,11 @@ La estructura completa, los permisos y su porqué están en [DRIVE.md](DRIVE.md)
 
 ---
 
-## Paso 6. Apps Script: envío de correos
+## Paso 6. Correos a las contrapartes: no hay nada que configurar
 
-Apps Script envía los correos de la app (formulario, cambios pedidos, rechazo, acceso concedido) desde una cuenta de Workspace. En la fase 2 también leerá el buzón.
+**La app no envía correos.** Cuando hace falta escribir a una contraparte (enlace al formulario, cambios pedidos, rechazo), la app prepara el texto en su idioma, con el enlace, y el voluntario lo copia y lo envía desde el buzón de proyectos de siempre. Así los correos salen de una dirección que las contrapartes ya conocen y no hay riesgo de que acaben en spam (ver [CORREO.md](CORREO.md#correos-a-las-contrapartes)).
 
-**¿Con qué cuenta?**
-- Si hiciste el paso 4: con `proyectos@correo.africadirecto.org`. Los correos salen desde el subdominio, con SPF y DKIM correctos.
-- Si no: con `gestion@africadirecto.org`. Los correos saldrán de `@africadirecto.org` y probablemente lleguen como spam, porque el SPF del dominio es del hosting. Mientras tanto, usa el botón de la app que copia el texto del correo y envíalo desde el buzón de siempre. Más detalles en [CORREO.md](CORREO.md#correos-que-envía-la-app).
-
-**Pasos:**
-
-1. Entra con esa cuenta en <https://script.google.com> **› Nuevo proyecto**. Renómbralo como "Africa Directo – correo".
-2. Borra el contenido de `Código.gs` y pega el de [`apps-script/Codigo.gs`](../apps-script/Codigo.gs).
-3. **Configuración del proyecto** (rueda dentada):
-   - Marca **"Mostrar el archivo de manifiesto appsscript.json"**. Vuelve al editor, abre `appsscript.json` y sustituye su contenido por el de [`apps-script/appsscript.json`](../apps-script/appsscript.json).
-   - Zona horaria: Europa/Madrid (ya viene en el manifiesto).
-   - En **Propiedades del script › Añadir propiedad**: nombre `SECRETO`, valor una cadena aleatoria larga, igual que `APPS_SCRIPT_SECRETO` en Vercel. Para generarla:
-
-     ```bash
-     openssl rand -base64 32
-     ```
-
-     Si no tienes `openssl`, vale cualquier generador de contraseñas de 40 caracteres.
-4. En el editor, elige la función **`probarEnvio`** y pulsa **Ejecutar**. Acepta los permisos (enviar correo en tu nombre). Debe llegarte un correo de prueba.
-5. **Implementar › Nueva implementación**:
-   - Tipo: **Aplicación web**.
-   - Descripción: "v1".
-   - Ejecutar como: **Yo** (la cuenta del paso 1 o del 4).
-   - Quién tiene acceso: **Cualquier usuario**. La app se identifica con el secreto; sin él, el script no hace nada.
-6. Copia la **URL de la aplicación web** (`https://script.google.com/macros/s/…/exec`) → `APPS_SCRIPT_URL`.
-
-**Al cambiar el código:** **Implementar › Gestionar implementaciones ›** lápiz **› Versión: nueva versión › Implementar**. Así la URL no cambia.
-
-**Límite:** 1.500 destinatarios al día con una cuenta de Workspace.
+Los avisos a los voluntarios (accesos pendientes, solicitudes recibidas) van por Google Chat, en el paso 7.
 
 ---
 
@@ -419,7 +391,6 @@ Cada cambio en `main` se publica solo. Las ramas y *pull requests* generan una v
 | --- | --- | --- |
 | `GOOGLE_SERVICE_ACCOUNT_KEY` | Firebase › Cuentas de servicio › generar clave nueva, ponerla en Vercel, redesplegar y borrar la antigua en Google Cloud › IAM › Cuentas de servicio › Claves | Ninguno visible |
 | `OPENAI_API_KEY` | Crear otra en OpenAI, cambiarla en Vercel y revocar la antigua | Ninguno visible |
-| `APPS_SCRIPT_SECRETO` | Cambiarlo a la vez en la propiedad del script y en Vercel | Ninguno visible |
 | `ENLACES_SECRETO` | Cambiarlo en Vercel | **Invalida todos los enlaces de las contrapartes**: hay que reenviarlos. Solo si se ha filtrado |
 | `CRON_SECRET` | Cambiarlo en Vercel | Ninguno visible |
 
@@ -476,8 +447,6 @@ Se ponen en Vercel (**Settings › Environment Variables**) y, para probar en lo
 | `OPENAI_MODELO_RAPIDO` | Paso 8.7 | No | `gpt-5-mini` |
 | `OPENAI_MODELO_REDACCION` | Paso 8.7 | No | `gpt-5` |
 | `GOOGLE_CHAT_WEBHOOK_URL` | Paso 7 | **Sí** | `https://chat.googleapis.com/v1/spaces/…` |
-| `APPS_SCRIPT_URL` | Paso 6 | No | `https://script.google.com/macros/s/…/exec` |
-| `APPS_SCRIPT_SECRETO` | Paso 6 | **Sí** | — |
 | `MODO_DEMO` | Solo en local | — | `1` (nunca en Vercel) |
 
 ---
@@ -492,7 +461,6 @@ Se ponen en Vercel (**Settings › Environment Variables**) y, para probar en lo
 | "No se pudo iniciar sesión" | Clave de la cuenta de servicio mal copiada (los `\n`) | Vuelve a pegarla entera |
 | Nueva solicitud: "No se pudo crear la carpeta en Drive" | La cuenta de servicio no tiene acceso a `AD · Proyectos` o el ID está mal | [DRIVE.md](DRIVE.md#acceso-de-la-app-a-drive). Después, "Crear carpeta en Drive" en la ficha |
 | Los correos de la app llegan como spam | SPF/DKIM del remitente | Paso 4 o [CORREO.md](CORREO.md#correos-que-envía-la-app) |
-| Ajustes: "Envío de correos: sin configurar" | Faltan `APPS_SCRIPT_URL` o `APPS_SCRIPT_SECRETO` | Paso 6 |
 | La IA no resume | Clave o modelo incorrectos, o crédito agotado | Mira los registros de Vercel (Deployments › Logs) y el saldo en OpenAI |
 | Todo va lento o da error a partir de cierta hora | Cuota diaria de Firestore agotada | Esperar al reinicio (medianoche del Pacífico) y revisar qué consume |
 | No llega la copia nocturna | `CRON_SECRET` o `DRIVE_UNIDAD_SISTEMA_ID` | Vercel › Settings › Cron Jobs › ver ejecuciones |

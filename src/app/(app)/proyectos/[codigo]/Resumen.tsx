@@ -86,10 +86,6 @@ export async function Resumen({ p }: { p: Proyecto }) {
           <h2 className="h3">Equipo</h2>
           <dl className="kv kv-1">
             <div>
-              <dt>Responsable</dt>
-              <dd>{p.responsable?.nombre ?? 'Sin asignar'}</dd>
-            </div>
-            <div>
               <dt>Revisó la propuesta</dt>
               <dd>{p.revisor ? `${p.revisor.nombre} · ${fechaLarga(p.revisor.fecha)}` : '—'}</dd>
             </div>

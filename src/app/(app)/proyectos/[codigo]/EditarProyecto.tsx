@@ -3,40 +3,34 @@
 import { useRef, useState } from 'react';
 import { Dialogo } from '@/componentes/Dialogo';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
+import { Desplegable } from '@/componentes/Desplegable';
+import { opcionesMonedas, opcionesPaises } from '@/componentes/opciones';
 import { editarProyecto } from '@/lib/acciones/proyectos';
 import { SECTORES } from '@/lib/formulario/textos';
+import { nombrePais } from '@/lib/paises';
 import type { Proyecto } from '@/lib/tipos';
 
 const dia = (iso?: string) => (iso ? iso.slice(0, 10) : '');
+const SECTORES_OPC = [{ valor: '', texto: 'Sin decidir' }, ...Object.entries(SECTORES).map(([valor, n]) => ({ valor, texto: n.es }))];
 
-export function EditarProyecto({
-  p,
-  paises,
-  monedas,
-  responsables,
-}: {
-  p: Proyecto;
-  paises: { codigo: string; nombre: string }[];
-  monedas: string[];
-  responsables: { id: string; nombre: string }[];
-}) {
+export function EditarProyecto({ p }: { p: Proyecto }) {
   const form = useRef<HTMLDivElement>(null);
   const [aviso, setAviso] = useState('');
+  const [pais, setPais] = useState(p.pais);
 
   // Busca las coordenadas del lugar en OpenStreetMap (Nominatim), a petición del usuario.
   const buscar = async () => {
-    const campo = (n: string) => form.current?.querySelector<HTMLInputElement | HTMLSelectElement>(`[name="${n}"]`);
+    const campo = (n: string) => form.current?.querySelector<HTMLInputElement>(`[name="${n}"]`);
     const lugar = campo('lugar')?.value.trim();
-    const pais = campo('pais') as HTMLSelectElement | undefined;
     if (!lugar) return setAviso('Escribe primero el lugar.');
     setAviso('Buscando…');
     try {
-      const q = `${lugar}, ${pais?.selectedOptions[0]?.text ?? ''}`;
+      const q = `${lugar}, ${nombrePais(pais)}`;
       const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=es&q=${encodeURIComponent(q)}`);
       const [r] = (await res.json()) as { lat: string; lon: string; display_name: string }[];
       if (!r) return setAviso('No se ha encontrado. Puedes escribir las coordenadas a mano.');
-      (campo('lat') as HTMLInputElement).value = Number(r.lat).toFixed(5);
-      (campo('lng') as HTMLInputElement).value = Number(r.lon).toFixed(5);
+      campo('lat')!.value = Number(r.lat).toFixed(5);
+      campo('lng')!.value = Number(r.lon).toFixed(5);
       setAviso(`Encontrado: ${r.display_name}`);
     } catch {
       setAviso('No se pudo buscar. Escribe las coordenadas a mano.');
@@ -54,35 +48,11 @@ export function EditarProyecto({
           </label>
           <label className="field">
             Sector
-            <select name="sector" defaultValue={p.sector}>
-              <option value="">Sin decidir</option>
-              {Object.entries(SECTORES).map(([k, n]) => (
-                <option key={k} value={k}>
-                  {n.es}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            Responsable
-            <select name="responsable" defaultValue={p.responsable?.id ?? ''}>
-              <option value="">Sin asignar</option>
-              {responsables.map((r) => (
-                <option key={r.id} value={r.id}>
-                  {r.nombre}
-                </option>
-              ))}
-            </select>
+            <Desplegable name="sector" defaultValue={p.sector} placeholder="Sin decidir" opciones={SECTORES_OPC} />
           </label>
           <label className="field">
             País
-            <select name="pais" defaultValue={p.pais}>
-              {paises.map((x) => (
-                <option key={x.codigo} value={x.codigo}>
-                  {x.nombre}
-                </option>
-              ))}
-            </select>
+            <Desplegable name="pais" value={pais} onChange={setPais} opciones={opcionesPaises('es')} />
           </label>
           <label className="field">
             Lugar
@@ -108,13 +78,7 @@ export function EditarProyecto({
           </label>
           <label className="field">
             Moneda
-            <select name="moneda" defaultValue={p.moneda}>
-              {monedas.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
+            <Desplegable name="moneda" defaultValue={p.moneda} opciones={opcionesMonedas('es', pais)} />
           </label>
           <label className="field">
             Inicio de obra

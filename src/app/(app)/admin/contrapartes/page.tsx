@@ -2,10 +2,12 @@ import type { Metadata } from 'next';
 import { requiere } from '@/lib/sesion';
 import { listarContrapartes, type ContraparteConId } from '@/lib/dominio/contrapartes';
 import { leerIndice } from '@/lib/dominio/indice';
-import { listaPaises, nombrePais } from '@/lib/paises';
+import { nombrePais } from '@/lib/paises';
 import { IDIOMAS_ES } from '@/lib/formulario/textos';
 import { Dialogo } from '@/componentes/Dialogo';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
+import { Desplegable } from '@/componentes/Desplegable';
+import { opcionesPaises } from '@/componentes/opciones';
 import { guardarContraparteAccion } from '@/lib/acciones/admin';
 import type { Idioma } from '@/lib/tipos';
 
@@ -26,16 +28,7 @@ function FormContraparte({ c }: { c?: ContraparteConId }) {
         </label>
         <label className="field">
           País
-          <select name="pais" required defaultValue={c?.pais ?? ''}>
-            <option value="" disabled>
-              Elige…
-            </option>
-            {listaPaises('es').map((p) => (
-              <option key={p.codigo} value={p.codigo}>
-                {p.nombre}
-              </option>
-            ))}
-          </select>
+          <Desplegable name="pais" required defaultValue={c?.pais ?? ''} opciones={opcionesPaises('es')} />
         </label>
         <label className="field">
           Persona de contacto
@@ -43,13 +36,11 @@ function FormContraparte({ c }: { c?: ContraparteConId }) {
         </label>
         <label className="field">
           Idioma
-          <select name="idioma" defaultValue={c?.idioma ?? 'fr'}>
-            {(Object.keys(IDIOMAS_ES) as Idioma[]).map((i) => (
-              <option key={i} value={i}>
-                {IDIOMAS_ES[i]}
-              </option>
-            ))}
-          </select>
+          <Desplegable
+            name="idioma"
+            defaultValue={c?.idioma ?? 'fr'}
+            opciones={(Object.keys(IDIOMAS_ES) as Idioma[]).map((i) => ({ valor: i, texto: IDIOMAS_ES[i] }))}
+          />
         </label>
         <label className="field ancho">
           <span>Correos <span className="ayuda">separados por comas; el primero es el principal</span></span>

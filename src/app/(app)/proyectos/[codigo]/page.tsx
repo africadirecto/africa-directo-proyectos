@@ -3,16 +3,16 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { requiere, tienePermiso } from '@/lib/sesion';
 import { leerProyecto } from '@/lib/dominio/proyectos';
-import { listarUsuarios } from '@/lib/dominio/usuarios';
 import { drive } from '@/lib/drive';
 import { ESTADOS, FASES, esFinal, indiceFase, transicionesDesde } from '@/lib/estados';
 import { dinero, diasDesde } from '@/lib/formato';
-import { nombrePais, listaPaises, MONEDAS } from '@/lib/paises';
+import { nombrePais } from '@/lib/paises';
 import { nombreSector } from '@/lib/formulario/textos';
 import { DIAS_SIN_NOTICIAS } from '@/lib/dominio/atencion';
 import { Estado } from '@/componentes/Basicos';
 import { Dialogo } from '@/componentes/Dialogo';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
+import { Desplegable } from '@/componentes/Desplegable';
 import { cambiarEstadoAccion, crearCarpetaAccion } from '@/lib/acciones/proyectos';
 import { EditarProyecto } from './EditarProyecto';
 import { Resumen } from './Resumen';
@@ -82,7 +82,6 @@ export default async function FichaProyecto({
   const fase = indiceFase(p.estado);
   const siguiente = siguientePaso(p);
   const opciones = transicionesDesde(p.estado).filter((e) => !(p.estado === 'revision' && e === 'solicitud'));
-  const responsables = editor ? (await listarUsuarios()).filter((u) => u.estado === 'activo' && u.permiso !== 'lectura') : [];
 
   return (
     <main className="principal" style={{ paddingTop: 20, gap: 20 }}>
@@ -102,7 +101,7 @@ export default async function FichaProyecto({
               <Estado estado={p.estado} />
             </div>
             <p style={{ margin: 0, fontSize: 15, color: 'var(--texto-2)' }}>
-              {[p.lugar, nombrePais(p.pais)].filter(Boolean).join(', ') || 'Sin ubicación'} · Contraparte: {p.contraparte.nombre} · Responsable: {p.responsable?.nombre ?? 'sin asignar'}
+              {[p.lugar, nombrePais(p.pais)].filter(Boolean).join(', ') || 'Sin ubicación'} · Contraparte: {p.contraparte.nombre}
             </p>
           </div>
           <div className="botones">
@@ -119,12 +118,7 @@ export default async function FichaProyecto({
               </FormAccion>
             ) : null}
             {editor ? (
-              <EditarProyecto
-                p={p}
-                paises={listaPaises('es')}
-                monedas={MONEDAS}
-                responsables={responsables.map((u) => ({ id: u.email, nombre: u.nombre || u.email }))}
-              />
+              <EditarProyecto p={p} />
             ) : null}
             {editor && opciones.length ? (
               <Dialogo boton="Cambiar estado" claseBoton="btn btn-p" titulo="Cambiar estado">
@@ -135,16 +129,7 @@ export default async function FichaProyecto({
                   </p>
                   <label className="field">
                     Nuevo estado
-                    <select name="estado" required defaultValue="">
-                      <option value="" disabled>
-                        Elige…
-                      </option>
-                      {opciones.map((e) => (
-                        <option key={e} value={e}>
-                          {ESTADOS[e].nombre}
-                        </option>
-                      ))}
-                    </select>
+                    <Desplegable name="estado" required opciones={opciones.map((e) => ({ valor: e, texto: ESTADOS[e].nombre }))} />
                   </label>
                   {p.estado === 'financiacion' && (p.presupuesto ?? 0) > p.comprometido ? (
                     <p className="aviso" style={{ margin: 0 }}>

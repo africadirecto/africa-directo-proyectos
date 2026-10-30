@@ -3,10 +3,14 @@
 // Formulario de la contraparte. Guarda en el dispositivo a cada cambio y en el
 // servidor unos segundos después; si no hay conexión, lo reintenta al volver.
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { cloneElement, useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { camposQueFaltan, totalPresupuesto } from '@/lib/formulario/respuestas';
 import type { Textos } from '@/lib/formulario/textos';
+import { MONEDA_DE_PAIS } from '@/lib/paises';
+import { enEuros, FUENTE_CAMBIO } from '@/lib/cambio';
+import { Desplegable } from '@/componentes/Desplegable';
+import { opcionesMonedas, opcionesPaises } from '@/componentes/opciones';
 import type { ArchivoSubido, Idioma, RespuestasSolicitud } from '@/lib/tipos';
 import { prepararArchivo, subirArchivo } from './subir';
 
@@ -37,8 +41,7 @@ export function FormularioSolicitud({
   actualizado,
   archivosIniciales,
   sectores,
-  paises,
-  monedas,
+  cambio,
   cambios,
 }: {
   token: string;
@@ -49,8 +52,8 @@ export function FormularioSolicitud({
   actualizado: string;
   archivosIniciales: ArchivoSubido[];
   sectores: Record<string, string>;
-  paises: { codigo: string; nombre: string }[];
-  monedas: string[];
+  /** Unidades de cada moneda por 1 euro (ver lib/cambio.ts). */
+  cambio: Record<string, number>;
   cambios: string;
 }) {
   const router = useRouter();
@@ -266,28 +269,55 @@ export function FormularioSolicitud({
     </span>
   );
   const attrs = (campo: keyof RespuestasSolicitud) => ({ 'data-campo': campo, 'data-error': error(campo) ? '' : undefined });
+
+  // Una casilla con su etiqueta y, si la tiene, su pista debajo (ligada con aria-describedby).
+  // Es una función y no un componente para que React no vuelva a montar el campo al escribir.
+  const casilla = (
+    nombre: keyof RespuestasSolicitud,
+    texto: string,
+    control: React.ReactElement<{ id?: string; 'aria-describedby'?: string }>,
+    { opcional = false, ancho = false }: { opcional?: boolean; ancho?: boolean } = {},
+  ) => {
+    const pista = t.pistas[nombre as keyof Textos['pistas']];
+    const id = `campo-${nombre}`;
+    return (
+      <div className={ancho ? 'field ancho' : 'field'} {...attrs(nombre)}>
+        <label htmlFor={id}>{etiqueta(nombre, texto, opcional)}</label>
+        {cloneElement(control, { id, 'aria-describedby': pista ? `${id}-pista` : undefined })}
+        {pista ? (
+          <p id={`${id}-pista`} className="pista">
+            {pista}
+          </p>
+        ) : null}
+      </div>
+    );
+  };
+
+  const elegirPais = (pais: string) => {
+    cambiar('pais', pais);
+    // La moneda sigue al país; la contraparte puede cambiarla después.
+    if (MONEDA_DE_PAIS[pais]) cambiar('moneda', MONEDA_DE_PAIS[pais]);
+  };
+
   const total = totalPresupuesto(r.lineas);
+  const totalEur = r.moneda !== 'EUR' ? enEuros(total, r.moneda, cambio) : null;
+  const euros = (n: number) => new Intl.NumberFormat(idioma, { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(n);
 
   return (
     <form className="pila" style={{ gap: 20 }} onSubmit={enviar} noValidate>
       <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12 }}>
         <h1>{t.titulo}</h1>
-        <label className="field" style={{ width: 160 }}>
+        <label className="field" style={{ width: 170 }}>
           {t.idioma}
-          <select
+          <Desplegable
             value={idioma}
-            onChange={(e) => {
-              const nuevo = e.target.value as Idioma;
+            onChange={(v) => {
+              const nuevo = v as Idioma;
               setIdioma(nuevo);
               router.replace(`?lang=${nuevo}`, { scroll: false });
             }}
-          >
-            {(Object.keys(idiomas) as Idioma[]).map((i) => (
-              <option key={i} value={i}>
-                {idiomas[i]}
-              </option>
-            ))}
-          </select>
+            opciones={(Object.keys(idiomas) as Idioma[]).map((i) => ({ valor: i, texto: idiomas[i] }))}
+          />
         </label>
       </div>
       <p className="p" style={{ color: 'var(--texto-2)' }}>
@@ -311,26 +341,20 @@ export function FormularioSolicitud({
           {t.s_org}
         </h2>
         <div className="campos">
-          <label className="field ancho" {...attrs('organizacion')}>
-            {etiqueta('organizacion', t.organizacion)}
-            <input value={r.organizacion} onChange={(e) => cambiar('organizacion', e.target.value)} autoComplete="organization" />
-          </label>
-          <label className="field" {...attrs('contactoNombre')}>
-            {etiqueta('contactoNombre', t.contactoNombre)}
-            <input value={r.contactoNombre} onChange={(e) => cambiar('contactoNombre', e.target.value)} autoComplete="name" />
-          </label>
-          <label className="field" {...attrs('contactoCargo')}>
-            {etiqueta('contactoCargo', t.contactoCargo, true)}
-            <input value={r.contactoCargo} onChange={(e) => cambiar('contactoCargo', e.target.value)} />
-          </label>
-          <label className="field" {...attrs('contactoCorreo')}>
-            {etiqueta('contactoCorreo', t.contactoCorreo)}
-            <input type="email" value={r.contactoCorreo} onChange={(e) => cambiar('contactoCorreo', e.target.value)} autoComplete="email" />
-          </label>
-          <label className="field" {...attrs('contactoTelefono')}>
-            {etiqueta('contactoTelefono', t.contactoTelefono, true)}
-            <input type="tel" value={r.contactoTelefono} onChange={(e) => cambiar('contactoTelefono', e.target.value)} autoComplete="tel" />
-          </label>
+          {casilla('organizacion', t.organizacion, <input value={r.organizacion} onChange={(e) => cambiar('organizacion', e.target.value)} autoComplete="organization" />, { ancho: true })}
+          {casilla('contactoNombre', t.contactoNombre, <input value={r.contactoNombre} onChange={(e) => cambiar('contactoNombre', e.target.value)} autoComplete="name" />)}
+          {casilla('contactoCargo', t.contactoCargo, <input value={r.contactoCargo} onChange={(e) => cambiar('contactoCargo', e.target.value)} />, { opcional: true })}
+          {casilla(
+            'contactoCorreo',
+            t.contactoCorreo,
+            <input type="email" value={r.contactoCorreo} onChange={(e) => cambiar('contactoCorreo', e.target.value)} autoComplete="email" />,
+          )}
+          {casilla(
+            'contactoTelefono',
+            t.contactoTelefono,
+            <input type="tel" value={r.contactoTelefono} onChange={(e) => cambiar('contactoTelefono', e.target.value)} autoComplete="tel" />,
+            { opcional: true },
+          )}
         </div>
       </section>
 
@@ -339,41 +363,19 @@ export function FormularioSolicitud({
           {t.s_proyecto}
         </h2>
         <div className="campos">
-          <label className="field ancho" {...attrs('titulo')}>
-            {etiqueta('titulo', t.tituloProyecto)}
-            <input value={r.titulo} onChange={(e) => cambiar('titulo', e.target.value)} />
-            <span className="ayuda">{t.ayudaTitulo}</span>
-          </label>
-          <label className="field" {...attrs('sector')}>
-            {etiqueta('sector', t.sector)}
-            <select value={r.sector} onChange={(e) => cambiar('sector', e.target.value)}>
-              <option value="">—</option>
-              {Object.entries(sectores).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field" {...attrs('pais')}>
-            {etiqueta('pais', t.pais)}
-            <select value={r.pais} onChange={(e) => cambiar('pais', e.target.value)}>
-              <option value="">—</option>
-              {paises.map((p) => (
-                <option key={p.codigo} value={p.codigo}>
-                  {p.nombre}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field" {...attrs('lugar')}>
-            {etiqueta('lugar', t.lugar)}
-            <input value={r.lugar} onChange={(e) => cambiar('lugar', e.target.value)} />
-          </label>
-          <label className="field" {...attrs('indicaciones')}>
-            {etiqueta('indicaciones', t.indicaciones, true)}
-            <input value={r.indicaciones} onChange={(e) => cambiar('indicaciones', e.target.value)} />
-          </label>
+          {casilla('titulo', t.tituloProyecto, <input value={r.titulo} onChange={(e) => cambiar('titulo', e.target.value)} />, { ancho: true })}
+          {casilla(
+            'sector',
+            t.sector,
+            <Desplegable value={r.sector} onChange={(v) => cambiar('sector', v)} placeholder="—" opciones={Object.entries(sectores).map(([valor, texto]) => ({ valor, texto }))} />,
+          )}
+          {casilla(
+            'pais',
+            t.pais,
+            <Desplegable value={r.pais} onChange={elegirPais} placeholder="—" opciones={opcionesPaises(idioma)} textoBuscar={t.buscar} sinResultados={t.sinResultados} />,
+          )}
+          {casilla('lugar', t.lugar, <input value={r.lugar} onChange={(e) => cambiar('lugar', e.target.value)} />)}
+          {casilla('indicaciones', t.indicaciones, <input value={r.indicaciones} onChange={(e) => cambiar('indicaciones', e.target.value)} />, { opcional: true })}
           <div className="field ancho">
             <span>
               {t.ubicacion} <span className="ayuda">({t.opcional})</span>
@@ -387,51 +389,50 @@ export function FormularioSolicitud({
               </span>
             </div>
           </div>
-          <label className="field ancho" {...attrs('necesidad')}>
-            {etiqueta('necesidad', t.necesidad)}
-            <textarea value={r.necesidad} onChange={(e) => cambiar('necesidad', e.target.value)} rows={6} />
-          </label>
-          <label className="field ancho" {...attrs('beneficiarios')}>
-            {etiqueta('beneficiarios', t.beneficiarios)}
-            <textarea value={r.beneficiarios} onChange={(e) => cambiar('beneficiarios', e.target.value)} rows={3} />
-          </label>
-          <label className="field" {...attrs('numBeneficiarios')}>
-            {etiqueta('numBeneficiarios', t.numBeneficiarios, true)}
-            <input type="number" inputMode="numeric" min={0} value={r.numBeneficiarios ?? ''} onChange={(e) => cambiar('numBeneficiarios', num(e.target.value))} />
-          </label>
-          <label className="field" {...attrs('plazoMeses')}>
-            {etiqueta('plazoMeses', t.plazoMeses, true)}
-            <input type="number" inputMode="numeric" min={0} value={r.plazoMeses ?? ''} onChange={(e) => cambiar('plazoMeses', num(e.target.value))} />
-          </label>
-          <label className="field ancho" {...attrs('aportacionLocal')}>
-            {etiqueta('aportacionLocal', t.aportacionLocal, true)}
-            <textarea value={r.aportacionLocal} onChange={(e) => cambiar('aportacionLocal', e.target.value)} rows={3} />
-            <span className="ayuda">{t.ayudaAportacion}</span>
-          </label>
+          {casilla('necesidad', t.necesidad, <textarea value={r.necesidad} onChange={(e) => cambiar('necesidad', e.target.value)} rows={6} />, { ancho: true })}
+          {casilla('beneficiarios', t.beneficiarios, <textarea value={r.beneficiarios} onChange={(e) => cambiar('beneficiarios', e.target.value)} rows={3} />, { ancho: true })}
+          {casilla(
+            'numBeneficiarios',
+            t.numBeneficiarios,
+            <input type="number" inputMode="numeric" min={0} value={r.numBeneficiarios ?? ''} onChange={(e) => cambiar('numBeneficiarios', num(e.target.value))} />,
+            { opcional: true },
+          )}
+          {casilla(
+            'plazoMeses',
+            t.plazoMeses,
+            <input type="number" inputMode="numeric" min={0} value={r.plazoMeses ?? ''} onChange={(e) => cambiar('plazoMeses', num(e.target.value))} />,
+            { opcional: true },
+          )}
+          {casilla('aportacionLocal', t.aportacionLocal, <textarea value={r.aportacionLocal} onChange={(e) => cambiar('aportacionLocal', e.target.value)} rows={3} />, {
+            opcional: true,
+            ancho: true,
+          })}
         </div>
       </section>
 
       <section className="card pila" style={{ gap: 14 }} {...attrs('lineas')}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12 }}>
-          <div>
-            <h2 className="h3" style={{ margin: 0 }}>
-              {t.s_presupuesto}
-              {error('lineas') ? <span className="error-campo" style={{ fontSize: 13, color: 'var(--error)' }}> · {t.obligatorio}</span> : null}
-            </h2>
-            <p className="meta" style={{ margin: '4px 0 0' }}>
-              {t.ayudaPresupuesto}
-            </p>
-          </div>
-          <label className="field" style={{ width: 130 }}>
-            {t.moneda}
-            <select value={r.moneda} onChange={(e) => cambiar('moneda', e.target.value)}>
-              {monedas.map((m) => (
-                <option key={m} value={m}>
-                  {m}
-                </option>
-              ))}
-            </select>
-          </label>
+        <div>
+          <h2 className="h3" style={{ margin: 0 }}>
+            {t.s_presupuesto}
+            {error('lineas') ? <span className="error-campo" style={{ fontSize: 13, color: 'var(--error)' }}> · {t.obligatorio}</span> : null}
+          </h2>
+          <p className="pista" style={{ marginTop: 6 }}>
+            {t.pistas.lineas}
+          </p>
+        </div>
+        <div className="campos">
+          {casilla(
+            'moneda',
+            t.moneda,
+            <Desplegable
+              value={r.moneda}
+              onChange={(v) => cambiar('moneda', v)}
+              opciones={opcionesMonedas(idioma, r.pais)}
+              buscar
+              textoBuscar={t.buscar}
+              sinResultados={t.sinResultados}
+            />,
+          )}
         </div>
         {r.lineas.map((l, i) => (
           <div key={i} className="linea-ppto">
@@ -462,9 +463,19 @@ export function FormularioSolicitud({
           <button type="button" className="btn btn-s" onClick={() => cambiar('lineas', [...r.lineas, { concepto: '', importe: null }])}>
             ＋ {t.anadirLinea}
           </button>
-          <p style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>
-            {t.total}: {total.toLocaleString(idioma)} {r.moneda}
-          </p>
+          <div className="total-ppto">
+            <p style={{ margin: 0, fontSize: 17, fontWeight: 700 }}>
+              {t.total}: {total.toLocaleString(idioma)} {r.moneda}
+            </p>
+            {totalEur != null && total > 0 ? (
+              <p className="meta" style={{ margin: 0 }}>
+                {t.equivalente.replace('{eur}', euros(totalEur))} ·{' '}
+                <a href={FUENTE_CAMBIO.url} target="_blank" rel="noreferrer">
+                  {FUENTE_CAMBIO.nombre}
+                </a>
+              </p>
+            ) : null}
+          </div>
         </div>
       </section>
 
@@ -473,8 +484,8 @@ export function FormularioSolicitud({
           <h2 className="h3" style={{ margin: 0 }}>
             {t.s_archivos}
           </h2>
-          <p className="meta" style={{ margin: '4px 0 0' }}>
-            {t.ayudaArchivos}
+          <p className="pista" style={{ marginTop: 6 }}>
+            {t.pistas.archivos}
           </p>
         </div>
         {archivos.length || subidas.length ? (

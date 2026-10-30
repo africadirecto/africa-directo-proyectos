@@ -98,7 +98,7 @@ describe('requiere atención', () => {
     comprometido: 0,
     contraparte: '',
     contraparteId: '',
-    responsableId: null,
+    inicio: null,
     formulario,
     formularioEnviadoEn: new Date(ahora - dias * 86_400_000).toISOString(),
     ultimaNoticia: new Date(ahora - dias * 86_400_000).toISOString(),

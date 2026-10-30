@@ -2,19 +2,19 @@
 
 import { useState } from 'react';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
+import { Desplegable } from '@/componentes/Desplegable';
+import { opcionesMonedas } from '@/componentes/opciones';
 import { anadirAportacion } from '@/lib/acciones/financiacion';
 import { ESTADOS_APORTACION } from '@/lib/estados';
 
 export function FormAportacion({
   codigo,
   monedaProyecto,
-  monedas,
   donantes,
   tipos,
 }: {
   codigo: string;
   monedaProyecto: string;
-  monedas: string[];
   donantes: { id: string; nombre: string }[];
   tipos: Record<string, string>;
 }) {
@@ -26,17 +26,13 @@ export function FormAportacion({
       <input type="hidden" name="codigo" value={codigo} />
       <label className="field">
         Donante
-        <select name="donante" value={donante} onChange={(e) => setDonante(e.target.value)} required>
-          <option value="" disabled>
-            Elige…
-          </option>
-          {donantes.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.nombre}
-            </option>
-          ))}
-          <option value="nuevo">＋ Donante nuevo</option>
-        </select>
+        <Desplegable
+          name="donante"
+          required
+          value={donante}
+          onChange={setDonante}
+          opciones={[...donantes.map((d) => ({ valor: d.id, texto: d.nombre })), { valor: 'nuevo', texto: '＋ Donante nuevo' }]}
+        />
       </label>
       {donante === 'nuevo' ? (
         <div className="campos">
@@ -46,13 +42,7 @@ export function FormAportacion({
           </label>
           <label className="field">
             Tipo
-            <select name="donante_tipo" defaultValue="fundacion">
-              {Object.entries(tipos).map(([k, v]) => (
-                <option key={k} value={k}>
-                  {v}
-                </option>
-              ))}
-            </select>
+            <Desplegable name="donante_tipo" defaultValue="fundacion" opciones={Object.entries(tipos).map(([valor, texto]) => ({ valor, texto }))} />
           </label>
         </div>
       ) : null}
@@ -63,13 +53,7 @@ export function FormAportacion({
         </label>
         <label className="field">
           Moneda
-          <select name="moneda" value={moneda} onChange={(e) => setMoneda(e.target.value)}>
-            {monedas.map((m) => (
-              <option key={m} value={m}>
-                {m}
-              </option>
-            ))}
-          </select>
+          <Desplegable name="moneda" value={moneda} onChange={setMoneda} opciones={opcionesMonedas('es')} />
         </label>
         {moneda !== monedaProyecto ? (
           <label className="field ancho">
@@ -79,13 +63,7 @@ export function FormAportacion({
         ) : null}
         <label className="field">
           Estado
-          <select name="estado" defaultValue="ofrecida">
-            {Object.entries(ESTADOS_APORTACION).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v.nombre}
-              </option>
-            ))}
-          </select>
+          <Desplegable name="estado" defaultValue="ofrecida" opciones={Object.entries(ESTADOS_APORTACION).map(([valor, v]) => ({ valor, texto: v.nombre }))} />
         </label>
       </div>
       <label className="field">

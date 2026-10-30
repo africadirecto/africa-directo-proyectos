@@ -66,7 +66,6 @@ export async function crearProyecto(o: {
   contraparte: Contraparte & { id: string };
   titulo: string;
   sector: string;
-  responsable: Persona | null;
   autor: Persona;
 }): Promise<{ proyecto: Proyecto; errorDrive?: string }> {
   const db = await almacen();
@@ -110,7 +109,6 @@ export async function crearProyecto(o: {
       idioma: o.contraparte.idioma,
       correo: o.contraparte.correos[0] ?? '',
     },
-    responsable: o.responsable,
     revisor: null,
     drive: null,
     formulario: { enlaceId, estado: 'pendiente', version: 0, enviadoEn: iso, comentarios: null },

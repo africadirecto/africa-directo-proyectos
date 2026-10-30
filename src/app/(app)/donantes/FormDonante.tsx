@@ -1,4 +1,5 @@
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
+import { Desplegable } from '@/componentes/Desplegable';
 import { guardarDonante } from '@/lib/acciones/financiacion';
 import { TIPOS_DONANTE, type DonanteConId } from '@/lib/dominio/donantes';
 
@@ -13,13 +14,11 @@ export function FormDonante({ d }: { d?: DonanteConId }) {
         </label>
         <label className="field">
           Tipo
-          <select name="tipo" defaultValue={d?.tipo ?? 'fundacion'}>
-            {Object.entries(TIPOS_DONANTE).map(([k, v]) => (
-              <option key={k} value={k}>
-                {v}
-              </option>
-            ))}
-          </select>
+          <Desplegable
+            name="tipo"
+            defaultValue={d?.tipo ?? 'fundacion'}
+            opciones={Object.entries(TIPOS_DONANTE).map(([valor, texto]) => ({ valor, texto }))}
+          />
         </label>
         <label className="field">
           Persona de contacto

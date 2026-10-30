@@ -6,7 +6,7 @@
 - Ese hosting tiene un número limitado de buzones y **no se pueden crear más**. Migrar el correo a Google no está previsto.
 - Las cuentas de Workspace (`nombre@africadirecto.org`) existen y sirven para entrar en Google (Drive, Chat, la app), pero el correo que mandan desde fuera a esas direcciones va al hosting, no a Gmail.
 
-El diseño original (CLAUDE.md) suponía un buzón `proyectos@` en Gmail leído por Apps Script. Eso no es posible tal cual, y además afecta a los **correos que envía la app**: hay que revisarlo (ver el apartado [Correos que envía la app](#correos-que-envía-la-app)).
+El diseño original (CLAUDE.md) suponía un buzón `proyectos@` en Gmail leído por Apps Script. Eso no es posible tal cual. Por la misma razón, **la app no envía correos**: los prepara para que un voluntario los copie (ver [Correos a las contrapartes](#correos-a-las-contrapartes)).
 
 ## Opciones
 
@@ -30,8 +30,8 @@ La app lee remitente, fecha, asunto, texto y adjuntos; guarda el original y los 
 Se añade a Workspace un **subdominio solo para la app**, por ejemplo `correo.africadirecto.org`, y se apunta *solo ese subdominio* a Gmail. El correo del dominio principal sigue en el hosting, sin cambios.
 
 - Se crea en Workspace un usuario `proyectos@correo.africadirecto.org` (las cuentas de Workspace for Nonprofits son gratuitas).
-- La app envía los avisos a las contrapartes **desde esa dirección**, con el alias del proyecto como dirección de respuesta: `proyectos+P-2026-014@correo.africadirecto.org`. Gmail entrega las direcciones con `+` en el mismo buzón.
-- Cuando la contraparte **responde** a un aviso, el correo llega a Gmail y Apps Script lo **asigna solo** al proyecto por el alias. Es lo que más se repite durante la ejecución: fotos y avances en respuesta a los avisos.
+- Cada proyecto tiene su alias: `proyectos+P-2026-014@correo.africadirecto.org`. Gmail entrega las direcciones con `+` en el mismo buzón. Los voluntarios pueden ponerlo en copia o como dirección de respuesta al escribir a la contraparte.
+- Cuando la contraparte **responde** a ese alias, el correo llega a Gmail y Apps Script lo **asigna solo** al proyecto. Es lo que más se repite durante la ejecución: fotos y avances.
 - Los correos que lleguen al buzón actual del hosting se pueden **reenviar** a `proyectos@correo.africadirecto.org`: a mano, o de forma automática si el hosting permite un filtro o redirección que mande una copia. Las redirecciones no suelen ocupar buzón; hay que preguntarlo al proveedor.
 - Apps Script revisa ese buzón cada pocos minutos y hace lo de la opción A sin que nadie intervenga. Lo que no sepa asignar va a la bandeja de "correos sin asignar", con la sugerencia de la IA.
 
@@ -73,21 +73,23 @@ Solo tiene sentido si no hay DNS ni IMAP.
 
 Gmail ha retirado en 2026 la opción "Consultar el correo de otras cuentas" (POP) y Gmailify, así que ya no se puede traer a Gmail el correo de un buzón externo.
 
-## Correos que envía la app
+## Correos a las contrapartes
 
-Hoy la app envía con Apps Script desde una cuenta de Workspace con dirección `@africadirecto.org`. Como el correo del dominio está en el hosting, es muy probable que el **SPF del dominio no autorice a Google** y que esos correos lleguen como spam o los rechacen. Hay tres salidas:
+**La app no envía correos** (decisión del equipo, octubre de 2026). Cuando hay que escribir a una contraparte, la app prepara el correo en su idioma y el voluntario lo copia y lo envía desde el buzón de proyectos de siempre:
 
-1. **Enviar desde el subdominio de la opción B** (`proyectos@correo.africadirecto.org`), con SPF y DKIM propios del subdominio. No toca la configuración del correo principal. **Es la recomendada.**
-2. Añadir Google al SPF del dominio principal (`include:_spf.google.com`) y activar DKIM de Google. Hay que hacerlo con cuidado para no romper el envío del hosting.
-3. Sin tocar el DNS: que la app envíe por **SMTP del hosting** con un buzón existente, guardando su contraseña en Vercel. Funciona, pero comparte el problema de la contraseña de la opción C.
+- **Enlace al formulario:** al crear la solicitud.
+- **Cambios pedidos:** con los comentarios del revisor traducidos y el mismo enlace.
+- **Rechazo:** con el motivo traducido.
 
-Mientras tanto, la app ya permite **copiar el texto del correo** (en el idioma de la contraparte, con el enlace) y enviarlo a mano desde el buzón habitual.
+Así los correos salen de una dirección que las contrapartes ya conocen. Además se evita el problema de entrega: si la app enviara desde Workspace con una dirección `@africadirecto.org`, el **SPF del dominio**, que es del hosting, no autorizaría a Google y los correos acabarían en spam.
+
+Si algún día se quiere el envío automático, lo más limpio es enviar desde el subdominio de la opción B, que tiene su propio SPF y DKIM y no toca el correo principal.
 
 ## Recomendación
 
 1. **Ahora (fase 2):** programar la opción A, *Añadir correo* en la ficha, con lectura de `.eml` y `.msg`, adjuntos a Drive y resumen de IA.
-2. **En cuanto se pueda pedir el cambio de DNS:** opción B, subdominio `correo.africadirecto.org`. Con eso se resuelven a la vez la recepción automática (respuestas a los avisos) y la entrega de los correos que envía la app.
-3. Si el DNS no es posible, opción C para recibir y SMTP del hosting para enviar.
+2. **En cuanto se pueda pedir el cambio de DNS:** opción B, subdominio `correo.africadirecto.org`, para la recepción automática de las respuestas.
+3. Si el DNS no es posible, opción C para recibir.
 
 ## Fuentes
 

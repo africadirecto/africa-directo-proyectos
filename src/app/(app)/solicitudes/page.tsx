@@ -3,9 +3,9 @@ import Link from 'next/link';
 import { requiere, tienePermiso } from '@/lib/sesion';
 import { leerIndice } from '@/lib/dominio/indice';
 import { leerProyecto } from '@/lib/dominio/proyectos';
-import { enlaceDe, listarVersiones, textoInvitacion } from '@/lib/dominio/solicitudes';
-import { correoDisponible } from '@/lib/avisos';
+import { enlaceDe, listarRevisiones, listarVersiones, textoInvitacion, textoRechazo } from '@/lib/dominio/solicitudes';
 import { iaDisponible } from '@/lib/ia';
+import { enEuros, tiposDeCambio } from '@/lib/cambio';
 import { dinero, fechaCorta, fechaLarga, haceDias } from '@/lib/formato';
 import { nombrePais } from '@/lib/paises';
 import { IDIOMAS_ES, nombreSector } from '@/lib/formulario/textos';
@@ -14,7 +14,7 @@ import { Estado, Etiqueta } from '@/componentes/Basicos';
 import { Copiar } from '@/componentes/Copiar';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
 import { VistaSolicitud } from '@/componentes/VistaSolicitud';
-import { decidirSolicitud, reanalizar, reenviarFormulario, renovarEnlaceAccion } from '@/lib/acciones/solicitudes';
+import { decidirSolicitud, reanalizar, renovarEnlaceAccion } from '@/lib/acciones/solicitudes';
 import type { EstadoFormulario, FilaPanel } from '@/lib/tipos';
 
 export const metadata: Metadata = { title: 'Solicitudes' };
@@ -42,6 +42,19 @@ function Item({ f, actual, detalle }: { f: FilaPanel; actual: boolean; detalle: 
   );
 }
 
+/** La app no envía correos: muestra el texto en el idioma de la contraparte para que lo envíe un voluntario. */
+function CorreoParaCopiar({ correo, para, idioma, abierto }: { correo: { asunto: string; texto: string }; para: string; idioma: string; abierto?: boolean }) {
+  return (
+    <details className="desplegable" open={abierto}>
+      <summary className="btn-enlace">Correo para la contraparte, listo para copiar ({idioma})</summary>
+      <p className="meta" style={{ margin: '8px 0' }}>
+        {para ? `Envíalo desde el buzón de proyectos a ${para}.` : 'La contraparte no tiene correo guardado: envíaselo por el medio que uséis.'}
+      </p>
+      <Copiar valor={`${correo.asunto}\n\n${correo.texto}`} etiqueta="Correo para la contraparte" multilinea />
+    </details>
+  );
+}
+
 export default async function Solicitudes({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
   const yo = await requiere('lectura');
   const editor = tienePermiso(yo, 'edicion');
@@ -53,6 +66,9 @@ export default async function Solicitudes({ searchParams }: { searchParams: Prom
   const p = elegido ? await leerProyecto(elegido) : null;
   const versiones = p ? await listarVersiones(p.codigo) : [];
   const v = versiones[0];
+  const eur = v && p?.estado === 'revision' && v.respuestas.moneda !== 'EUR' ? enEuros(totalPresupuesto(v.respuestas.lineas), v.respuestas.moneda, await tiposDeCambio()) : null;
+  // Al rechazar, el correo para la contraparte sale de la última revisión.
+  const rechazo = p?.estado === 'rechazada' ? (await listarRevisiones(p.codigo)).find((r) => r.decision === 'rechazar') : undefined;
 
   return (
     <main className="principal">
@@ -70,8 +86,7 @@ export default async function Solicitudes({ searchParams }: { searchParams: Prom
 
       {q.nueva ? (
         <p className="aviso-ok" role="status" style={{ margin: 0 }}>
-          Solicitud registrada.{' '}
-          {q.nueva === 'enviada' ? 'Se ha enviado el formulario por correo a la contraparte.' : 'Envía a la contraparte el enlace al formulario (abajo).'}
+          Solicitud registrada. Envía a la contraparte el enlace al formulario (abajo).
         </p>
       ) : null}
       {q.drive === '0' ? (
@@ -157,7 +172,10 @@ export default async function Solicitudes({ searchParams }: { searchParams: Prom
                 <dl className="kv">
                   <div>
                     <dt>Presupuesto estimado</dt>
-                    <dd>{dinero(totalPresupuesto(v.respuestas.lineas), v.respuestas.moneda)}</dd>
+                    <dd>
+                      {dinero(totalPresupuesto(v.respuestas.lineas), v.respuestas.moneda)}
+                      {eur != null ? <span className="meta"> (≈ {dinero(Math.round(eur), 'EUR')})</span> : null}
+                    </dd>
                   </div>
                   <div>
                     <dt>Plazo previsto</dt>
@@ -199,11 +217,9 @@ export default async function Solicitudes({ searchParams }: { searchParams: Prom
                         </Enviar>
                       </div>
                     </FormAccion>
-                    {!correoDisponible() ? (
-                      <p className="meta" style={{ margin: 0 }}>
-                        El envío automático de correos no está configurado: tras pedir cambios, copia el enlace y los comentarios y envíalos tú.
-                      </p>
-                    ) : null}
+                    <p className="meta" style={{ margin: 0 }}>
+                      Si pides cambios o la rechazas, la app prepara el correo para la contraparte en su idioma, listo para copiar y enviar.
+                    </p>
                     {!v.analisis?.hechoPorIA && iaDisponible() ? (
                       <FormAccion accion={reanalizar}>
                         <input type="hidden" name="codigo" value={p.codigo} />
@@ -269,14 +285,6 @@ export default async function Solicitudes({ searchParams }: { searchParams: Prom
                     </p>
                     <Copiar valor={enlaceDe(p)} etiqueta="Enlace al formulario" />
                     <div className="botones">
-                      {correoDisponible() && p.contraparte.correo ? (
-                        <FormAccion accion={reenviarFormulario}>
-                          <input type="hidden" name="codigo" value={p.codigo} />
-                          <Enviar clase="btn btn-s" pendiente="Enviando…">
-                            Enviar por correo a {p.contraparte.correo}
-                          </Enviar>
-                        </FormAccion>
-                      ) : null}
                       <FormAccion accion={renovarEnlaceAccion} confirmar="El enlace actual dejará de funcionar. ¿Seguro?">
                         <input type="hidden" name="codigo" value={p.codigo} />
                         <Enviar clase="btn btn-d" pendiente="Renovando…">
@@ -284,19 +292,27 @@ export default async function Solicitudes({ searchParams }: { searchParams: Prom
                         </Enviar>
                       </FormAccion>
                     </div>
-                    {!correoDisponible() ? (
-                      <details className="desplegable">
-                        <summary className="btn-enlace">Ver un correo listo para copiar ({IDIOMAS_ES[p.contraparte.idioma].toLowerCase()})</summary>
-                        <Copiar valor={`${textoInvitacion(p).asunto}\n\n${textoInvitacion(p).texto}`} etiqueta="Correo para la contraparte" multilinea />
-                      </details>
-                    ) : null}
+                    <CorreoParaCopiar
+                      correo={textoInvitacion(p)}
+                      para={p.contraparte.correo}
+                      idioma={IDIOMAS_ES[p.contraparte.idioma].toLowerCase()}
+                      abierto={p.formulario.estado === 'cambios'}
+                    />
                   </section>
                 ) : null}
               </>
             ) : (
-              <p className="p">
-                Esta solicitud ya no está pendiente. <Link href={`/proyectos/${p.codigo}`}>Abrir la ficha del proyecto →</Link>
-              </p>
+              <>
+                <p className="p">
+                  Esta solicitud ya no está pendiente. <Link href={`/proyectos/${p.codigo}`}>Abrir la ficha del proyecto →</Link>
+                </p>
+                {editor && rechazo ? (
+                  <section className="pila">
+                    <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Avisar a la contraparte</h3>
+                    <CorreoParaCopiar correo={textoRechazo(p, rechazo)} para={p.contraparte.correo} idioma={IDIOMAS_ES[p.contraparte.idioma].toLowerCase()} abierto />
+                  </section>
+                ) : null}
+              </>
             )}
           </article>
         ) : (

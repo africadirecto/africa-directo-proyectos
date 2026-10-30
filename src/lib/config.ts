@@ -53,8 +53,6 @@ export const config = {
   },
   avisos: {
     chatWebhook: texto('GOOGLE_CHAT_WEBHOOK_URL'),
-    appsScriptUrl: texto('APPS_SCRIPT_URL'),
-    appsScriptSecreto: texto('APPS_SCRIPT_SECRETO'),
   },
 };
 
@@ -65,7 +63,6 @@ export function estadoIntegraciones() {
     drive: modoDemo ? 'demo' : config.drive.unidadProyectos ? 'ok' : 'falta',
     login: modoDemo ? 'demo' : process.env.NEXT_PUBLIC_FIREBASE_API_KEY && config.ong.dominio ? 'ok' : 'falta',
     ia: config.ia.openaiClave ? 'ok' : modoDemo ? 'demo' : 'falta',
-    correo: config.avisos.appsScriptUrl ? 'ok' : 'falta',
     chat: config.avisos.chatWebhook ? 'ok' : 'falta',
     copia: modoDemo ? 'demo' : config.drive.unidadSistema && config.secretos.cron ? 'ok' : 'falta',
   } as const;

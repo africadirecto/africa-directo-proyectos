@@ -8,6 +8,7 @@ import { iniciales } from '@/lib/formato';
 import { salir } from '@/lib/acciones/sesion';
 import { comprobarConfig, modoDemo } from '@/lib/config';
 import { Navegacion } from './Navegacion';
+import { MenuPerfil } from './MenuPerfil';
 
 const PERMISOS = { lectura: 'Lectura', edicion: 'Edición', admin: 'Administración' };
 
@@ -25,25 +26,12 @@ export default async function LayoutApp({ children }: { children: React.ReactNod
             <img src="/logo-cara.svg" alt="" />
           </Link>
           <Navegacion porRevisar={porRevisar} admin={tienePermiso(u, 'admin')} />
-          <div className="yo">
-            <span className="avatar" aria-hidden="true">
-              {iniciales(u.nombre || u.email)}
-            </span>
-            <span className="yo-datos">
-              <b>{u.nombre || u.email}</b>
-              <span>{PERMISOS[u.permiso]}</span>
-            </span>
-            <form action={salir}>
-              <button type="submit" className="salir">
-                Salir
-              </button>
-            </form>
-          </div>
+          <MenuPerfil iniciales={iniciales(u.nombre || u.email)} nombre={u.nombre || u.email} email={u.email} permiso={PERMISOS[u.permiso]} salir={salir} />
         </div>
       </header>
       {modoDemo ? (
         <p className="meta" style={{ margin: 0, padding: '6px 24px', textAlign: 'center', background: 'var(--aviso-fondo)' }}>
-          Modo de demostración: los datos son de ejemplo y no se envían correos.
+          Modo de demostración: los datos son de ejemplo.
         </p>
       ) : null}
       {faltan.length && tienePermiso(u, 'admin') ? (

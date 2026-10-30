@@ -5,18 +5,19 @@ Aplicación web para que los voluntarios de Africa Directo lleven los proyectos 
 El contexto completo (la ONG, el flujo y las decisiones de partida) está en [CLAUDE.md](CLAUDE.md) y el diseño de referencia en [design/](design/DESIGN.md). Documentación:
 
 - [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md): cómo funciona el sistema, datos, seguridad y cómo funcionarán las plantillas de informes.
-- [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md): puesta en marcha paso a paso (Google Workspace, Firebase, Drive, Apps Script, Chat, OpenAI y Vercel).
+- [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md): puesta en marcha paso a paso (Google Workspace, Firebase, Drive, Chat, OpenAI y Vercel).
 - [docs/DRIVE.md](docs/DRIVE.md): estructura de carpetas de las unidades compartidas y permisos.
 - [docs/CORREO.md](docs/CORREO.md): cómo llegan a la app los correos de las contrapartes, dado que el correo del dominio está en un hosting externo.
 
 ## Qué hace (fase 1: núcleo)
 
 - **Acceso** con la cuenta de Google de la ONG. La primera vez queda en "acceso pendiente" hasta que un administrador lo aprueba. Tres permisos (lectura, edición, administración), comprobados siempre en el servidor.
-- **Inicio**: avisos (sin noticias en más de 30 días, solicitudes por revisar, formularios sin responder), filtros, tabla y mapa de OpenStreetMap.
+- **Inicio**: avisos (sin noticias en más de 30 días, solicitudes por revisar, formularios sin responder), filtros de selección múltiple (estado, país, contraparte, año), tabla y mapa de OpenStreetMap con una tarjeta al pasar por cada punto.
 - **Nueva solicitud**: da de alta la contraparte y el proyecto (código `P-AAAA-NNN`), crea su carpeta en Drive con las subcarpetas fijas y genera el enlace al formulario.
-- **Formulario de la contraparte** (`/f/<token>`): francés, inglés, portugués o español; guardado automático en el dispositivo y en el servidor; fotos reducidas en el navegador; subida reanudable a Drive por trozos de 1 MiB.
+- **Formulario de la contraparte** (`/f/<token>`): francés, inglés, portugués o español; una pista con ejemplo bajo cada casilla que puede dar dudas; país con bandera, que propone su moneda; total del presupuesto con su equivalente aproximado en euros; guardado automático en el dispositivo y en el servidor; fotos reducidas en el navegador; subida reanudable a Drive por trozos de 1 MiB.
 - **Al enviarse**: nueva versión, paso a "En revisión", traducción y resumen con IA, aviso de lo que falta, PDF de la solicitud en `01_Solicitud` y aviso a Google Chat.
 - **Revisión**: validar, pedir cambios (reabre el mismo enlace con los comentarios traducidos) o rechazar.
+- **Correos a las contrapartes**: la app no los envía. Prepara el texto en el idioma de la contraparte (enlace, cambios pedidos, rechazo) para que un voluntario lo copie y lo envíe desde el buzón de proyectos (ver [docs/CORREO.md](docs/CORREO.md)).
 - **Ficha del proyecto**: resumen, seguimiento (cronología y notas), financiación (aportaciones por donante; pasa sola a "Aprobado" al cubrirse el presupuesto), archivos (carpetas y fotos publicables) y versiones de la solicitud. Cada cambio de estado guarda quién, cuándo y por qué.
 - **Donantes**: ficha de cada donante con sus aportaciones e informes que pide.
 - **Administración**: usuarios y permisos, contrapartes y estado de las integraciones y del uso de IA.
@@ -80,8 +81,7 @@ src/
     formulario/        Textos en cuatro idiomas y validación del formulario
     sesion.ts          Sesión y permisos
     enlaces.ts         Enlaces firmados para las contrapartes
-  componentes/         Piezas de interfaz compartidas
-apps-script/           Código de Apps Script (envío de correos)
+  componentes/         Piezas de interfaz compartidas (Desplegable: el selector de toda la app)
 docs/DESPLIEGUE.md     Puesta en marcha paso a paso
 ```
 

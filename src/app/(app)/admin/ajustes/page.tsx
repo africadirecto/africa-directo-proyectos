@@ -10,7 +10,6 @@ const NOMBRES: Record<keyof ReturnType<typeof estadoIntegraciones>, [string, str
   drive: ['Carpetas en Drive', 'DRIVE_UNIDAD_PROYECTOS_ID'],
   login: ['Entrar con Google', 'NEXT_PUBLIC_FIREBASE_* y ONG_DOMINIO'],
   ia: ['IA: traducir y resumir', 'OPENAI_API_KEY'],
-  correo: ['Envío de correos (Apps Script)', 'APPS_SCRIPT_URL y APPS_SCRIPT_SECRETO'],
   chat: ['Avisos en Google Chat', 'GOOGLE_CHAT_WEBHOOK_URL'],
   copia: ['Copia nocturna', 'DRIVE_UNIDAD_SISTEMA_ID y CRON_SECRET'],
 };

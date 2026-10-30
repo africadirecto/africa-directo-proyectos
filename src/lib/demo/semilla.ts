@@ -302,7 +302,6 @@ function py(
     resumen: '',
     beneficiarios: extra.beneficiarios ?? '',
     contraparte: { id: contraparte, nombre, contacto: '', idioma, correo: cp(nombre, '', pais, '', idioma).correos[0] },
-    responsable: codigo === 'P-2026-006' || codigo === 'P-2026-011' ? luis : ana,
     revisor: avanzado ? { ...luis, fecha: hace(diasCreado - 20) } : null,
     drive: null,
     formulario: {

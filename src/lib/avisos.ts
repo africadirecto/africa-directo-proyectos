@@ -1,5 +1,5 @@
-// Avisos salientes: mensajes a Google Chat (webhook) y correos a través de
-// Apps Script, que los envía desde el buzón de proyectos de la ONG.
+// Avisos salientes: mensajes a Google Chat (webhook). La app no envía correos: los textos
+// para las contrapartes se muestran listos para copiar y los envía un voluntario.
 
 import { config } from './config';
 
@@ -17,38 +17,6 @@ export async function avisarChat(texto: string): Promise<void> {
     });
   } catch (e) {
     console.error('No se pudo avisar por Chat', e);
-  }
-}
-
-export interface Correo {
-  para: string;
-  asunto: string;
-  texto: string;
-  /** Dirección para las respuestas, p. ej. proyectos+P-2026-014@dominio. */
-  responderA?: string;
-}
-
-export const correoDisponible = () => !!config.avisos.appsScriptUrl;
-
-/** Envía un correo con Apps Script. Devuelve false si no está configurado o falla. */
-export async function enviarCorreo(c: Correo): Promise<boolean> {
-  if (!correoDisponible()) {
-    if (config.modoDemo) console.info(`[Correo a ${c.para}] ${c.asunto}\n${c.texto}`);
-    return false;
-  }
-  try {
-    const res = await fetch(config.avisos.appsScriptUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ secreto: config.avisos.appsScriptSecreto, accion: 'enviarCorreo', ...c }),
-      redirect: 'follow',
-    });
-    const datos = (await res.json().catch(() => ({}))) as { ok?: boolean; error?: string };
-    if (!datos.ok) console.error('Apps Script no envió el correo', datos.error);
-    return !!datos.ok;
-  } catch (e) {
-    console.error('No se pudo enviar el correo', e);
-    return false;
   }
 }
 

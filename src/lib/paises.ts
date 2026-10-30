@@ -40,7 +40,45 @@ export function listaPaises(idioma: Idioma = 'es'): { codigo: string; nombre: st
     .sort((a, b) => a.nombre.localeCompare(b.nombre, idioma));
 }
 
-export const MONEDAS = ['EUR', 'USD', 'XOF', 'XAF', 'CDF', 'KES', 'TZS', 'UGX', 'RWF', 'ETB', 'MWK', 'MZN', 'NGN', 'GHS', 'ZAR', 'AOA', 'MGA'];
+/**
+ * Moneda que se propone al elegir el país (ISO 4217). Zimbabue usa sobre todo el dólar
+ * estadounidense en la práctica, así que se propone USD.
+ */
+export const MONEDA_DE_PAIS: Record<string, string> = {
+  AO: 'AOA', BF: 'XOF', BI: 'BIF', BJ: 'XOF', BW: 'BWP', CD: 'CDF', CF: 'XAF', CG: 'XAF', CI: 'XOF',
+  CM: 'XAF', CV: 'CVE', DJ: 'DJF', DZ: 'DZD', EG: 'EGP', ER: 'ERN', ET: 'ETB', GA: 'XAF', GH: 'GHS',
+  GM: 'GMD', GN: 'GNF', GQ: 'XAF', GW: 'XOF', KE: 'KES', KM: 'KMF', LR: 'LRD', LS: 'LSL', LY: 'LYD',
+  MA: 'MAD', MG: 'MGA', ML: 'XOF', MR: 'MRU', MU: 'MUR', MW: 'MWK', MZ: 'MZN', NA: 'NAD', NE: 'XOF',
+  NG: 'NGN', RW: 'RWF', SC: 'SCR', SD: 'SDG', SL: 'SLE', SN: 'XOF', SO: 'SOS', SS: 'SSP', ST: 'STN',
+  SZ: 'SZL', TD: 'XAF', TG: 'XOF', TN: 'TND', TZ: 'TZS', UG: 'UGX', ZA: 'ZAR', ZM: 'ZMW', ZW: 'USD',
+};
+
+/** Euro, dólar, los dos francos CFA y después el resto de monedas africanas por código. */
+export const MONEDAS = [
+  'EUR',
+  'USD',
+  'XOF',
+  'XAF',
+  ...[...new Set(Object.values(MONEDA_DE_PAIS))].filter((m) => !['USD', 'XOF', 'XAF'].includes(m)).sort(),
+];
+
+/** Monedas compartidas por varios países: no tienen una bandera propia. */
+const ZONAS: Record<string, string> = { EUR: 'EU', USD: 'US' };
+const MULTIPAIS = ['XOF', 'XAF'];
+
+/**
+ * Bandera que acompaña a una moneda: la de la UE para el euro, la de EE. UU. para el dólar y,
+ * para las monedas nacionales, la del país. Los francos CFA no tienen bandera; si el país
+ * elegido los usa, se muestra la suya.
+ */
+export function banderaDeMoneda(moneda: string, pais = ''): string | null {
+  if (ZONAS[moneda]) return ZONAS[moneda];
+  if (MULTIPAIS.includes(moneda)) return MONEDA_DE_PAIS[pais] === moneda ? pais : null;
+  return Object.keys(MONEDA_DE_PAIS).find((p) => MONEDA_DE_PAIS[p] === moneda) ?? null;
+}
+
+/** Ruta del SVG de la bandera (public/banderas, de flag-icons). */
+export const urlBandera = (codigo: string) => `/banderas/${codigo.toLowerCase()}.svg`;
 
 export function nombreMoneda(codigo: string, idioma: Idioma = 'es'): string {
   try {

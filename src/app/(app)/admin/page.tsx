@@ -4,6 +4,7 @@ import { listarUsuarios } from '@/lib/dominio/usuarios';
 import { fechaCorta, haceDias } from '@/lib/formato';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
 import { Dialogo } from '@/componentes/Dialogo';
+import { Desplegable } from '@/componentes/Desplegable';
 import { aprobarAccion, invitarAccion, quitarAccesoAccion } from '@/lib/acciones/admin';
 import { SelectorPermiso } from './SelectorPermiso';
 
@@ -66,11 +67,15 @@ export default async function Usuarios() {
               </label>
               <label className="field">
                 Permiso
-                <select name="permiso" defaultValue="lectura">
-                  <option value="lectura">Lectura</option>
-                  <option value="edicion">Edición</option>
-                  <option value="admin">Administración</option>
-                </select>
+                <Desplegable
+                  name="permiso"
+                  defaultValue="lectura"
+                  opciones={[
+                    { valor: 'lectura', texto: 'Lectura' },
+                    { valor: 'edicion', texto: 'Edición' },
+                    { valor: 'admin', texto: 'Administración' },
+                  ]}
+                />
               </label>
               <div className="botones">
                 <Enviar pendiente="Guardando…">Dar acceso</Enviar>

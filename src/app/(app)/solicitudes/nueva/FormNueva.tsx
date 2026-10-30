@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
+import { Bandera, Desplegable } from '@/componentes/Desplegable';
+import { opcionesPaises } from '@/componentes/opciones';
 import { nuevaSolicitud } from '@/lib/acciones/solicitudes';
 import { IDIOMAS_ES, SECTORES } from '@/lib/formulario/textos';
 import type { Idioma } from '@/lib/tipos';
@@ -14,18 +16,12 @@ interface OpcionContraparte {
   idioma: Idioma;
 }
 
-export function FormNueva({
-  contrapartes,
-  paises,
-  correoAutomatico,
-}: {
-  contrapartes: OpcionContraparte[];
-  paises: { codigo: string; nombre: string }[];
-  correoAutomatico: boolean;
-}) {
+const IDIOMAS = (Object.keys(IDIOMAS_ES) as Idioma[]).map((i) => ({ valor: i, texto: IDIOMAS_ES[i] }));
+const SECTORES_OPC = [{ valor: '', texto: 'Sin decidir' }, ...Object.entries(SECTORES).map(([valor, n]) => ({ valor, texto: n.es }))];
+
+export function FormNueva({ contrapartes }: { contrapartes: OpcionContraparte[] }) {
   const [cp, setCp] = useState(contrapartes.length ? '' : 'nueva');
   const elegida = contrapartes.find((c) => c.id === cp);
-  const tieneCorreo = cp === 'nueva' || !!elegida?.correo;
 
   return (
     <FormAccion accion={nuevaSolicitud} className="pila" >
@@ -35,17 +31,17 @@ export function FormNueva({
         </h2>
         <label className="field">
           ¿Quién pide el proyecto?
-          <select name="contraparte" value={cp} onChange={(e) => setCp(e.target.value)} required>
-            <option value="" disabled>
-              Elige una contraparte…
-            </option>
-            {contrapartes.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.nombre} ({c.pais})
-              </option>
-            ))}
-            <option value="nueva">＋ Contraparte nueva</option>
-          </select>
+          <Desplegable
+            name="contraparte"
+            required
+            value={cp}
+            onChange={setCp}
+            placeholder="Elige una contraparte…"
+            opciones={[
+              ...contrapartes.map((c) => ({ valor: c.id, texto: c.nombre, icono: c.pais ? <Bandera codigo={c.pais} /> : undefined })),
+              { valor: 'nueva', texto: '＋ Contraparte nueva' },
+            ]}
+          />
         </label>
         {elegida ? (
           <p className="meta" style={{ margin: 0 }}>
@@ -65,16 +61,7 @@ export function FormNueva({
             </label>
             <label className="field">
               País
-              <select name="cp_pais" required defaultValue="">
-                <option value="" disabled>
-                  Elige…
-                </option>
-                {paises.map((p) => (
-                  <option key={p.codigo} value={p.codigo}>
-                    {p.nombre}
-                  </option>
-                ))}
-              </select>
+              <Desplegable name="cp_pais" required opciones={opcionesPaises('es')} />
             </label>
             <label className="field">
               Persona de contacto
@@ -86,13 +73,7 @@ export function FormNueva({
             </label>
             <label className="field">
               Idioma en que escribe
-              <select name="cp_idioma" defaultValue="fr" required>
-                {(Object.keys(IDIOMAS_ES) as Idioma[]).map((i) => (
-                  <option key={i} value={i}>
-                    {IDIOMAS_ES[i]}
-                  </option>
-                ))}
-              </select>
+              <Desplegable name="cp_idioma" required defaultValue="fr" opciones={IDIOMAS} />
             </label>
           </div>
         ) : null}
@@ -112,28 +93,14 @@ export function FormNueva({
           </label>
           <label className="field">
             <span>Sector <span className="ayuda">opcional</span></span>
-            <select name="sector" defaultValue="">
-              <option value="">Sin decidir</option>
-              {Object.entries(SECTORES).map(([clave, n]) => (
-                <option key={clave} value={clave}>
-                  {n.es}
-                </option>
-              ))}
-            </select>
+            <Desplegable name="sector" defaultValue="" placeholder="Sin decidir" opciones={SECTORES_OPC} />
           </label>
         </div>
       </section>
 
-      {correoAutomatico && tieneCorreo ? (
-        <label className="check">
-          <input type="checkbox" name="enviar" defaultChecked />
-          Enviar ya el formulario por correo a la contraparte, en su idioma
-        </label>
-      ) : (
-        <p className="meta" style={{ margin: 0 }}>
-          Al crearla verás el enlace al formulario y un correo listo para copiar y enviar.
-        </p>
-      )}
+      <p className="meta" style={{ margin: 0 }}>
+        Al crearla verás el enlace al formulario y un correo listo para copiar y enviar.
+      </p>
       <div className="botones">
         <Enviar pendiente="Creando carpeta y enlace…">Crear solicitud</Enviar>
       </div>

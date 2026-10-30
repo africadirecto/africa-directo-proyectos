@@ -6,7 +6,6 @@ import { actualizarProyecto, asegurarCarpetas, cambiarEstado, leerProyecto } fro
 import { recalcularFinanciacion } from '../dominio/aportaciones';
 import { anotarEvento } from '../dominio/eventos';
 import { marcarPublicable } from '../dominio/archivos';
-import { leerUsuario } from '../dominio/usuarios';
 import { ESTADOS } from '../estados';
 import { MONEDAS, PAISES } from '../paises';
 import { SECTORES } from '../formulario/textos';
@@ -56,13 +55,6 @@ export async function editarProyecto(_: Resultado, fd: FormData): Promise<Result
     const presupuesto = numero(fd, 'presupuesto');
     if (presupuesto != null && presupuesto < 0) throw new Error('El presupuesto no puede ser negativo.');
 
-    let responsable: Proyecto['responsable'] = p.responsable;
-    const resp = texto(fd, 'responsable', 200);
-    if (resp !== (p.responsable?.id ?? '')) {
-      const u = resp ? await leerUsuario(resp) : null;
-      responsable = u ? { id: u.email, nombre: u.nombre || u.email } : null;
-    }
-
     await actualizarProyecto(codigo, {
       titulo,
       sector: SECTORES[sector] ? sector : p.sector,
@@ -74,7 +66,6 @@ export async function editarProyecto(_: Resultado, fd: FormData): Promise<Result
       presupuesto,
       descripcion: texto(fd, 'descripcion', 6000),
       beneficiarios: texto(fd, 'beneficiarios', 1000),
-      responsable,
       fechas: { ...p.fechas, inicio: fecha(fd, 'inicio') ?? p.fechas.inicio, finPrevisto: fecha(fd, 'finPrevisto') },
     });
     // Un cambio de presupuesto puede completar la financiación.

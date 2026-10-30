@@ -23,7 +23,7 @@ export function filaDe(p: Proyecto): FilaPanel {
     comprometido: p.comprometido,
     contraparte: p.contraparte.nombre,
     contraparteId: p.contraparte.id,
-    responsableId: p.responsable?.id ?? null,
+    inicio: p.fechas.inicio ?? null,
     formulario: p.formulario.estado,
     formularioEnviadoEn: p.formulario.enviadoEn,
     ultimaNoticia: p.ultimaNoticia,

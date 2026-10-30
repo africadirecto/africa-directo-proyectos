@@ -3,15 +3,16 @@
 // Inicio: avisos, filtros, tabla y mapa. Todo se filtra en el navegador a partir
 // del índice del panel, sin más lecturas de la base de datos.
 
-import { useCallback, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
-import { ACTIVOS, EN_MARCHA, ESTADOS } from '@/lib/estados';
-import { dinero, diasDesde, fechaCorta, haceDias, porcentaje } from '@/lib/formato';
+import { ACTIVOS, ESTADOS } from '@/lib/estados';
+import { dinero, fechaLarga } from '@/lib/formato';
 import { nombrePais, PAISES } from '@/lib/paises';
 import { nombreSector } from '@/lib/formulario/textos';
 import { DIAS_SIN_NOTICIAS } from '@/lib/dominio/atencion';
-import { Estado, Financiado } from '@/componentes/Basicos';
+import { Estado } from '@/componentes/Basicos';
+import { Bandera, Desplegable } from '@/componentes/Desplegable';
 import type { EstadoProyecto, FilaPanel } from '@/lib/tipos';
 import type { PuntoMapa } from './Mapa';
 
@@ -22,73 +23,98 @@ const Mapa = dynamic(() => import('./Mapa'), {
 
 const ORDEN: EstadoProyecto[] = ['ejecucion', 'parado', 'aprobado', 'financiacion', 'validada', 'revision', 'solicitud', 'completado', 'cerrado', 'rechazada', 'cancelado'];
 
+const OPCIONES_ESTADO = ORDEN.map((e) => ({ valor: e, texto: ESTADOS[e].nombre }));
+const ATAJOS_ESTADO = [
+  { texto: 'Activos', valores: [...ACTIVOS] },
+  { texto: 'Todos', valores: [] },
+];
+const mismos = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x));
+const resumenEstado = (sel: string[]) =>
+  !sel.length ? 'Todos' : mismos(sel, ACTIVOS) ? 'Activos' : sel.length === 1 ? ESTADOS[sel[0] as EstadoProyecto].nombre : `${sel.length} estados`;
+
+/** Desplazamiento fijo por proyecto para que los que no tienen coordenadas no caigan todos en el centro del país. */
 function desplazamiento(codigo: string): [number, number] {
-  let h = 0;
-  for (const c of codigo) h = (h * 31 + c.charCodeAt(0)) | 0;
-  return [((h & 0xff) / 255 - 0.5) * 1.2, (((h >> 8) & 0xff) / 255 - 0.5) * 1.2];
+  // FNV-1a con mezcla final: códigos consecutivos (P-2026-001, P-2026-002) quedan bien separados.
+  let h = 2166136261;
+  for (const c of codigo) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
+  h ^= h >>> 15;
+  h = Math.imul(h, 2246822507);
+  h ^= h >>> 13;
+  return [((h & 0xff) / 255 - 0.5) * 1.6, (((h >>> 8) & 0xff) / 255 - 0.5) * 1.6];
 }
 
 export function PanelProyectos({
   filas,
-  yo,
   sinNoticias,
   porRevisar,
   sinResponder,
 }: {
   filas: FilaPanel[];
-  yo: string;
   sinNoticias: string[];
   porRevisar: number;
   sinResponder: number;
 }) {
   const [buscar, setBuscar] = useState('');
-  const [estado, setEstado] = useState('activos');
-  const [pais, setPais] = useState('');
-  const [anio, setAnio] = useState('');
-  const [mios, setMios] = useState(false);
+  const [estados, setEstados] = useState<string[]>([...ACTIVOS]);
+  const [paises, setPaises] = useState<string[]>([]);
+  const [contrapartes, setContrapartes] = useState<string[]>([]);
+  const [anios, setAnios] = useState<string[]>([]);
   const [soloSinNoticias, setSoloSinNoticias] = useState(false);
-  const [elegido, setElegido] = useState<string | null>(null);
 
-  const paises = useMemo(() => [...new Set(filas.map((f) => f.pais).filter(Boolean))].sort((a, b) => nombrePais(a).localeCompare(nombrePais(b), 'es')), [filas]);
-  const anios = useMemo(() => [...new Set(filas.map((f) => f.anio))].sort((a, b) => b - a), [filas]);
+  const opcionesPais = useMemo(
+    () =>
+      [...new Set(filas.map((f) => f.pais).filter(Boolean))]
+        .sort((a, b) => nombrePais(a).localeCompare(nombrePais(b), 'es'))
+        .map((p) => ({ valor: p, texto: nombrePais(p), icono: <Bandera codigo={p} /> })),
+    [filas],
+  );
+  const opcionesContraparte = useMemo(() => {
+    const nombres = new Map(filas.map((f) => [f.contraparteId, f.contraparte]));
+    return [...nombres].map(([valor, texto]) => ({ valor, texto })).sort((a, b) => a.texto.localeCompare(b.texto, 'es'));
+  }, [filas]);
+  const opcionesAnio = useMemo(() => [...new Set(filas.map((f) => f.anio))].sort((a, b) => b - a).map((a) => ({ valor: String(a), texto: String(a) })), [filas]);
 
   const visibles = useMemo(() => {
     const q = buscar.trim().toLowerCase();
     return filas
       .filter((f) => {
         if (soloSinNoticias && !sinNoticias.includes(f.codigo)) return false;
-        if (estado === 'activos' && !ACTIVOS.includes(f.estado)) return false;
-        if (estado !== 'activos' && estado !== 'todos' && f.estado !== estado) return false;
-        if (pais && f.pais !== pais) return false;
-        if (anio && String(f.anio) !== anio) return false;
-        if (mios && f.responsableId !== yo) return false;
+        // Sin nada elegido en un filtro, no se filtra por él.
+        if (estados.length && !estados.includes(f.estado)) return false;
+        if (paises.length && !paises.includes(f.pais)) return false;
+        if (contrapartes.length && !contrapartes.includes(f.contraparteId)) return false;
+        if (anios.length && !anios.includes(String(f.anio))) return false;
         if (q && ![f.titulo, f.codigo, f.contraparte, f.lugar, nombrePais(f.pais)].some((t) => t.toLowerCase().includes(q))) return false;
         return true;
       })
       .sort((a, b) => ORDEN.indexOf(a.estado) - ORDEN.indexOf(b.estado) || b.codigo.localeCompare(a.codigo));
-  }, [filas, buscar, estado, pais, anio, mios, soloSinNoticias, sinNoticias, yo]);
+  }, [filas, buscar, estados, paises, contrapartes, anios, soloSinNoticias, sinNoticias]);
 
   const puntos = useMemo<PuntoMapa[]>(
     () =>
       visibles.flatMap((f): PuntoMapa[] => {
-        const titulo = `${f.titulo || f.contraparte} (${ESTADOS[f.estado].nombre})`;
-        if (f.lat != null && f.lng != null) return [{ codigo: f.codigo, lat: f.lat, lng: f.lng, color: ESTADOS[f.estado].color, aproximado: false, titulo }];
+        const datos = {
+          codigo: f.codigo,
+          color: ESTADOS[f.estado].color,
+          titulo: f.titulo || `Solicitud de ${f.contraparte}`,
+          anio: f.anio,
+          lugar: [f.lugar, nombrePais(f.pais)].filter(Boolean).join(', '),
+        };
+        if (f.lat != null && f.lng != null) return [{ ...datos, lat: f.lat, lng: f.lng, aproximado: false }];
         const centro = PAISES[f.pais];
         if (!centro) return [];
         const [dy, dx] = desplazamiento(f.codigo);
-        return [{ codigo: f.codigo, lat: centro[0] + dy, lng: centro[1] + dx, color: ESTADOS[f.estado].color, aproximado: true, titulo }];
+        return [{ ...datos, lat: centro[0] + dy, lng: centro[1] + dx, aproximado: true }];
       }),
     [visibles],
   );
 
-  const seleccionar = useCallback((c: string) => setElegido(c), []);
-  const fila = visibles.find((f) => f.codigo === elegido) ?? null;
   const limpiar = () => {
     setBuscar('');
-    setEstado('activos');
-    setPais('');
-    setAnio('');
-    setMios(false);
+    setEstados([...ACTIVOS]);
+    setPaises([]);
+    setContrapartes([]);
+    setAnios([]);
     setSoloSinNoticias(false);
   };
 
@@ -129,41 +155,19 @@ export function PanelProyectos({
         </label>
         <label className="field" style={{ flex: '1 1 160px' }}>
           Estado
-          <select value={estado} onChange={(e) => setEstado(e.target.value)}>
-            <option value="activos">Activos</option>
-            <option value="todos">Todos</option>
-            {(Object.keys(ESTADOS) as EstadoProyecto[]).map((e) => (
-              <option key={e} value={e}>
-                {ESTADOS[e].nombre}
-              </option>
-            ))}
-          </select>
+          <Desplegable multiple value={estados} onChange={setEstados} opciones={OPCIONES_ESTADO} atajos={ATAJOS_ESTADO} resumen={resumenEstado} />
         </label>
         <label className="field" style={{ flex: '1 1 160px' }}>
           País
-          <select value={pais} onChange={(e) => setPais(e.target.value)}>
-            <option value="">Todos</option>
-            {paises.map((p) => (
-              <option key={p} value={p}>
-                {nombrePais(p)}
-              </option>
-            ))}
-          </select>
+          <Desplegable multiple value={paises} onChange={setPaises} opciones={opcionesPais} placeholder="Todos" textoBuscar="Buscar país…" />
         </label>
-        <label className="field" style={{ flex: '1 1 120px' }}>
+        <label className="field" style={{ flex: '1 1 200px' }}>
+          Contraparte
+          <Desplegable multiple value={contrapartes} onChange={setContrapartes} opciones={opcionesContraparte} placeholder="Todas" textoBuscar="Buscar contraparte…" />
+        </label>
+        <label className="field" style={{ flex: '1 1 110px' }}>
           Año
-          <select value={anio} onChange={(e) => setAnio(e.target.value)}>
-            <option value="">Todos</option>
-            {anios.map((a) => (
-              <option key={a} value={a}>
-                {a}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="check" style={{ flex: '0 0 auto' }}>
-          <input type="checkbox" checked={mios} onChange={(e) => setMios(e.target.checked)} />
-          Solo los míos
+          <Desplegable multiple value={anios} onChange={setAnios} opciones={opcionesAnio} placeholder="Todos" />
         </label>
         <button type="button" className="btn btn-s" style={{ flex: '0 0 auto' }} onClick={limpiar}>
           Limpiar
@@ -177,46 +181,39 @@ export function PanelProyectos({
               <thead>
                 <tr>
                   <th scope="col">Proyecto</th>
+                  <th scope="col">Contraparte</th>
                   <th scope="col">Ubicación</th>
                   <th scope="col">Estado</th>
+                  <th scope="col">Inicio</th>
                   <th scope="col" className="der">
                     Presupuesto
                   </th>
-                  <th scope="col">Financiado</th>
-                  <th scope="col">Última noticia</th>
                 </tr>
               </thead>
               <tbody>
-                {visibles.map((f) => {
-                  const dias = diasDesde(f.ultimaNoticia);
-                  const tarde = EN_MARCHA.includes(f.estado) && dias > DIAS_SIN_NOTICIAS;
-                  return (
-                    <tr key={f.codigo}>
-                      <td>
-                        <Link className="fuerte" href={`/proyectos/${f.codigo}`}>
-                          {f.titulo || `Solicitud de ${f.contraparte}`}
-                        </Link>
-                        <span className="sub">
-                          {f.codigo}
-                          {f.sector ? ` · ${nombreSector(f.sector)}` : ''}
-                        </span>
-                      </td>
-                      <td>
-                        {f.lugar || '—'}
-                        <span className="sub">{nombrePais(f.pais)}</span>
-                      </td>
-                      <td>
-                        <Estado estado={f.estado} />
-                      </td>
-                      <td className="der">{f.presupuesto ? dinero(f.presupuesto, f.moneda) : <span className="meta">—</span>}</td>
-                      <td>{['solicitud', 'revision'].includes(f.estado) ? <span className="meta">—</span> : <Financiado parte={f.comprometido} total={f.presupuesto} />}</td>
-                      <td>
-                        <span className={tarde ? 'warn' : undefined}>{fechaCorta(f.ultimaNoticia)}</span>
-                        <span className="sub">{['cerrado', 'cancelado', 'rechazada'].includes(f.estado) ? ESTADOS[f.estado].nombre.toLowerCase() : haceDias(f.ultimaNoticia)}</span>
-                      </td>
-                    </tr>
-                  );
-                })}
+                {visibles.map((f) => (
+                  <tr key={f.codigo}>
+                    <td>
+                      <Link className="fuerte" href={`/proyectos/${f.codigo}`}>
+                        {f.titulo || `Solicitud de ${f.contraparte}`}
+                      </Link>
+                      <span className="sub">
+                        {f.codigo}
+                        {f.sector ? ` · ${nombreSector(f.sector)}` : ''}
+                      </span>
+                    </td>
+                    <td>{f.contraparte || '—'}</td>
+                    <td>
+                      {f.lugar || '—'}
+                      <span className="sub">{nombrePais(f.pais)}</span>
+                    </td>
+                    <td>
+                      <Estado estado={f.estado} />
+                    </td>
+                    <td style={{ whiteSpace: 'nowrap' }}>{f.inicio ? fechaLarga(f.inicio) : <span className="meta">—</span>}</td>
+                    <td className="der">{f.presupuesto ? dinero(f.presupuesto, f.moneda) : <span className="meta">—</span>}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
             {!visibles.length ? <p className="vacio">No hay proyectos con estos filtros.</p> : null}
@@ -233,25 +230,9 @@ export function PanelProyectos({
             </h2>
             <span className="meta">Muestra los proyectos filtrados</span>
           </div>
-          <Mapa puntos={puntos} seleccionado={elegido} onSeleccionar={seleccionar} />
-          {fila ? (
-            <div className="mapa-tarjeta">
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                <span style={{ fontWeight: 600, fontSize: 15 }}>{fila.titulo || `Solicitud de ${fila.contraparte}`}</span>
-                <Estado estado={fila.estado} />
-              </div>
-              <span className="meta" style={{ fontSize: 14 }}>
-                {[fila.lugar, nombrePais(fila.pais)].filter(Boolean).join(', ')}
-                {fila.presupuesto ? ` · ${dinero(fila.presupuesto, fila.moneda)} · financiado al ${porcentaje(fila.comprometido, fila.presupuesto)} %` : ''}
-                {fila.lat == null ? ' · ubicación aproximada' : ''}
-              </span>
-              <Link href={`/proyectos/${fila.codigo}`} style={{ fontSize: 14, fontWeight: 600 }}>
-                Abrir proyecto →
-              </Link>
-            </div>
-          ) : null}
+          <Mapa puntos={puntos} />
           <p className="meta" style={{ margin: 0 }}>
-            Pulsa un punto para ver el proyecto; el color es su estado. Los puntos con borde discontinuo aún no tienen coordenadas.
+            Pasa el ratón por un punto (o tócalo en el móvil) para ver el proyecto; el color es su estado. Los puntos con borde discontinuo aún no tienen coordenadas.
           </p>
         </aside>
       </div>
