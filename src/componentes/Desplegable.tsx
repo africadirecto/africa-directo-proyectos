@@ -301,8 +301,19 @@ export function Desplegable(props: PropsDesplegable) {
 
       {abierto ? (
         // preventDefault en el clic: el desplegable suele estar dentro de un <label>, que si no
-        // reenviaría el clic al botón y lo cerraría.
-        <div className="desplegable-panel" style={posicion} onClick={(e) => e.preventDefault()}>
+        // reenviaría el clic al botón y lo cerraría. Escape (también desde un atajo) cierra solo
+        // el desplegable, no el diálogo que lo contiene.
+        <div
+          className="desplegable-panel"
+          style={posicion}
+          onClick={(e) => e.preventDefault()}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' && !e.isDefaultPrevented()) {
+              e.preventDefault();
+              cerrar();
+            }
+          }}
+        >
           {conBuscador ? (
             <input
               ref={buscador}

@@ -54,9 +54,11 @@ export function BotonInformeGeneral({
         <input type="hidden" name="tipo" value={tipo} />
         {sobre !== undefined ? <input type="hidden" name="sobre" value={sobre} /> : null}
         <p className="meta" style={{ margin: 0 }}>
-          {explicacion} La IA lo redacta con los datos de la app; lo que no consta queda como [PENDIENTE]. Revísalo y apruébalo antes de enviarlo.
+          {formato === 'sheets'
+            ? 'Un libro con todos los datos de los proyectos elegidos y resúmenes por estado, país, sector, contraparte y año, con gráficas. Los resúmenes son fórmulas: si corriges un dato en la hoja «Proyectos», se recalculan. No usa IA.'
+            : `${explicacion} La IA lo redacta con los datos de la app; lo que no consta queda como [PENDIENTE]. Revísalo y apruébalo antes de enviarlo.`}
         </p>
-        <ElegirFormato valor={formato} onChange={setFormato} />
+        <ElegirFormato valor={formato} onChange={setFormato} conHoja={tipo === 'cartera'} />
         <div className="campos">
           {opcionesSobre ? (
             <label className="field ancho">
@@ -86,19 +88,25 @@ export function BotonInformeGeneral({
               <Desplegable multiple name="paises" opciones={paises} placeholder="Todos" textoBuscar="Buscar país…" />
             </label>
           ) : null}
-          <label className="field">
-            Novedades desde
-            <input type="date" name="desde" defaultValue={haceUnAnio()} required max={hoy()} />
-          </label>
-          <label className="field">
-            Hasta
-            <input type="date" name="hasta" defaultValue={hoy()} required max={hoy()} />
-          </label>
-          <IdiomaYExtension />
-          <Indicaciones ejemplo={tipo === 'donante' ? 'agradece especialmente su apoyo a la escuela de Kinshasa.' : 'centra el informe en los proyectos de agua.'} />
+          {formato !== 'sheets' ? (
+            <>
+              <label className="field">
+                Novedades desde
+                <input type="date" name="desde" defaultValue={haceUnAnio()} required max={hoy()} />
+              </label>
+              <label className="field">
+                Hasta
+                <input type="date" name="hasta" defaultValue={hoy()} required max={hoy()} />
+              </label>
+              <IdiomaYExtension />
+              <Indicaciones ejemplo={tipo === 'donante' ? 'agradece especialmente su apoyo a la escuela de Kinshasa.' : 'centra el informe en los proyectos de agua.'} />
+            </>
+          ) : null}
         </div>
         <div className="botones">
-          <Enviar pendiente="Redactando… puede tardar un minuto">{formato === 'slides' ? 'Generar presentación' : 'Generar informe'}</Enviar>
+          <Enviar pendiente={formato === 'sheets' ? 'Creando la hoja…' : 'Redactando… puede tardar un minuto'}>
+            {formato === 'slides' ? 'Generar presentación' : formato === 'sheets' ? 'Generar hoja de cálculo' : 'Generar informe'}
+          </Enviar>
         </div>
         <ResultadoInforme estado={estado} />
       </form>

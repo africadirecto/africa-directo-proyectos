@@ -3,7 +3,7 @@
 // Piezas comunes de los diálogos de informe: elegir formato (Docs o Slides), idioma,
 // extensión, indicaciones para la IA y el resultado con el enlace al archivo.
 
-import { LogoDocs, LogoSlides } from './Iconos';
+import { LogoDocs, LogoSheets, LogoSlides } from './Iconos';
 import { Desplegable } from './Desplegable';
 import type { FormatoInforme } from '@/lib/tipos';
 
@@ -19,16 +19,18 @@ export const EXTENSIONES = [
   { valor: 'detallado', texto: 'Detallado' },
 ];
 
-export function ElegirFormato({ valor, onChange }: { valor: FormatoInforme; onChange: (f: FormatoInforme) => void }) {
+const FORMATOS = [
+  ['docs', 'Informe', 'Documento de Google Docs', <LogoDocs key="d" tamano={22} />],
+  ['slides', 'Presentación', 'Diapositivas de Google Slides', <LogoSlides key="s" tamano={22} />],
+  ['sheets', 'Hoja de cálculo', 'Datos y resúmenes en Google Sheets', <LogoSheets key="h" tamano={22} />],
+] as const;
+
+/** Elegir formato. La hoja de cálculo solo se ofrece si `conHoja` (informe de proyectos). */
+export function ElegirFormato({ valor, onChange, conHoja = false }: { valor: FormatoInforme; onChange: (f: FormatoInforme) => void; conHoja?: boolean }) {
   return (
     <fieldset className="formatos">
       <legend>Formato</legend>
-      {(
-        [
-          ['docs', 'Informe', 'Documento de Google Docs', <LogoDocs key="d" tamano={22} />],
-          ['slides', 'Presentación', 'Diapositivas de Google Slides', <LogoSlides key="s" tamano={22} />],
-        ] as const
-      ).map(([f, nombre, detalle, icono]) => (
+      {FORMATOS.filter(([f]) => conHoja || f !== 'sheets').map(([f, nombre, detalle, icono]) => (
         <label key={f} className="formato" data-elegido={valor === f ? '' : undefined}>
           <input type="radio" name="formato" value={f} checked={valor === f} onChange={() => onChange(f)} className="oculto" />
           {icono}
@@ -75,7 +77,7 @@ export function ResultadoInforme({ estado }: { estado: { ok: boolean; mensaje?: 
       <span>{estado.mensaje}</span>
       {estado.url ? (
         <a className="btn btn-s btn-peq" href={estado.url} target="_blank" rel="noreferrer">
-          {estado.url.includes('/presentation/') ? <LogoSlides tamano={16} /> : <LogoDocs tamano={16} />} Abrir
+          {estado.url.includes('/presentation/') ? <LogoSlides tamano={16} /> : estado.url.includes('/spreadsheets/') ? <LogoSheets tamano={16} /> : <LogoDocs tamano={16} />} Abrir
         </a>
       ) : null}
     </div>

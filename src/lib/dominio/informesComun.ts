@@ -156,6 +156,12 @@ export const contarPendientes = (r: Redaccion) =>
 
 /** Direcciones de descarga de Google para un informe aprobado. */
 export function descargas(i: Pick<Informe, 'docId' | 'formato'>): { texto: string; url: string }[] {
+  if (i.formato === 'sheets') {
+    return [
+      { texto: 'Excel', url: `https://docs.google.com/spreadsheets/d/${i.docId}/export?format=xlsx` },
+      { texto: 'PDF', url: `https://docs.google.com/spreadsheets/d/${i.docId}/export?format=pdf` },
+    ];
+  }
   if (i.formato === 'slides') {
     return [
       { texto: 'PDF', url: `https://docs.google.com/presentation/d/${i.docId}/export/pdf` },

@@ -47,8 +47,11 @@ export interface Drive {
   urlDocumento(id: string): string;
   /** Dirección para abrir una presentación (en Google, el editor de Slides). */
   urlPresentacion(id: string): string;
+  /** Dirección para abrir una hoja de cálculo (en Google, el editor de Sheets). */
+  urlHoja(id: string): string;
 }
 
 export const ES_CARPETA = 'application/vnd.google-apps.folder';
 export const ES_DOC = 'application/vnd.google-apps.document';
 export const ES_PRESENTACION = 'application/vnd.google-apps.presentation';
+export const ES_HOJA = 'application/vnd.google-apps.spreadsheet';

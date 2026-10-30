@@ -16,6 +16,8 @@ import { leerContraparte } from './contrapartes';
 import { leerDonante, TIPOS_DONANTE } from './donantes';
 import { listarEventos } from './eventos';
 import { leerIndice } from './indice';
+import { ES_HOJA } from '../drive/tipos';
+import { rellenarLibro, type Celda, type Hoja } from '../drive/sheets';
 import { eurDe as eurFila } from '../panel';
 import { leerProyecto } from './proyectos';
 import { aprobar, contarPendientes, crearArchivoInforme, FACTOR, LOCALE, notasRevision, sinContactos, type EventoContexto, type InformeConId } from './informesComun';
@@ -84,7 +86,8 @@ export async function listarInformesGenerales(tipo: TipoInformeGeneral, sobre?: 
 
 
 export async function generarInformeGeneral(o: OpcionesInformeGeneral, autor: Persona): Promise<InformeConId> {
-  if (!o.desde || !o.hasta || o.desde > o.hasta) throw new Error('Revisa las fechas del periodo.');
+  if (o.formato === 'sheets' && o.tipo !== 'cartera') throw new Error('La hoja de cálculo solo está disponible para el informe de proyectos.');
+  if (o.formato !== 'sheets' && (!o.desde || !o.hasta || o.desde > o.hasta)) throw new Error('Revisa las fechas del periodo.');
   const indice = await leerIndice();
   const estados = o.estados.length ? o.estados : ACTIVOS;
   let sobre: { id: string; nombre: string } | null = null;
@@ -110,6 +113,7 @@ export async function generarInformeGeneral(o: OpcionesInformeGeneral, autor: Pe
     filas = indice.filter((f) => estados.includes(f.estado) && (!o.paises.length || o.paises.includes(f.pais)));
   }
   if (!filas.length) throw new Error('No hay proyectos que cumplan las condiciones elegidas.');
+  if (o.formato === 'sheets') return libroDeProyectos(filas, o, autor);
 
   // Detalle de cada proyecto (ficha y cronología del periodo), hasta MAX_PROYECTOS.
   const orden = [...filas].sort((a, b) => b.codigo.localeCompare(a.codigo));
@@ -242,6 +246,121 @@ export async function generarInformeGeneral(o: OpcionesInformeGeneral, autor: Pe
   };
   const id = await (await almacen()).crear('informes', { ...informe });
   return { ...informe, id };
+}
+
+// ── Libro de análisis (Google Sheets) ──────────────────────────────────────
+
+/**
+ * Libro de Google Sheets con los proyectos y resúmenes por estado, país, sector, contraparte
+ * y año. Los resúmenes son fórmulas sobre la hoja «Proyectos»: si se corrige un dato allí,
+ * todo se recalcula. No usa IA. Las fórmulas van en español («;» y nombres en español,
+ * salvo COUNTUNIQUE, que en español no se reconoce)
+ * porque el libro se configura en español.
+ */
+async function libroDeProyectos(filas: FilaPanel[], o: OpcionesInformeGeneral, autor: Persona): Promise<InformeConId> {
+  const orden = [...filas].sort((a, b) => a.codigo.localeCompare(b.codigo));
+  const n = orden.length + 1; // última fila con datos en «Proyectos»
+  const fecha = (iso?: string | null) => (iso ? iso.slice(0, 10) : '');
+  const proyectos: Celda[][] = [
+    ['Código', 'Título', 'País', 'Lugar', 'Sector', 'Contraparte', 'Estado', 'Año', 'Presupuesto (€)', 'Comprometido (€)', '% financiado', 'Falta (€)', 'Presupuesto local', 'Moneda local', 'Inicio', 'Última noticia'],
+    ...orden.map((f, i) => {
+      const r = i + 2;
+      return [
+        f.codigo,
+        f.titulo || `Solicitud de ${f.contraparte}`,
+        nombrePais(f.pais),
+        f.lugar,
+        nombreSector(f.sector),
+        f.contraparte,
+        ESTADOS[f.estado].nombre,
+        f.anio,
+        eurFila(f) || null,
+        f.comprometido ?? 0,
+        `=SI(I${r}>0;J${r}/I${r};"")`,
+        `=SI(I${r}>0;MAX(0;I${r}-J${r});"")`,
+        f.presupuesto,
+        f.moneda,
+        fecha(f.inicio),
+        fecha(f.ultimaNoticia),
+      ];
+    }),
+  ];
+  // Resumen por una columna de «Proyectos» (letra), con fórmulas que se recalculan solas.
+  const resumen = (titulo: string, columna: string, valores: (string | number)[]): Hoja => {
+    const rango = `Proyectos!$${columna}$2:$${columna}$${n}`;
+    return {
+      titulo,
+      cabecera: true,
+      formatos: { 1: 'entero', 2: 'euros', 3: 'euros', 4: 'porcentaje' },
+      grafico: { titulo: `Presupuesto (€) ${titulo.toLowerCase()}`, columna: 2 },
+      filas: [
+        [titulo.replace('Por ', '').replace(/^./, (c) => c.toUpperCase()), 'Proyectos', 'Presupuesto (€)', 'Comprometido (€)', '% financiado'],
+        ...valores.map((v, i) => {
+          const r = i + 2;
+          return [v, `=CONTAR.SI(${rango};A${r})`, `=SUMAR.SI(${rango};A${r};Proyectos!$I$2:$I$${n})`, `=SUMAR.SI(${rango};A${r};Proyectos!$J$2:$J$${n})`, `=SI(C${r}>0;D${r}/C${r};"")`];
+        }),
+      ],
+    };
+  };
+  const distintos = (fn: (f: FilaPanel) => string | number) =>
+    [...new Set(orden.map(fn))].filter((v) => v !== '').sort((a, b) => String(a).localeCompare(String(b), 'es', { numeric: true }));
+  const hoy = new Date().toISOString().slice(0, 10);
+  const hojas: Hoja[] = [
+    {
+      titulo: 'Resumen',
+      formatosFila: { 5: 'entero', 6: 'euros', 7: 'euros', 8: 'porcentaje', 9: 'euros', 10: 'entero', 11: 'entero' },
+      filas: [
+        ['Africa Directo · Análisis de proyectos', ''],
+        ['Generado', hoy],
+        ['Estados incluidos', (o.estados.length ? o.estados : ACTIVOS).map((e) => ESTADOS[e].nombre).join(', ')],
+        ['Países', o.paises.length ? o.paises.map((p) => nombrePais(p)).join(', ') : 'Todos'],
+        ['', ''],
+        ['Proyectos', `=CONTARA(Proyectos!A2:A${n})`],
+        ['Presupuesto (€)', `=SUMA(Proyectos!I2:I${n})`],
+        ['Comprometido (€)', `=SUMA(Proyectos!J2:J${n})`],
+        ['% financiado', '=SI(B7>0;B8/B7;0)'],
+        ['Falta por financiar (€)', `=SUMA(Proyectos!L2:L${n})`],
+        ['Países distintos', `=COUNTUNIQUE(Proyectos!C2:C${n})`],
+        ['Contrapartes distintas', `=COUNTUNIQUE(Proyectos!F2:F${n})`],
+      ],
+    },
+    { titulo: 'Proyectos', filas: proyectos, cabecera: true, formatos: { 8: 'euros', 9: 'euros', 10: 'porcentaje', 11: 'euros', 12: 'entero' } },
+    resumen('Por estado', 'G', distintos((f) => ESTADOS[f.estado].nombre)),
+    resumen('Por país', 'C', distintos((f) => nombrePais(f.pais))),
+    resumen('Por sector', 'E', distintos((f) => nombreSector(f.sector))),
+    resumen('Por contraparte', 'F', distintos((f) => f.contraparte)),
+    resumen('Por año', 'H', distintos((f) => f.anio)),
+  ];
+
+  const d = await drive();
+  const raiz = await d.carpetaHija('_Informes generales', d.raizProyectos);
+  const carpeta = await d.carpetaHija(CARPETAS.cartera, raiz);
+  const nombre = conFecha('Análisis de proyectos');
+  const { id } = await d.crearVacio(nombre, ES_HOJA, carpeta);
+  await rellenarLibro(id, hojas);
+  const informe: Informe = {
+    titulo: nombre,
+    tipo: 'cartera',
+    formato: 'sheets',
+    sobre: null,
+    plantilla: { id: 'app:sheets', nombre: 'Hoja de cálculo de la app' },
+    desde: hoy,
+    hasta: hoy,
+    donante: null,
+    idioma: 'es',
+    extension: 'normal',
+    docId: id,
+    url: d.urlHoja(id),
+    estado: 'borrador',
+    pendientes: 0,
+    notas: [],
+    resumen: `${orden.length} proyectos.`,
+    hechoPorIA: false,
+    creado: new Date().toISOString(),
+    creadoPor: autor,
+  };
+  const idInforme = await (await almacen()).crear('informes', { ...informe });
+  return { ...informe, id: idInforme };
 }
 
 export async function aprobarInformeGeneral(id: string, autor: Persona): Promise<void> {

@@ -202,6 +202,7 @@ En <https://console.cloud.google.com>, con el proyecto elegido arriba, entra en 
 - **Google Drive API**: necesaria desde ya.
 - **Google Docs API**: para rellenar las plantillas de informe hechas en Google Docs (ver [INFORMES.md](INFORMES.md)).
 - **Google Slides API**: para los informes en forma de presentación.
+- **Google Sheets API**: para el libro de análisis de proyectos (hoja de cálculo).
 
 ---
 

@@ -35,3 +35,14 @@ export function LogoSlides({ tamano = 18 }: { tamano?: number }) {
     </svg>
   );
 }
+
+/** Logotipo de Google Sheets (para los libros de análisis). */
+export function LogoSheets({ tamano = 18 }: { tamano?: number }) {
+  return (
+    <svg width={Math.round((tamano * 3) / 4)} height={tamano} viewBox="0 0 48 64" aria-hidden="true" style={{ flex: 'none' }}>
+      <path d="M29.4 0H4.4A4.4 4.4 0 0 0 0 4.4v55.2A4.4 4.4 0 0 0 4.4 64h39.2a4.4 4.4 0 0 0 4.4-4.4V18.6L35.7 12.1z" fill="#0f9d58" />
+      <path d="M29.4 0v14.2a4.4 4.4 0 0 0 4.4 4.4H48z" fill="#87ceac" />
+      <path d="M11 30h26v22H11zm3 3v4h8v-4zm11 0v4h9v-4zm-11 7v4h8v-4zm11 0v4h9v-4zm-11 7v2h8v-2zm11 0v2h9v-2z" fill="#f1f1f1" fillRule="evenodd" />
+    </svg>
+  );
+}

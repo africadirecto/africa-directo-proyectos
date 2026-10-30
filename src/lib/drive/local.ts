@@ -142,7 +142,7 @@ export const driveLocal: Drive = {
   },
 
   async crearVacio() {
-    throw new Error('En el modo demo no se pueden crear presentaciones: elige «Documento».');
+    throw new Error('En el modo demo no se pueden crear presentaciones ni hojas de cálculo: elige «Informe».');
   },
 
   // En demo no hay unidad de plantillas: solo se usan las plantillas de la app.
@@ -155,4 +155,5 @@ export const driveLocal: Drive = {
   urlMiniatura: (id) => `/api/drive-local/${id}`,
   urlDocumento: (id) => `/api/drive-local/${id}`,
   urlPresentacion: (id) => `/api/drive-local/${id}`,
+  urlHoja: (id) => `/api/drive-local/${id}`,
 };

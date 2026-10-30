@@ -14,7 +14,10 @@ import type { EstadoProyecto, ExtensionInforme, FormatoInforme, Informe } from '
 type ResultadoInforme = Resultado & { url?: string };
 
 const fecha = (v: string) => (/^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
-const formato = (fd: FormData): FormatoInforme => (texto(fd, 'formato', 10) === 'slides' ? 'slides' : 'docs');
+const formato = (fd: FormData): FormatoInforme => {
+  const f = texto(fd, 'formato', 10);
+  return f === 'slides' || f === 'sheets' ? f : 'docs';
+};
 const extension = (fd: FormData): ExtensionInforme => {
   const e = texto(fd, 'extension', 20);
   return e === 'breve' || e === 'detallado' ? e : 'normal';
@@ -26,8 +29,9 @@ const idioma = (fd: FormData) => {
 
 function mensajeListo(i: Informe): string {
   return [
-    `${i.formato === 'slides' ? 'Presentación creada' : 'Borrador creado'}.`,
-    !i.hechoPorIA ? 'La IA no está configurada: los apartados están sin redactar.' : '',
+    `${i.formato === 'slides' ? 'Presentación creada' : i.formato === 'sheets' ? 'Hoja de cálculo creada' : 'Borrador creado'}.`,
+    !i.hechoPorIA && i.formato !== 'sheets' ? 'La IA no está configurada: los apartados están sin redactar.' : '',
+    i.formato === 'sheets' ? 'Revísala y apruébala para poder descargarla.' : '',
     i.pendientes ? `Tiene ${i.pendientes} ${i.pendientes === 1 ? 'dato pendiente' : 'datos pendientes'} marcados como [PENDIENTE].` : '',
   ]
     .filter(Boolean)

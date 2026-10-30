@@ -1,6 +1,6 @@
 # Informes con IA
 
-La app prepara **borradores de informe (Google Docs) y presentaciones (Google Slides) para donantes**. La IA los redacta con los datos del proyecto; un voluntario los revisa, los corrige y los aprueba. **Ningún informe sale hacia un donante sin aprobación**, y la app no los envía: los descarga y envía una persona.
+La app prepara **borradores de informe (Google Docs) y presentaciones (Google Slides) para donantes**, y un libro de análisis de proyectos en Google Sheets. La IA los redacta con los datos del proyecto; un voluntario los revisa, los corrige y los aprueba. **Ningún informe sale hacia un donante sin aprobación**, y la app no los envía: los descarga y envía una persona.
 
 ## Generar un informe
 
@@ -36,6 +36,18 @@ Además del de cada proyecto, con **Generar informe** se pueden preparar, tambi�
 | La ficha de cada **donante** | Lo que ha financiado ese donante y cómo van esos proyectos, para enviárselo | — |
 
 Todos piden el periodo de las novedades, el idioma, la extensión e indicaciones para la IA. Se guardan en `AD · Proyectos / _Informes generales` y aparecen bajo cada página para revisarlos y aprobarlos. La IA ve el detalle de hasta 30 proyectos (los más recientes); el resto cuenta en las cifras.
+
+### Hoja de cálculo de proyectos
+
+En la página **Proyectos**, **Generar informe** ofrece también el formato **Hoja de cálculo**: un libro de Google Sheets con los proyectos de los estados y países elegidos. **No usa IA.**
+
+| Hoja | Qué tiene |
+| --- | --- |
+| **Resumen** | Número de proyectos, presupuesto, comprometido, porcentaje financiado, lo que falta, países y contrapartes |
+| **Proyectos** | Una fila por proyecto: código, título, país, lugar, sector, contraparte, estado, año, presupuesto y comprometido en euros, porcentaje y lo que falta, presupuesto en moneda local y fechas |
+| **Por estado, país, sector, contraparte y año** | Número de proyectos, presupuesto, comprometido y porcentaje, con una gráfica de barras |
+
+Los resúmenes son **fórmulas** sobre la hoja «Proyectos»: si se corrige un dato allí, se recalculan. El libro es una copia del momento en que se genera; no se actualiza con la app. Como los demás, queda en `_Informes generales/Cartera` como borrador y, una vez aprobado, se descarga en **Excel** o **PDF**.
 
 ## Qué datos usa la IA
 

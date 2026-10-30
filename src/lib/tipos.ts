@@ -297,8 +297,8 @@ export interface Enlace {
  */
 export type TipoInforme = 'seguimiento' | 'final' | 'financiacion' | 'cartera' | 'contraparte' | 'donante';
 export type ExtensionInforme = 'breve' | 'normal' | 'detallado';
-/** Documento (Google Docs) o presentación (Google Slides). */
-export type FormatoInforme = 'docs' | 'slides';
+/** Documento (Google Docs), presentación (Google Slides) u hoja de cálculo (Google Sheets, solo de proyectos). */
+export type FormatoInforme = 'docs' | 'slides' | 'sheets';
 
 /**
  * Borradores hechos con IA, en Google Docs o Slides. Los de un proyecto están en

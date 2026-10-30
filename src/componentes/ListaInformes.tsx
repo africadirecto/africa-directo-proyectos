@@ -2,7 +2,7 @@ import { fechaCorta, fechaLarga } from '@/lib/formato';
 import { descargas, type InformeConId } from '@/lib/dominio/informesComun';
 import { Etiqueta } from './Basicos';
 import { FormAccion, Enviar } from './FormAccion';
-import { LogoDocs, LogoSlides } from './Iconos';
+import { LogoDocs, LogoSheets, LogoSlides } from './Iconos';
 import { aprobarInformeAccion } from '@/lib/acciones/informes';
 
 /**
@@ -21,13 +21,13 @@ export function ListaInformes({ informes, codigo = '', editor, titulo = 'Informe
         <div key={i.id} className="req">
           <div style={{ minWidth: 0, flex: '1 1 320px' }}>
             <p style={{ margin: 0, fontWeight: 600, fontSize: 15, display: 'flex', alignItems: 'center', gap: 8 }}>
-              {i.formato === 'slides' ? <LogoSlides tamano={16} /> : <LogoDocs tamano={16} />}
+              {i.formato === 'slides' ? <LogoSlides tamano={16} /> : i.formato === 'sheets' ? <LogoSheets tamano={16} /> : <LogoDocs tamano={16} />}
               <a href={i.url} target="_blank" rel="noreferrer">
                 {i.titulo.replace(/^\d{4}-\d{2}-\d{2} /, '')}
               </a>
             </p>
             <p className="meta" style={{ margin: '2px 0 0' }}>
-              {i.tipo === 'financiacion' ? 'Para buscar financiación' : `${fechaCorta(i.desde)} – ${fechaCorta(i.hasta)}`} · {i.plantilla.nombre} · creado el {fechaLarga(i.creado)} por {i.creadoPor.nombre}
+              {i.tipo === 'financiacion' ? 'Para buscar financiación' : i.formato === 'sheets' ? 'Hoja de cálculo' : `${fechaCorta(i.desde)} – ${fechaCorta(i.hasta)}`} · {i.plantilla.nombre} · creado el {fechaLarga(i.creado)} por {i.creadoPor.nombre}
               {i.estado === 'aprobado' && i.aprobadoPor ? ` · aprobado por ${i.aprobadoPor.nombre}` : ''}
             </p>
             {i.notas?.length && i.estado !== 'aprobado' ? (
