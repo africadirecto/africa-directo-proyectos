@@ -79,7 +79,7 @@ export async function analizarSolicitud(
         '- tituloEs: un título breve (máximo 8 palabras).',
         '- resumen: 3 a 5 frases claras y neutras. No inventes datos ni cifras que no estén en la solicitud.',
         '- traduccion: traducción fiel al español de cada campo de texto; si ya está en español, cópialo. "conceptos" son los conceptos del presupuesto en el mismo orden.',
-        '- falta: lista breve de información importante que falta o es confusa para valorar el proyecto (desglose, beneficiarios, plazos, aportación local, permisos, mantenimiento…). No repitas las comprobaciones ya hechas.',
+        '- falta: lista breve de información importante que falta o es confusa para valorar el proyecto (desglose, beneficiarios, plazos, aportación local, permisos, mantenimiento…). Máximo 6 puntos, sin suposiciones. No incluyas nada de comprobacionesYaHechas, ni siquiera para decir que ya está señalado.',
         'No incluyas nombres de personas ni datos de contacto.',
       ].join('\n'),
       entrada: JSON.stringify(entrada),
@@ -88,7 +88,8 @@ export async function analizarSolicitud(
       tituloEs: res.tituloEs || r.titulo,
       resumen: res.resumen,
       traduccion: idioma === 'es' ? null : res.traduccion,
-      falta: [...avisos, ...res.falta.filter((f) => !avisos.includes(f))],
+      // Por si la IA repite alguna comprobación automática con otras palabras («ya señalado…»).
+      falta: [...avisos, ...res.falta.filter((f) => !avisos.includes(f) && !/ya (se ha |est[aá] )?señalad/i.test(f))],
       hechoPorIA: true,
     };
   } catch (e) {
