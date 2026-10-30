@@ -3,9 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { permitido, persona } from '../sesion';
 import { leerProyecto } from '../dominio/proyectos';
-import { actualizarAportacion, crearAportacion, ESTADOS_APORTACION, renombrarDonanteEnAportaciones } from '../dominio/aportaciones';
+import { actualizarAportacion, crearAportacion, eliminarAportacion, ESTADOS_APORTACION, renombrarDonanteEnAportaciones } from '../dominio/aportaciones';
 import { actualizarDonante, crearDonante, leerDonante, TIPOS_DONANTE } from '../dominio/donantes';
-import { MONEDAS } from '../paises';
 import { intentar, numero, texto, type Resultado } from './resultado';
 import type { EstadoAportacion, TipoDonante } from '../tipos';
 
@@ -41,18 +40,13 @@ export async function anadirAportacion(_: Resultado, fd: FormData): Promise<Resu
     if (!donante) throw new Error('Elige un donante.');
 
     const importe = numero(fd, 'importe');
-    if (!importe || importe <= 0) throw new Error('Escribe el importe.');
-    const moneda = MONEDAS.includes(texto(fd, 'moneda', 3)) ? texto(fd, 'moneda', 3) : p.moneda;
-    const importeProyecto = moneda === p.moneda ? importe : numero(fd, 'importe_proyecto');
-    if (!importeProyecto || importeProyecto <= 0) {
-      throw new Error(`La aportación está en ${moneda}: indica su equivalente en ${p.moneda}.`);
-    }
+    if (!importe || importe <= 0) throw new Error('Escribe el importe en euros.');
     const estado = texto(fd, 'estado', 20);
     if (!estadoValido(estado)) throw new Error('Elige el estado de la aportación.');
 
     await crearAportacion(
       codigo,
-      { donanteId, donanteNombre: donante.nombre, importe, moneda, importeProyecto, estado, notas: texto(fd, 'notas', 1000) },
+      { donanteId, donanteNombre: donante.nombre, importe, estado, notas: texto(fd, 'notas', 1000) },
       persona(yo),
     );
     revalidatePath(`/proyectos/${codigo}`);
@@ -70,6 +64,31 @@ export async function cambiarAportacion(_: Resultado, fd: FormData): Promise<Res
     revalidatePath(`/proyectos/${texto(fd, 'codigo', 20)}`);
     revalidatePath('/', 'layout');
     revalidatePath('/donantes', 'layout');
+  });
+}
+
+/** Corrige una aportación: importe (en euros), estado y notas. */
+export async function editarAportacion(_: Resultado, fd: FormData): Promise<Resultado> {
+  return intentar(async () => {
+    const yo = await permitido('edicion');
+    const estado = texto(fd, 'estado', 20);
+    if (!estadoValido(estado)) throw new Error('Estado no válido.');
+    const importe = numero(fd, 'importe');
+    if (!importe || importe <= 0) throw new Error('Escribe el importe en euros.');
+    await actualizarAportacion(texto(fd, 'id', 100), { importe, estado, notas: texto(fd, 'notas', 1000) }, persona(yo));
+    revalidatePath(`/proyectos/${texto(fd, 'codigo', 20)}`);
+    revalidatePath('/', 'layout');
+    return 'Aportación guardada.';
+  });
+}
+
+export async function eliminarAportacionAccion(_: Resultado, fd: FormData): Promise<Resultado> {
+  return intentar(async () => {
+    const yo = await permitido('edicion');
+    const codigo = await eliminarAportacion(texto(fd, 'id', 100), persona(yo));
+    revalidatePath(`/proyectos/${codigo}`);
+    revalidatePath('/', 'layout');
+    return 'Aportación eliminada.';
   });
 }
 

@@ -20,9 +20,12 @@ El contexto completo (la ONG, el flujo y las decisiones de partida) está en [CL
 - **Revisión**: validar, pedir cambios (reabre el mismo enlace con los comentarios traducidos) o rechazar.
 - **Correos a las contrapartes**: la app no los envía. Prepara el texto en el idioma de la contraparte (enlace, cambios pedidos, rechazo) para que un voluntario lo copie y lo envíe desde el buzón de proyectos (ver [docs/CORREO.md](docs/CORREO.md)).
 - **Ficha del proyecto**: resumen, archivos (carpetas, fotos publicables, informes y un diálogo para añadir archivos arrastrándolos), seguimiento (cronología y notas), financiación (aportaciones por donante; pasa sola a "Aprobado" al cubrirse el presupuesto) y versiones de la solicitud. Cada cambio de estado guarda quién, cuándo y por qué.
-- **Informes con IA**: borrador en Google Docs con la plantilla de la app o una propia con marcadores, para revisar y aprobar antes de enviarlo (ver [docs/INFORMES.md](docs/INFORMES.md)).
-- **Donantes**: ficha de cada donante con sus aportaciones e informes que pide.
-- **Administración**: usuarios y permisos, contrapartes y estado de las integraciones y del uso de IA.
+- **Informes con IA**: en Google Docs o Slides, de un proyecto (para buscar financiación, de seguimiento o final) o de conjunto (proyectos, contrapartes, donante), con la plantilla de la app o una propia con marcadores; se revisan y aprueban antes de enviarlos (ver [docs/INFORMES.md](docs/INFORMES.md)).
+- **Donantes**: lista con filtros y analíticas (comprometido por donante y por tipo, embudo de aportaciones, evolución por año) y ficha de cada donante con sus aportaciones, los informes que pide y un informe para enviarle.
+- **Contrapartes**: lista con filtros y analíticas y ficha de cada una con sus proyectos. Todos las ven; con permiso de edición se dan de alta y con administración se editan.
+- **Analíticas**: en Proyectos, Donantes y Contrapartes, gráficas que siguen a los filtros; al pulsar una barra se filtra por ese valor.
+- **Financiación en euros**: las aportaciones se registran en euros y se comparan con el presupuesto en euros del proyecto (calculado con el cambio del día y corregible); el presupuesto de la solicitud se mantiene en su moneda.
+- **Administración**: usuarios y permisos y estado de las integraciones y del uso de IA.
 - **Cada noche**: copia de la base de datos en la unidad "Sistema" de Drive y, los lunes, resumen de pendientes en Google Chat.
 
 Quedan para las siguientes fases: lectura del buzón de proyectos y bandeja de correos sin asignar (fase 2), presentaciones en Slides y plantillas de donante en Word o Excel (fase 3), y la ficha para donantes y estadísticas (fase 4).

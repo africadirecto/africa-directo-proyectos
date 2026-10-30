@@ -10,6 +10,7 @@ import { analizarSolicitud, traducir } from '../ia';
 import { avisosAutomaticos, totalPresupuesto } from '../formulario/respuestas';
 import { CORREOS, nombreSector, IDIOMAS_ES } from '../formulario/textos';
 import { nombrePais } from '../paises';
+import { aEurosHoy } from '../cambio';
 import { actualizarProyecto, cambiarEstado, leerProyecto, nombreCarpeta } from './proyectos';
 import { anotarEvento } from './eventos';
 import type {
@@ -202,6 +203,8 @@ export async function enviarSolicitud(codigo: string, respuestas: RespuestasSoli
     lng: respuestas.lng ?? p.lng,
     moneda: respuestas.moneda,
     presupuesto: presupuesto || p.presupuesto,
+    // La financiación va en euros: se convierte con el cambio de hoy (se puede corregir en la ficha).
+    presupuestoEur: presupuesto ? await aEurosHoy(presupuesto, respuestas.moneda) : p.presupuestoEur,
     descripcion: respuestas.necesidad,
     beneficiarios: respuestas.numBeneficiarios
       ? `${respuestas.numBeneficiarios} · ${respuestas.beneficiarios}`
@@ -230,7 +233,11 @@ export async function procesarSolicitud(codigo: string, version: number): Promis
   await db.guardar(ruta, { analisis }, { fusionar: true });
   const cambios: Partial<Proyecto> = { resumen: analisis.resumen };
   if (analisis.hechoPorIA && (!p.titulo || p.titulo === v.respuestas.titulo)) cambios.titulo = analisis.tituloEs;
-  if (analisis.traduccion?.necesidad) cambios.descripcion = analisis.traduccion.necesidad;
+  // La ficha queda en castellano: la traducción sustituye a los textos de la contraparte
+  // (el original sigue en la versión de la solicitud y en su PDF).
+  const t = analisis.traduccion;
+  if (t?.necesidad) cambios.descripcion = t.necesidad;
+  if (t?.beneficiarios) cambios.beneficiarios = v.respuestas.numBeneficiarios ? `${v.respuestas.numBeneficiarios} · ${t.beneficiarios}` : t.beneficiarios;
   const actualizado = await actualizarProyecto(codigo, cambios);
 
   const d = await drive();

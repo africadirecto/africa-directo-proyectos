@@ -8,6 +8,7 @@ import { anotarEvento } from '../dominio/eventos';
 import { marcarPublicable } from '../dominio/archivos';
 import { ESTADOS } from '../estados';
 import { MONEDAS, PAISES } from '../paises';
+import { aEurosHoy } from '../cambio';
 import { SECTORES } from '../formulario/textos';
 import { intentar, numero, texto, type Resultado } from './resultado';
 import type { CategoriaEvento, EstadoProyecto, Proyecto } from '../tipos';
@@ -54,6 +55,13 @@ export async function editarProyecto(_: Resultado, fd: FormData): Promise<Result
     }
     const presupuesto = numero(fd, 'presupuesto');
     if (presupuesto != null && presupuesto < 0) throw new Error('El presupuesto no puede ser negativo.');
+    const monedaFinal = MONEDAS.includes(moneda) ? moneda : p.moneda;
+    // En euros: lo que escriba el voluntario o, si lo deja vacío, la conversión con el cambio de hoy.
+    const eurEscrito = numero(fd, 'presupuestoEur');
+    if (eurEscrito != null && eurEscrito < 0) throw new Error('El presupuesto en euros no puede ser negativo.');
+    const cambiaLocal = presupuesto !== p.presupuesto || monedaFinal !== p.moneda;
+    const presupuestoEur =
+      monedaFinal === 'EUR' ? presupuesto : eurEscrito != null && !(cambiaLocal && eurEscrito === p.presupuestoEur) ? eurEscrito : await aEurosHoy(presupuesto, monedaFinal);
 
     await actualizarProyecto(codigo, {
       titulo,
@@ -62,14 +70,15 @@ export async function editarProyecto(_: Resultado, fd: FormData): Promise<Result
       lugar: texto(fd, 'lugar', 200),
       lat,
       lng,
-      moneda: MONEDAS.includes(moneda) ? moneda : p.moneda,
+      moneda: monedaFinal,
       presupuesto,
+      presupuestoEur,
       descripcion: texto(fd, 'descripcion', 6000),
       beneficiarios: texto(fd, 'beneficiarios', 1000),
       fechas: { ...p.fechas, inicio: fecha(fd, 'inicio') ?? p.fechas.inicio, finPrevisto: fecha(fd, 'finPrevisto') },
     });
     // Un cambio de presupuesto puede completar la financiación.
-    if (presupuesto !== p.presupuesto) await recalcularFinanciacion(codigo, persona(yo));
+    if (presupuestoEur !== p.presupuestoEur) await recalcularFinanciacion(codigo, persona(yo));
     rutas(codigo);
     return 'Datos guardados.';
   });

@@ -3,23 +3,19 @@
 import { useState } from 'react';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
 import { Desplegable } from '@/componentes/Desplegable';
-import { opcionesMonedas } from '@/componentes/opciones';
 import { anadirAportacion } from '@/lib/acciones/financiacion';
 import { ESTADOS_APORTACION } from '@/lib/estados';
 
 export function FormAportacion({
   codigo,
-  monedaProyecto,
   donantes,
   tipos,
 }: {
   codigo: string;
-  monedaProyecto: string;
   donantes: { id: string; nombre: string }[];
   tipos: Record<string, string>;
 }) {
   const [donante, setDonante] = useState('');
-  const [moneda, setMoneda] = useState(monedaProyecto);
 
   return (
     <FormAccion accion={anadirAportacion} className="pila" limpiar>
@@ -48,19 +44,9 @@ export function FormAportacion({
       ) : null}
       <div className="campos">
         <label className="field">
-          Importe
+          Importe (€)
           <input name="importe" inputMode="decimal" required placeholder="12000" />
         </label>
-        <label className="field">
-          Moneda
-          <Desplegable name="moneda" value={moneda} onChange={setMoneda} opciones={opcionesMonedas('es')} />
-        </label>
-        {moneda !== monedaProyecto ? (
-          <label className="field ancho">
-            Equivalente en {monedaProyecto} (la moneda del proyecto)
-            <input name="importe_proyecto" inputMode="decimal" required />
-          </label>
-        ) : null}
         <label className="field">
           Estado
           <Desplegable name="estado" defaultValue="ofrecida" opciones={Object.entries(ESTADOS_APORTACION).map(([valor, v]) => ({ valor, texto: v.nombre }))} />

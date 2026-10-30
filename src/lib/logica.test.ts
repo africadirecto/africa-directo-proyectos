@@ -35,7 +35,7 @@ describe('estados', () => {
 describe('financiación', () => {
   const ap = (estado: 'ofrecida' | 'comprometida' | 'recibida' | 'descartada', importe: number, donanteId = 'a') => ({
     estado,
-    importeProyecto: importe,
+    importe,
     donanteId,
   });
 
@@ -95,6 +95,7 @@ describe('requiere atención', () => {
     estado,
     moneda: 'EUR',
     presupuesto: 1000,
+    presupuestoEur: 1000,
     comprometido: 0,
     contraparte: '',
     contraparteId: '',

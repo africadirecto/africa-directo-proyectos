@@ -33,6 +33,14 @@ export async function tiposDeCambio(): Promise<Record<string, number>> {
   return Object.fromEntries(MONEDAS.map((m) => [m, FIJOS[m] ?? tasas[m]]).filter(([, t]) => typeof t === 'number' && t > 0));
 }
 
+/** Presupuesto en euros redondeado a la unidad, con el cambio del día (null si no se conoce). */
+export async function aEurosHoy(importe: number | null, moneda: string): Promise<number | null> {
+  if (importe == null) return null;
+  if (moneda === 'EUR') return importe;
+  const e = enEuros(importe, moneda, await tiposDeCambio());
+  return e == null ? null : Math.round(e);
+}
+
 /** Importe en euros, o null si no se conoce el cambio de esa moneda. */
 export function enEuros(importe: number, moneda: string, tasas: Record<string, number>): number | null {
   const t = tasas[moneda];

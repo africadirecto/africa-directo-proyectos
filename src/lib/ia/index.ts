@@ -7,7 +7,7 @@
 import { config } from '../config';
 import { nombrePais } from '../paises';
 import { IDIOMAS_ES, nombreSector } from '../formulario/textos';
-import type { AnalisisSolicitud, Idioma, RespuestasSolicitud, TraduccionSolicitud } from '../tipos';
+import type { AnalisisSolicitud, FormatoInforme, Idioma, RespuestasSolicitud, TraduccionSolicitud } from '../tipos';
 import { pedirJson } from './openrouter';
 
 export const iaDisponible = () => !!config.ia.clave;
@@ -75,10 +75,10 @@ export async function analizarSolicitud(
       esquema: ESQUEMA_ANALISIS,
       instrucciones: [
         'Eres un asistente de la ONG española Africa Directo, que financia proyectos en África.',
-        'Recibes en JSON una solicitud de proyecto escrita por una contraparte local. Devuelve, en español de España:',
+        'Recibes en JSON una solicitud de proyecto escrita por una contraparte local, a menudo en francés, inglés o portugués. Devuelve, en castellano (español de España):',
         '- tituloEs: un título breve (máximo 8 palabras).',
         '- resumen: 3 a 5 frases claras y neutras. No inventes datos ni cifras que no estén en la solicitud.',
-        '- traduccion: traducción fiel al español de cada campo de texto; si ya está en español, cópialo. "conceptos" son los conceptos del presupuesto en el mismo orden.',
+        '- traduccion: traducción fiel al castellano de cada campo de texto, con un estilo natural y claro; si ya está en castellano, cópialo. "conceptos" son los conceptos del presupuesto traducidos, en el mismo orden.',
         '- falta: lista breve de información importante que falta o es confusa para valorar el proyecto (desglose, beneficiarios, plazos, aportación local, permisos, mantenimiento…). Máximo 6 puntos, sin suposiciones. No incluyas nada de comprobacionesYaHechas, ni siquiera para decir que ya está señalado.',
         'No incluyas nombres de personas ni datos de contacto.',
       ].join('\n'),
@@ -136,6 +136,8 @@ export interface ApartadoRedactado {
 
 export interface Redaccion {
   apartados: ApartadoRedactado[];
+  /** Un texto breve por proyecto, en los informes de varios proyectos. */
+  proyectos: { codigo: string; texto: string }[];
   pendientes: string[];
   resumen: string;
   hechoPorIA: boolean;
@@ -144,8 +146,17 @@ export interface Redaccion {
 const ESQUEMA_INFORME = {
   type: 'object',
   additionalProperties: false,
-  required: ['apartados', 'pendientes', 'resumen'],
+  required: ['apartados', 'proyectos', 'pendientes', 'resumen'],
   properties: {
+    proyectos: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['codigo', 'texto'],
+        properties: { codigo: { type: 'string' }, texto: { type: 'string' } },
+      },
+    },
     apartados: {
       type: 'array',
       items: {
@@ -170,16 +181,25 @@ const ESQUEMA_INFORME = {
  * (`contexto`, ya sin datos de contacto). Lo que no consta queda como [PENDIENTE: …].
  * Sin IA, devuelve cada apartado marcado como pendiente para que lo escriba un voluntario.
  */
-export async function redactarInforme(contexto: object, apartados: ApartadoPedido[], idioma: Idioma, instrucciones: string): Promise<Redaccion> {
+export async function redactarInforme(
+  contexto: object,
+  apartados: ApartadoPedido[],
+  idioma: Idioma,
+  instrucciones: string,
+  opciones: { formato?: FormatoInforme; porProyecto?: string[] } = {},
+): Promise<Redaccion> {
+  const diapositivas = opciones.formato === 'slides';
+  const porProyecto = opciones.porProyecto ?? [];
   const sinIA: Redaccion = {
     apartados: apartados.map((a) => ({ clave: a.clave, titulo: a.titulo, texto: `[PENDIENTE: ${a.instruccion}]`, fuentes: [] })),
+    proyectos: [],
     pendientes: ['La IA no está configurada: hay que redactar todos los apartados.'],
     resumen: '',
     hechoPorIA: false,
   };
-  if (!iaDisponible() || !apartados.length) return sinIA;
+  if (!iaDisponible() || (!apartados.length && !porProyecto.length)) return sinIA;
 
-  const palabras = apartados.reduce((s, a) => s + a.palabras, 0);
+  const palabras = apartados.reduce((s, a) => s + a.palabras, 0) + porProyecto.length * 60;
   const res = await pedirJson<Omit<Redaccion, 'hechoPorIA'>>({
     tarea: 'redaccion',
     nombre: 'informe',
@@ -187,11 +207,16 @@ export async function redactarInforme(contexto: object, apartados: ApartadoPedid
     maxTokens: Math.min(16_000, 2000 + palabras * 4),
     instrucciones: [
       'Eres un voluntario experto de la ONG española Africa Directo, que financia proyectos en África con el lema «el 100 % llega».',
-      `Redacta, en ${IDIOMAS_ES[idioma].toLowerCase()}, los apartados de un informe para un donante, con tono profesional, cercano y honesto.`,
+      `Redacta, en ${IDIOMAS_ES[idioma].toLowerCase()}, los apartados de ${diapositivas ? 'una presentación' : 'un informe'} para donantes, con tono profesional, cercano y honesto.`,
       'Reglas:',
       '- Usa SOLO los datos del JSON. No inventes cifras, fechas, nombres ni hechos, ni des por hecho lo que no consta (por ejemplo, que una obra parada se ha reanudado o que unos fondos se han recibido).',
       '- Si un dato necesario no consta, escribe en el texto «[PENDIENTE: qué falta]» (siempre en español) para que lo complete un voluntario.',
-      '- Cada apartado, aproximadamente con las palabras indicadas. Texto plano: párrafos separados por una línea en blanco, sin títulos, viñetas ni Markdown.',
+      diapositivas
+        ? '- Es para diapositivas: cada apartado son de 3 a 5 ideas cortas (máximo 18 palabras cada una), una por línea, sin guiones ni símbolos delante. Sin Markdown.'
+        : '- Cada apartado, aproximadamente con las palabras indicadas. Texto plano: párrafos separados por una línea en blanco, sin títulos, viñetas ni Markdown.',
+      porProyecto.length
+        ? `- "proyectos": para cada código de ${porProyecto.join(', ')}, ${diapositivas ? '2 o 3 ideas cortas, una por línea' : 'un párrafo de unas 60 palabras'} con lo más importante de ese proyecto en el periodo.`
+        : '- "proyectos": déjalo vacío.',
       '- "titulo": el título del apartado traducido al idioma del informe.',
       '- "fuentes": los ids de los eventos que usas (por ejemplo "E3"), o "ficha", "aportaciones" o "solicitud".',
       '- No incluyas datos de contacto ni nombres de beneficiarios concretos; nunca identifiques a menores.',
@@ -208,6 +233,7 @@ export async function redactarInforme(contexto: object, apartados: ApartadoPedid
   const porClave = new Map(res.apartados.map((a) => [a.clave, a]));
   return {
     apartados: apartados.map((a) => porClave.get(a.clave) ?? { clave: a.clave, titulo: a.titulo, texto: `[PENDIENTE: ${a.instruccion}]`, fuentes: [] }),
+    proyectos: res.proyectos.filter((x) => porProyecto.includes(x.codigo)),
     pendientes: res.pendientes,
     resumen: res.resumen,
     hechoPorIA: true,

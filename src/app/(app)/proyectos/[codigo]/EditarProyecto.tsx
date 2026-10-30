@@ -73,12 +73,18 @@ export function EditarProyecto({ p }: { p: Proyecto }) {
             {aviso ? <span className="meta">{aviso}</span> : null}
           </div>
           <label className="field">
-            Presupuesto
+            Presupuesto (moneda de la solicitud)
             <input name="presupuesto" inputMode="decimal" defaultValue={p.presupuesto ?? ''} />
           </label>
           <label className="field">
             Moneda
             <Desplegable name="moneda" defaultValue={p.moneda} opciones={opcionesMonedas('es', pais)} />
+          </label>
+          <label className="field ancho">
+            <span>
+              Presupuesto en euros <span className="ayuda">es el que se financia; si lo dejas vacío o cambias el de arriba, se calcula con el cambio de hoy</span>
+            </span>
+            <input name="presupuestoEur" inputMode="decimal" defaultValue={p.presupuestoEur ?? ''} />
           </label>
           <label className="field">
             Inicio de obra

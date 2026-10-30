@@ -141,6 +141,10 @@ export const driveLocal: Drive = {
     return existente?.id ?? this.crearCarpeta(nombre, padreId);
   },
 
+  async crearVacio() {
+    throw new Error('En el modo demo no se pueden crear presentaciones: elige «Documento».');
+  },
+
   // En demo no hay unidad de plantillas: solo se usan las plantillas de la app.
   async documentosDeUnidad() {
     return [];
@@ -150,4 +154,5 @@ export const driveLocal: Drive = {
   urlArchivo: (id) => `/api/drive-local/${id}`,
   urlMiniatura: (id) => `/api/drive-local/${id}`,
   urlDocumento: (id) => `/api/drive-local/${id}`,
+  urlPresentacion: (id) => `/api/drive-local/${id}`,
 };

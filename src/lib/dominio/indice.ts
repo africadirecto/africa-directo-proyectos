@@ -4,6 +4,7 @@
 // La copia nocturna lo reconstruye por si alguna vez se desincroniza.
 
 import { almacen } from '../almacen';
+import { presupuestoEnEuros } from './aportaciones';
 import type { FilaPanel, Proyecto } from '../tipos';
 
 const RUTA = 'indices/proyectos';
@@ -20,6 +21,7 @@ export function filaDe(p: Proyecto): FilaPanel {
     estado: p.estado,
     moneda: p.moneda,
     presupuesto: p.presupuesto,
+    presupuestoEur: presupuestoEnEuros(p),
     comprometido: p.comprometido,
     contraparte: p.contraparte.nombre,
     contraparteId: p.contraparte.id,

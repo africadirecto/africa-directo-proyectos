@@ -24,3 +24,14 @@ export function LogoDocs({ tamano = 18 }: { tamano?: number }) {
     </svg>
   );
 }
+
+/** Logotipo de Google Slides (para las presentaciones). */
+export function LogoSlides({ tamano = 18 }: { tamano?: number }) {
+  return (
+    <svg width={Math.round((tamano * 3) / 4)} height={tamano} viewBox="0 0 48 64" aria-hidden="true" style={{ flex: 'none' }}>
+      <path d="M29.4 0H4.4A4.4 4.4 0 0 0 0 4.4v55.2A4.4 4.4 0 0 0 4.4 64h39.2a4.4 4.4 0 0 0 4.4-4.4V18.6L35.7 12.1z" fill="#f4b400" />
+      <path d="M29.4 0v14.2a4.4 4.4 0 0 0 4.4 4.4H48z" fill="#fad165" />
+      <rect x="11" y="30" width="26" height="20" rx="1.5" fill="none" stroke="#fff" strokeWidth="3.2" />
+    </svg>
+  );
+}

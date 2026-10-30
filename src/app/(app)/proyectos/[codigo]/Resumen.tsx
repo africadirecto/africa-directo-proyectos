@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { listarEventos } from '@/lib/dominio/eventos';
 import { leerContraparte } from '@/lib/dominio/contrapartes';
 import { aliasProyecto } from '@/lib/avisos';
+import { presupuestoEnEuros } from '@/lib/dominio/aportaciones';
 import { dinero, fechaLarga, porcentaje } from '@/lib/formato';
 import { IDIOMAS_ES } from '@/lib/formulario/textos';
 import type { Proyecto } from '@/lib/tipos';
@@ -27,12 +28,15 @@ export async function Resumen({ p }: { p: Proyecto }) {
           <dl className="kv">
             <div>
               <dt>Presupuesto</dt>
-              <dd>{dinero(p.presupuesto, p.moneda)}</dd>
+              <dd>
+                {dinero(presupuestoEnEuros(p))}
+                {p.moneda !== 'EUR' && p.presupuesto ? <span className="meta"> · {dinero(p.presupuesto, p.moneda)}</span> : null}
+              </dd>
             </div>
             <div>
               <dt>Financiado</dt>
               <dd>
-                {p.presupuesto ? `${porcentaje(p.comprometido, p.presupuesto)} %` : '—'}
+                {presupuestoEnEuros(p) ? `${porcentaje(p.comprometido, presupuestoEnEuros(p))} %` : '—'}
                 {p.numDonantes ? ` · ${p.numDonantes} donante${p.numDonantes === 1 ? '' : 's'}` : ''}
               </dd>
             </div>

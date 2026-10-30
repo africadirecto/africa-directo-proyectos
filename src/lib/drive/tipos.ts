@@ -36,14 +36,19 @@ export interface Drive {
   copiar(id: string, carpetaId: string, nombre: string): Promise<ArchivoDrive>;
   /** Busca una subcarpeta por nombre y, si no existe, la crea. */
   carpetaHija(nombre: string, padreId: string): Promise<string>;
-  /** Todos los Google Docs de una unidad compartida, con la ruta de carpetas de cada uno. */
+  /** Todos los Google Docs y Slides de una unidad compartida, con la ruta de carpetas de cada uno. */
   documentosDeUnidad(unidadId: string): Promise<(ArchivoDrive & { ruta: string })[]>;
+  /** Crea un archivo vacío de Google (por ejemplo, una presentación) en la carpeta. */
+  crearVacio(nombre: string, mime: string, carpetaId: string): Promise<ArchivoDrive>;
   urlCarpeta(id: string): string;
   urlArchivo(id: string): string;
   urlMiniatura(id: string): string;
   /** Dirección para abrir un documento (en Google, el editor de Docs). */
   urlDocumento(id: string): string;
+  /** Dirección para abrir una presentación (en Google, el editor de Slides). */
+  urlPresentacion(id: string): string;
 }
 
 export const ES_CARPETA = 'application/vnd.google-apps.folder';
 export const ES_DOC = 'application/vnd.google-apps.document';
+export const ES_PRESENTACION = 'application/vnd.google-apps.presentation';

@@ -5,7 +5,6 @@ import { usePathname } from 'next/navigation';
 
 const SECCIONES = [
   ['/admin', 'Usuarios y permisos'],
-  ['/admin/contrapartes', 'Contrapartes'],
   ['/admin/ajustes', 'Ajustes'],
 ] as const;
 

@@ -51,10 +51,11 @@ export async function invitarAccion(_: Resultado, fd: FormData): Promise<Resulta
   });
 }
 
+/** Dar de alta: permiso de edición. Cambiar una contraparte existente: administración. */
 export async function guardarContraparteAccion(_: Resultado, fd: FormData): Promise<Resultado> {
   return intentar(async () => {
-    await permitido('admin');
     const id = texto(fd, 'id', 100);
+    await permitido(id ? 'admin' : 'edicion');
     const nombre = texto(fd, 'nombre', 200);
     const pais = texto(fd, 'pais', 2);
     const idioma = texto(fd, 'idioma', 2);
@@ -78,7 +79,7 @@ export async function guardarContraparteAccion(_: Resultado, fd: FormData): Prom
     };
     if (id) await actualizarContraparte(id, datos);
     else await crearContraparte(datos);
-    revalidatePath('/admin/contrapartes');
+    revalidatePath('/contrapartes', 'layout');
     return id ? 'Contraparte guardada. Los proyectos existentes conservan los datos que tenían.' : 'Contraparte añadida.';
   });
 }

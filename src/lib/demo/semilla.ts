@@ -114,7 +114,7 @@ async function sembrar() {
     }),
   ];
 
-  const aportaciones: Omit<Aportacion, 'proyectoTitulo' | 'creado' | 'actualizado' | 'actualizadoPor' | 'donanteNombre' | 'moneda' | 'importeProyecto' | 'notas'>[] = [
+  const aportaciones: Omit<Aportacion, 'proyectoTitulo' | 'creado' | 'actualizado' | 'actualizadoPor' | 'donanteNombre' | 'notas'>[] = [
     { proyecto: 'P-2026-014', donanteId: 'horizonte', importe: 12000, estado: 'comprometida' },
     { proyecto: 'P-2026-014', donanteId: 'aguaviva', importe: 6000, estado: 'recibida' },
     { proyecto: 'P-2026-006', donanteId: 'solar', importe: 25000, estado: 'recibida' },
@@ -131,8 +131,6 @@ async function sembrar() {
       ...a,
       proyectoTitulo: p.titulo,
       donanteNombre: donantes[a.donanteId].nombre,
-      moneda: 'EUR',
-      importeProyecto: a.importe,
       notas: '',
       creado: hace(60),
       actualizado: hace(30),
@@ -141,7 +139,7 @@ async function sembrar() {
   }
 
   for (const p of proyectos) {
-    const t = totales(aportaciones.filter((a) => a.proyecto === p.codigo).map((a) => ({ ...a, importeProyecto: a.importe })));
+    const t = totales(aportaciones.filter((a) => a.proyecto === p.codigo));
     Object.assign(p, t);
     const enlace: Enlace = { proyecto: p.codigo, accion: 'solicitud', creado: p.fechas.creado, creadoPor: ana, caduca: new Date(Date.now() + 120 * DIA).toISOString(), revocado: false };
     await db.guardar(`enlaces/${p.formulario.enlaceId}`, { ...enlace });
@@ -295,6 +293,7 @@ function py(
     estado,
     moneda: 'EUR',
     presupuesto,
+    presupuestoEur: presupuesto,
     comprometido: 0,
     recibido: 0,
     numDonantes: 0,

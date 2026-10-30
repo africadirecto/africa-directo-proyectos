@@ -4,7 +4,7 @@
 
 import { JWT } from 'google-auth-library';
 import { config } from '../config';
-import { ES_CARPETA, ES_DOC, type ArchivoDrive, type Drive, type EstadoSubida } from './tipos';
+import { ES_CARPETA, ES_DOC, ES_PRESENTACION, type ArchivoDrive, type Drive, type EstadoSubida } from './tipos';
 
 const API = 'https://www.googleapis.com/drive/v3';
 const SUBIDA = 'https://www.googleapis.com/upload/drive/v3';
@@ -231,13 +231,22 @@ export const driveGoogle: Drive = {
       } while (pagina);
       return lista;
     };
-    const [docs, carpetas] = await Promise.all([buscar(`mimeType = '${ES_DOC}'`), buscar(`mimeType = '${ES_CARPETA}'`)]);
+    const [docs, carpetas] = await Promise.all([buscar(`(mimeType = '${ES_DOC}' or mimeType = '${ES_PRESENTACION}')`), buscar(`mimeType = '${ES_CARPETA}'`)]);
     const porId = new Map(carpetas.map((c) => [c.id, c]));
     const ruta = (id?: string): string[] => {
       const c = id ? porId.get(id) : undefined;
       return c ? [...ruta(c.parents?.[0]), c.name] : [];
     };
     return docs.map((d) => ({ ...aArchivo(d), ruta: ruta(d.parents?.[0]).join(' / ') }));
+  },
+
+  async crearVacio(nombre, mime, carpetaId) {
+    const res = await api(`${API}/files?${TODAS}&fields=${CAMPOS}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: nombre, mimeType: mime, parents: [carpetaId] }),
+    });
+    return aArchivo((await res.json()) as Crudo);
   },
 
   async htmlAPdf(html, carpetaId, nombre) {
@@ -258,6 +267,7 @@ export const driveGoogle: Drive = {
   // Funciona en el navegador de quien tenga sesión de Google con acceso a la unidad compartida.
   urlMiniatura: (id) => `https://drive.google.com/thumbnail?id=${id}&sz=w480`,
   urlDocumento: (id) => `https://docs.google.com/document/d/${id}/edit`,
+  urlPresentacion: (id) => `https://docs.google.com/presentation/d/${id}/edit`,
 };
 
 /**

@@ -64,9 +64,15 @@ export interface Proyecto {
   lat: number | null;
   lng: number | null;
   estado: EstadoProyecto;
+  /** Presupuesto en la moneda local de la solicitud (la que eligió la contraparte). */
   moneda: string;
   presupuesto: number | null;
-  /** Suma de aportaciones comprometidas o recibidas, en la moneda del proyecto. */
+  /**
+   * Presupuesto en euros: es la cifra que se financia. Se calcula con el cambio del día al
+   * recibir la solicitud y un voluntario puede corregirlo en «Editar datos».
+   */
+  presupuestoEur: number | null;
+  /** Suma de aportaciones comprometidas o recibidas, en euros. */
   comprometido: number;
   recibido: number;
   numDonantes: number;
@@ -114,6 +120,8 @@ export interface FilaPanel {
   estado: EstadoProyecto;
   moneda: string;
   presupuesto: number | null;
+  presupuestoEur: number | null;
+  /** En euros. */
   comprometido: number;
   contraparte: string;
   contraparteId: string;
@@ -264,10 +272,8 @@ export interface Aportacion {
   proyectoTitulo: string;
   donanteId: string;
   donanteNombre: string;
+  /** Siempre en euros: la ONG financia en euros. */
   importe: number;
-  moneda: string;
-  /** Equivalente en la moneda del proyecto (igual a `importe` si es la misma moneda). */
-  importeProyecto: number;
   estado: EstadoAportacion;
   notas: string;
   creado: string;
@@ -285,13 +291,25 @@ export interface Enlace {
   revocado: boolean;
 }
 
-export type TipoInforme = 'seguimiento' | 'final';
+/**
+ * De un proyecto: seguimiento, final o de financiación (para presentarlo a donantes).
+ * De conjunto: cartera (varios proyectos), contraparte o donante.
+ */
+export type TipoInforme = 'seguimiento' | 'final' | 'financiacion' | 'cartera' | 'contraparte' | 'donante';
 export type ExtensionInforme = 'breve' | 'normal' | 'detallado';
+/** Documento (Google Docs) o presentación (Google Slides). */
+export type FormatoInforme = 'docs' | 'slides';
 
-/** proyectos/{codigo}/informes/{id}: borradores de informe hechos con IA, en Google Docs. */
+/**
+ * Borradores hechos con IA, en Google Docs o Slides. Los de un proyecto están en
+ * proyectos/{codigo}/informes/{id}; los de conjunto, en informes/{id}.
+ */
 export interface Informe {
   titulo: string;
   tipo: TipoInforme;
+  formato: FormatoInforme;
+  /** En los de conjunto: la contraparte o el donante del informe (null = todos). */
+  sobre?: { id: string; nombre: string } | null;
   plantilla: { id: string; nombre: string };
   desde: string;
   hasta: string;
@@ -304,6 +322,8 @@ export interface Informe {
   estado: 'borrador' | 'aprobado';
   /** Cuántos [PENDIENTE: …] dejó la IA para que los complete un voluntario. */
   pendientes: number;
+  /** Notas para la revisión (pendientes y fuentes); también van al final del documento. */
+  notas?: string[];
   /** Resumen en español, para el siguiente informe y para la lista. */
   resumen: string;
   hechoPorIA: boolean;

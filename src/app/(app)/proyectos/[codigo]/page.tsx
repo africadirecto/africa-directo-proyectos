@@ -18,7 +18,8 @@ import { EditarProyecto } from './EditarProyecto';
 import { GenerarInforme } from './GenerarInforme';
 import { LogoDrive } from '@/componentes/Iconos';
 import { desdePropuesto, listarInformes, listarPlantillas } from '@/lib/dominio/informes';
-import { aportacionesDeProyecto } from '@/lib/dominio/aportaciones';
+import { presupuestoEnEuros } from '@/lib/dominio/aportaciones';
+import { listarDonantes } from '@/lib/dominio/donantes';
 import { iaDisponible } from '@/lib/ia';
 import { Resumen } from './Resumen';
 import { Seguimiento } from './Seguimiento';
@@ -45,7 +46,7 @@ export async function generateMetadata({ params }: { params: Promise<{ codigo: s
 
 /** Sugerencia de "Siguiente paso" según el estado. */
 function siguientePaso(p: Proyecto): { texto: string; enlace?: [string, string] } | null {
-  const falta = (p.presupuesto ?? 0) - p.comprometido;
+  const falta = (presupuestoEnEuros(p) ?? 0) - p.comprometido;
   switch (p.estado) {
     case 'solicitud':
       return { texto: p.formulario.estado === 'cambios' ? 'esperando a que la contraparte corrija la solicitud.' : 'esperando a que la contraparte rellene el formulario.', enlace: ['Ver el enlace', `/solicitudes?p=${p.codigo}`] };
@@ -54,7 +55,7 @@ function siguientePaso(p: Proyecto): { texto: string; enlace?: [string, string] 
     case 'validada':
       return { texto: 'buscar financiación: añade los donantes a los que se presenta el proyecto.', enlace: ['Financiación', '?pestana=financiacion'] };
     case 'financiacion':
-      return { texto: falta > 0 ? `faltan ${dinero(falta, p.moneda)} por comprometer.` : 'revisa el presupuesto: la financiación ya lo cubre.', enlace: ['Financiación', '?pestana=financiacion'] };
+      return { texto: falta > 0 ? `faltan ${dinero(falta)} por comprometer.` : 'revisa el presupuesto: la financiación ya lo cubre.', enlace: ['Financiación', '?pestana=financiacion'] };
     case 'aprobado':
       return { texto: 'cuando empiece la obra, pasa el proyecto a «En ejecución».' };
     case 'ejecucion': {
@@ -132,8 +133,8 @@ export default async function FichaProyecto({
               <GenerarInforme
                 codigo={p.codigo}
                 plantillas={await listarPlantillas()}
-                donantes={[...new Map((await aportacionesDeProyecto(p.codigo)).map((a) => [a.donanteId, { id: a.donanteId, nombre: a.donanteNombre }])).values()]}
-                tipo={['completado', 'cerrado'].includes(p.estado) ? 'final' : 'seguimiento'}
+                donantes={(await listarDonantes()).map((d) => ({ id: d.id, nombre: d.nombre }))}
+                tipo={['completado', 'cerrado'].includes(p.estado) ? 'final' : ['revision', 'validada', 'financiacion'].includes(p.estado) ? 'financiacion' : 'seguimiento'}
                 desde={desdePropuesto(p, await listarInformes(p.codigo))}
                 hoy={new Date().toISOString().slice(0, 10)}
                 ia={iaDisponible()}
@@ -150,9 +151,9 @@ export default async function FichaProyecto({
                     Nuevo estado
                     <Desplegable name="estado" required opciones={opciones.map((e) => ({ valor: e, texto: ESTADOS[e].nombre }))} />
                   </label>
-                  {p.estado === 'financiacion' && (p.presupuesto ?? 0) > p.comprometido ? (
+                  {p.estado === 'financiacion' && (presupuestoEnEuros(p) ?? 0) > p.comprometido ? (
                     <p className="aviso" style={{ margin: 0 }}>
-                      Ojo: lo comprometido ({dinero(p.comprometido, p.moneda)}) no cubre el presupuesto ({dinero(p.presupuesto, p.moneda)}). Normalmente pasa solo a Aprobado al cubrirse.
+                      Ojo: lo comprometido ({dinero(p.comprometido)}) no cubre el presupuesto ({dinero(presupuestoEnEuros(p))}). Normalmente pasa solo a Aprobado al cubrirse.
                     </p>
                   ) : null}
                   <label className="field">

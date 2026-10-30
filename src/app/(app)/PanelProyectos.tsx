@@ -15,6 +15,8 @@ import { Estado } from '@/componentes/Basicos';
 import { Bandera, Desplegable } from '@/componentes/Desplegable';
 import type { EstadoProyecto, FilaPanel } from '@/lib/tipos';
 import type { PuntoMapa } from './Mapa';
+import { AnaliticasProyectos } from './AnaliticasProyectos';
+import { eurDe } from '@/lib/panel';
 
 const Mapa = dynamic(() => import('./Mapa'), {
   ssr: false,
@@ -211,7 +213,10 @@ export function PanelProyectos({
                       <Estado estado={f.estado} />
                     </td>
                     <td style={{ whiteSpace: 'nowrap' }}>{f.inicio ? fechaLarga(f.inicio) : <span className="meta">—</span>}</td>
-                    <td className="der">{f.presupuesto ? dinero(f.presupuesto, f.moneda) : <span className="meta">—</span>}</td>
+                    <td className="der">
+                      {eurDe(f) ? dinero(eurDe(f)) : <span className="meta">—</span>}
+                      {f.presupuesto && f.moneda !== 'EUR' ? <span className="sub">{dinero(f.presupuesto, f.moneda)}</span> : null}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -236,6 +241,16 @@ export function PanelProyectos({
           </p>
         </aside>
       </div>
+
+      <AnaliticasProyectos
+        filas={visibles}
+        estados={mismos(estados, ACTIVOS) ? [] : estados}
+        paises={paises}
+        contrapartes={contrapartes}
+        onEstado={(e) => setEstados((x) => (x.length === 1 && x[0] === e ? [...ACTIVOS] : [e]))}
+        onPais={(p) => setPaises((x) => (x.includes(p) ? x.filter((y) => y !== p) : [...x, p]))}
+        onContraparte={(c) => setContrapartes((x) => (x.includes(c) ? x.filter((y) => y !== c) : [...x, c]))}
+      />
     </>
   );
 }

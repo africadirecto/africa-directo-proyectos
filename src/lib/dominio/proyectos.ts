@@ -96,6 +96,7 @@ export async function crearProyecto(o: {
     estado: 'solicitud',
     moneda: 'EUR',
     presupuesto: null,
+    presupuestoEur: null,
     comprometido: 0,
     recibido: 0,
     numDonantes: 0,
