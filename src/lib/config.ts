@@ -38,6 +38,8 @@ export const config = {
   drive: {
     unidadProyectos: texto('DRIVE_UNIDAD_PROYECTOS_ID'),
     unidadSistema: texto('DRIVE_UNIDAD_SISTEMA_ID'),
+    /** Opcional: unidad «Plantillas», con las plantillas de informe en Google Docs. */
+    unidadPlantillas: texto('DRIVE_UNIDAD_PLANTILLAS_ID'),
     // Opcional: usuario de Workspace al que suplanta la cuenta de servicio (delegación de dominio).
     usuario: texto('GOOGLE_DRIVE_USUARIO').toLowerCase(),
   },
@@ -47,9 +49,11 @@ export const config = {
     cron: texto('CRON_SECRET'),
   },
   ia: {
-    openaiClave: texto('OPENAI_API_KEY'),
-    modeloRapido: texto('OPENAI_MODELO_RAPIDO') || 'gpt-5-mini',
-    modeloRedaccion: texto('OPENAI_MODELO_REDACCION') || 'gpt-5',
+    /** Clave de OpenRouter (https://openrouter.ai/keys). */
+    clave: texto('OPENROUTER_API_KEY'),
+    // Modelos de OpenRouter (https://openrouter.ai/models): baratos, con salida JSON y sin retención de datos.
+    modeloRapido: texto('IA_MODELO_RAPIDO') || 'anthropic/claude-haiku-5.5',
+    modeloRedaccion: texto('IA_MODELO_REDACCION') || 'google/gemini-3.7-flash',
   },
   avisos: {
     chatWebhook: texto('GOOGLE_CHAT_WEBHOOK_URL'),
@@ -62,7 +66,7 @@ export function estadoIntegraciones() {
     firestore: modoDemo ? 'demo' : config.google.proyectoId && config.google.clavePrivada ? 'ok' : 'falta',
     drive: modoDemo ? 'demo' : config.drive.unidadProyectos ? 'ok' : 'falta',
     login: modoDemo ? 'demo' : process.env.NEXT_PUBLIC_FIREBASE_API_KEY && config.ong.dominio ? 'ok' : 'falta',
-    ia: config.ia.openaiClave ? 'ok' : modoDemo ? 'demo' : 'falta',
+    ia: config.ia.clave ? 'ok' : modoDemo ? 'demo' : 'falta',
     chat: config.avisos.chatWebhook ? 'ok' : 'falta',
     copia: modoDemo ? 'demo' : config.drive.unidadSistema && config.secretos.cron ? 'ok' : 'falta',
   } as const;

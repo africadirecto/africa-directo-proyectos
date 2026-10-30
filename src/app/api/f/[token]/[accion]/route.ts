@@ -64,7 +64,7 @@ async function manejar(req: Request, token: string, accion: string): Promise<Res
       return error('Trozo no válido');
     }
     const estado = await d.enviarTrozo(url, trozo, inicio, total);
-    return NextResponse.json({ recibido: estado.recibido, archivos: estado.archivo ? await registrar(acceso, estado.archivo) : undefined });
+    return NextResponse.json({ recibido: estado.recibido, resultado: estado.archivo ? { archivos: await registrar(acceso, estado.archivo) } : undefined });
   }
 
   if (req.method !== 'POST') return error('Método no permitido', 405);
@@ -99,13 +99,13 @@ async function manejar(req: Request, token: string, accion: string): Promise<Res
       const url = String(cuerpo.url ?? '');
       if (!comprobarFirmaSubida(acceso.enlaceId, url, String(cuerpo.firma ?? ''))) return error('Subida no válida', 403);
       const estado = await d.estadoSubida(url, Number(cuerpo.total));
-      return NextResponse.json({ recibido: estado.recibido, archivos: estado.archivo ? await registrar(acceso, estado.archivo) : undefined });
+      return NextResponse.json({ recibido: estado.recibido, resultado: estado.archivo ? { archivos: await registrar(acceso, estado.archivo) } : undefined });
     }
 
     case 'confirmar': {
       const a = await d.metadatos(String(cuerpo.id ?? '').slice(0, 100));
       if (!a) return error('Archivo no encontrado', 404);
-      return NextResponse.json({ archivos: await registrar(acceso, a) });
+      return NextResponse.json({ resultado: { archivos: await registrar(acceso, a) } });
     }
 
     case 'quitar': {

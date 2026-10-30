@@ -12,7 +12,7 @@ import { enEuros, FUENTE_CAMBIO } from '@/lib/cambio';
 import { Desplegable } from '@/componentes/Desplegable';
 import { opcionesMonedas, opcionesPaises } from '@/componentes/opciones';
 import type { ArchivoSubido, Idioma, RespuestasSolicitud } from '@/lib/tipos';
-import { prepararArchivo, subirArchivo } from './subir';
+import { prepararArchivo, subirArchivo } from '@/componentes/subida';
 
 type EstadoGuardado = '' | 'guardando' | 'guardado' | 'sinConexion';
 interface Subida {
@@ -145,8 +145,8 @@ export function FormularioSolicitud({
         actualizarSubida(s.clave, { estado: 'preparando' });
         const { blob, nombre, mime } = await prepararArchivo(s.archivo);
         actualizarSubida(s.clave, { estado: 'subiendo', tamano: blob.size, subido: 0 });
-        const lista = await subirArchivo(
-          token,
+        const { archivos: lista } = await subirArchivo<{ archivos: ArchivoSubido[] }>(
+          `/api/f/${token}`,
           blob,
           nombre,
           mime,

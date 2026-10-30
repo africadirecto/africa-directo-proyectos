@@ -1,0 +1,89 @@
+# Informes con IA
+
+La app prepara **borradores de informe para donantes en Google Docs**. La IA los redacta con los datos del proyecto; un voluntario los revisa, los corrige y los aprueba. **Ningún informe sale hacia un donante sin aprobación**, y la app no los envía: los descarga y envía una persona.
+
+## Generar un informe
+
+1. En la ficha del proyecto, pulsa **Generar informe** (hace falta permiso de edición y que el proyecto tenga carpeta en Drive).
+2. Elige:
+
+   | Opción | Para qué sirve |
+   | --- | --- |
+   | **Plantilla** | Las dos de la app (seguimiento y final) o cualquier Google Doc de la unidad `AD · Plantillas` |
+   | **Tipo** | De seguimiento o final: cambia los apartados de las plantillas de la app y lo que se pide a la IA |
+   | **Para el donante** | Uno de los donantes con aportación comprometida o recibida. Rellena `{{donante.*}}` y orienta el texto (por ejemplo, el agradecimiento) |
+   | **Desde / Hasta** | El periodo. Solo entra en el informe la cronología de esas fechas. Por defecto, desde el final del último informe |
+   | **Idioma** | Español, francés, inglés o portugués. Las notas para el voluntario van siempre en español |
+   | **Extensión** | Breve, normal o detallada: multiplica las palabras de cada apartado (×0,6, ×1, ×1,6) |
+   | **Fotos publicables** | Añade la lista de fotos marcadas como publicables, con su enlace |
+   | **Indicaciones para la IA** | Lo que quieras destacar u orientar, en tus palabras |
+
+3. **Generar borrador.** Tarda de unos segundos a un minuto. El documento queda en `05_Informes` y en la pestaña **Archivos › Informes**, como **Borrador**.
+4. Ábrelo en Google Docs y revísalo:
+   - Completa lo marcado como **`[PENDIENTE: …]`**: es lo que no consta en la app. La IA no inventa datos.
+   - Al final hay unas **notas para la revisión**: lo pendiente y de qué evento de la cronología sale cada apartado. **Bórralas antes de enviar.**
+5. Pulsa **Aprobar** en la lista de informes. Solo entonces aparecen los botones **PDF** y **Word** para descargarlo y enviarlo.
+
+## Qué datos usa la IA
+
+Solo los del proyecto, y sin datos de contacto:
+
+- **Ficha:** título, sector, país, lugar, contraparte, estado, descripción, resumen de la solicitud, beneficiarios, presupuesto y fechas.
+- **Financiación:** aportaciones comprometidas y recibidas, por donante.
+- **Cronología del periodo:** notas, cambios de estado, archivos, correos y aportaciones. Se quitan correos y teléfonos. No entran los eventos internos (revisiones, enlaces).
+- **Fotos publicables:** solo cuántas hay. Las fotos no se envían a la IA.
+- **Informe anterior:** su resumen, para dar continuidad.
+
+La IA va por OpenRouter, solo a proveedores que no guardan los datos ni los usan para entrenar (ver [DESPLIEGUE.md › Paso 8](DESPLIEGUE.md#paso-8-ia-con-openrouter)).
+
+## Plantillas propias (Google Docs)
+
+Cualquier **Google Doc** de la unidad `AD · Plantillas` (en cualquier subcarpeta) aparece en la lista de plantillas, agrupado por carpeta. Por ejemplo:
+
+```
+AD · Plantillas/
+├── ONG/Informe de seguimiento con logo
+└── Donantes/Fundación Horizonte/Informe intermedio
+```
+
+Para generar el informe, la app **copia la plantilla** en `05_Informes` y **sustituye los marcadores** sin tocar el formato: logos, tablas, estilos, encabezados y pies se mantienen.
+
+Hace falta:
+
+- La variable `DRIVE_UNIDAD_PLANTILLAS_ID` con el ID de la unidad.
+- La cuenta de servicio como **Lector** (o más) de esa unidad.
+- La **Google Docs API** activada en el proyecto de Google Cloud ([DESPLIEGUE.md › 3.6](DESPLIEGUE.md#36-activar-las-api-de-google)).
+
+### Marcadores de datos
+
+Se escriben tal cual en el documento, con llaves dobles:
+
+| Marcador | Qué pone |
+| --- | --- |
+| `{{proyecto.codigo}}`, `{{proyecto.titulo}}` | Código y título |
+| `{{proyecto.sector}}`, `{{proyecto.pais}}`, `{{proyecto.lugar}}` | Sector y país en el idioma del informe; lugar |
+| `{{proyecto.contraparte}}`, `{{proyecto.beneficiarios}}`, `{{proyecto.estado}}` | Contraparte, beneficiarios, estado |
+| `{{proyecto.presupuesto}}`, `{{proyecto.financiado}}`, `{{proyecto.recibido}}`, `{{proyecto.moneda}}` | Cifras con formato de moneda |
+| `{{proyecto.inicio}}`, `{{proyecto.fin_previsto}}` | Fechas de la obra |
+| `{{informe.fecha}}`, `{{informe.desde}}`, `{{informe.hasta}}`, `{{informe.periodo}}` | Fecha de hoy y periodo del informe |
+| `{{donante.nombre}}`, `{{donante.importe}}` | El donante elegido y su aportación |
+
+### Marcadores de IA
+
+Cada uno es un apartado que redacta la IA:
+
+| Forma | Ejemplo |
+| --- | --- |
+| `{{ia:clave}}` | `{{ia:avance}}` (unas 120 palabras) |
+| `{{ia:clave\|N palabras}}` | `{{ia:avance\|200 palabras}}` |
+| `{{ia:clave\|N palabras\|instrucción}}` | `{{ia:avance\|150 palabras\|Describe el avance de las obras en el periodo}}` |
+
+La clave es un nombre corto sin espacios (`avance`, `incidencias`, `beneficiarios`…). Si la misma clave aparece varias veces, se usa el mismo texto. Los marcadores que la app no conoce se dejan tal cual y se avisa en las notas finales.
+
+> Escribe cada marcador de una vez, sin cambiar el formato a mitad (por ejemplo, sin poner en negrita solo una parte), para que Google Docs lo guarde como un solo texto.
+
+## Todavía no está hecho
+
+- **Plantillas de donante en Word o Excel:** de momento hay que convertirlas a Google Docs a mano (abrir en Drive › Abrir con Google Docs) y escribir los marcadores. El mapeo asistido por IA está diseñado en [ARQUITECTURA.md](ARQUITECTURA.md#plantillas-e-informes-con-ia).
+- **Fotos dentro del documento:** se añade la lista con enlaces; insertar las imágenes exige que Google pueda descargarlas, y las fotos no deben hacerse públicas.
+- **Presentaciones** en Google Slides.

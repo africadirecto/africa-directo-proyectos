@@ -12,7 +12,7 @@ flowchart LR
   C["Contrapartes<br/>(enlace sin cuenta)"] -->|formulario y subidas| APP
   APP["App Next.js<br/>en Vercel"] --> FS[("Firestore<br/>datos")]
   APP --> DR["Google Drive<br/>archivos"]
-  APP --> AI["OpenAI<br/>traducir y resumir"]
+  APP --> AI["OpenRouter (IA)<br/>traducir, resumir, redactar"]
   APP --> CH["Google Chat<br/>avisos"]
   C -. "navegador → Drive<br/>(subida directa)" .-> DR
   CRON["Cron de Vercel<br/>cada noche"] --> APP
@@ -26,7 +26,7 @@ flowchart LR
 | **Firebase Auth** | Entrar con Google; solo cuentas `@africadirecto.org` | Gratis | — |
 | **Google Drive** (unidades compartidas) | Archivos de cada proyecto, plantillas y copias | Gratis (100 TB) | — |
 | **Google Chat** (webhook) | Avisos a los voluntarios | Gratis | — |
-| **OpenAI** (API de Responses) | Traducir, resumir, señalar lo que falta; en la fase 3, redactar | ~1 $/mes | El límite de gasto que se ponga |
+| **OpenRouter** (IA) | Traducir, resumir, señalar lo que falta y redactar borradores de informe. Da acceso a modelos de varios proveedores con una sola clave | ~1 $/mes | El saldo cargado y el límite de la clave |
 
 El servidor casero de la ONG **no forma parte del sistema**; como mucho, puede descargar una segunda copia de las copias nocturnas.
 
@@ -69,7 +69,7 @@ Qué ocurre por dentro en cada paso:
    - Al cambiar una, se recalcula lo comprometido. La primera pasa el proyecto a «Financiación», y cuando lo comprometido cubre el presupuesto pasa solo a «Aprobado».
 6. **Ejecución y seguimiento:** notas, cambios de estado y, en la fase 2, correos y fotos que llegan.
    - La app avisa de los proyectos sin noticias en más de 30 días.
-7. **Informes** (fase 3): borradores de IA en Google Docs que un voluntario revisa y aprueba. Ver [Plantillas e informes con IA](#plantillas-e-informes-con-ia).
+7. **Informes:** borradores de IA en Google Docs que un voluntario revisa y aprueba. Ver [INFORMES.md](INFORMES.md).
 
 ## Datos
 
@@ -111,9 +111,9 @@ Firestore guarda documentos JSON en colecciones. Las fechas se guardan como text
 - **Secretos:** solo en variables de entorno (Vercel y `.env.local`), nunca en el repositorio.
 - **IA:**
   - Se envían solo datos del proyecto, sin nombres ni datos de contacto.
-  - Se usa `store: false` para que OpenAI no conserve las respuestas en su plataforma.
+  - Cada petición exige proveedores sin retención de datos y que no entrenen con ellos (`zdr`, `data_collection: deny`).
 - **RGPD:**
-  - La ONG es la responsable del tratamiento. Google, Vercel y OpenAI son encargados.
+  - La ONG es la responsable del tratamiento. Google, Vercel, OpenRouter y el proveedor del modelo son encargados.
   - Firestore está en Europa y las funciones de Vercel también (Fráncfort).
   - Solo las fotos marcadas como publicables pueden salir en informes.
 
@@ -147,7 +147,7 @@ Si se corta la conexión, el navegador espera a que vuelva, pregunta a Drive cu�
 Pantallas (src/app)          → lo que ve el usuario; sin reglas de negocio
 Acciones (src/lib/acciones)  → comprueban permisos y validan lo que llega
 Dominio (src/lib/dominio)    → las reglas: estados, financiación, solicitudes…
-Capas propias                → almacén (Firestore o fichero), Drive (API o disco), IA (OpenAI o sin IA)
+Capas propias                → almacén (Firestore o fichero), Drive (API o disco), IA (OpenRouter o sin IA)
 ```
 
 - **Modo demo** (`MODO_DEMO=1`): las capas propias usan un fichero JSON y carpetas en disco, y se entra eligiendo un usuario. Sirve para probar y enseñar la app sin ninguna cuenta.
@@ -156,39 +156,17 @@ Capas propias                → almacén (Firestore o fichero), Drive (API o di
 
 ## Plantillas e informes con IA
 
-> **Fase 3: todavía no está programado.** Este es el diseño previsto, para validarlo con el equipo antes de construirlo.
+**Hecho:** generar un borrador desde la ficha, con las plantillas de la app o con cualquier Google Doc de `AD · Plantillas` con marcadores (`{{proyecto.titulo}}`, `{{ia:avance|150 palabras|instrucción}}`), aprobarlo y descargarlo en PDF o Word. Cómo se usa y lista de marcadores: [INFORMES.md](INFORMES.md).
 
-### Idea
+Cómo funciona por dentro (`lib/dominio/informes.ts`):
 
-Una plantilla es un **Google Doc (o Slides) normal** con **marcadores** entre llaves dobles. Para generar un informe, la app **copia la plantilla** en la carpeta `05_Informes` del proyecto y **sustituye los marcadores**: unos con datos de la app, otros con texto que redacta la IA. El resultado es un Google Doc corriente que un voluntario corrige a mano antes de aprobarlo.
+1. Reúne el contexto: ficha, aportaciones, eventos del periodo (sin correos ni teléfonos), número de fotos publicables y el resumen del informe anterior.
+2. Con una plantilla de la app, pide a la IA sus apartados y crea el Google Doc a partir de HTML. Con una plantilla de Google Docs, la copia en `05_Informes`, lee sus marcadores con la API de Docs y los sustituye (`replaceAllText`), así que el formato se mantiene.
+3. La IA redacta **todos los apartados en una sola llamada** con salida JSON: texto, de qué eventos sale cada uno y lo que falta. Lo que no consta queda como `[PENDIENTE: …]`.
+4. Al final del documento se añaden notas para la revisión (pendientes y fuentes), que el voluntario borra antes de enviar.
+5. Se guarda en `proyectos/{código}/informes` con estado **Borrador → Aprobado** y queda en la cronología. Solo los aprobados muestran la descarga en PDF y Word.
 
-### Marcadores
-
-| Marcador | Qué pone | Ejemplo de resultado |
-| --- | --- | --- |
-| `{{proyecto.titulo}}`, `{{proyecto.codigo}}`, `{{proyecto.lugar}}`, `{{proyecto.pais}}` | Datos de la ficha | Aula escuela primaria · P-2026-014 · Kinshasa · RD Congo |
-| `{{proyecto.presupuesto}}`, `{{proyecto.comprometido}}`, `{{proyecto.inicio}}` | Cifras y fechas con formato | 18.000 € · 3 ago 2026 |
-| `{{contraparte.nombre}}` | Nombre de la contraparte | Sœurs de la Charité de Kinshasa |
-| `{{donante.nombre}}`, `{{aportacion.importe}}` | El donante para el que es el informe | Fundación Horizonte · 12.000 € |
-| `{{periodo.desde}}`, `{{periodo.hasta}}`, `{{hoy}}` | El periodo que cubre | 1 ago 2026 – 31 oct 2026 |
-| `{{tabla:presupuesto}}`, `{{tabla:aportaciones}}` | Una tabla con los datos | Concepto / Importe… |
-| `{{fotos:4}}` | Hasta 4 fotos **publicables** del periodo | (fotos) |
-| `{{ia:avance\|150 palabras\|Describe el avance de las obras en el periodo}}` | Texto redactado por la IA: nombre, extensión e instrucción | "Durante agosto se terminaron los cimientos…" |
-
-### Cómo se genera un informe
-
-1. En la pestaña **Informes** de la ficha, el voluntario elige tipo (seguimiento, final, presentación, ficha), donante y periodo, y pulsa **Generar borrador**.
-2. La app elige la plantilla: la **del donante**, si tiene una preparada, o la **de la ONG**.
-3. **Copia** la plantilla en `05_Informes` con un nombre como `2026-11-10 Informe intermedio – Fundación Horizonte`.
-4. Sustituye directamente los **marcadores de datos**.
-5. Para cada **marcador de IA** hace una llamada al modelo de redacción. Va una por marcador para no pasar de los 300 s por función de Vercel.
-   - **Contexto:** la ficha, los eventos del periodo con sus resúmenes, las aportaciones, la lista de fotos publicables y el informe anterior. Nada de datos de contacto.
-   - **La IA devuelve** el texto, de qué eventos sale cada párrafo y lo que no ha encontrado.
-   - **Lo que no consta se escribe `[PENDIENTE: …]`** en vez de inventarlo.
-6. Las **fotos** se insertan desde Drive con un enlace temporal y firmado de la app. Google Docs necesita poder descargar la imagen, y así nunca se hacen públicas.
-7. Al final del documento se añade un **anexo "Fuentes"** que dice de qué evento sale cada párrafo. El voluntario lo usa para comprobar y lo borra antes de enviar.
-8. El informe pasa por estos estados en la app: **Borrador de IA → Revisado → Aprobado → Enviado**. El voluntario lo corrige en Google Docs, lo aprueba en la app y lo **exporta a PDF o Word**. La exportación se guarda en `05_Informes`.
-9. **Nada sale hacia un donante sin aprobación humana.** La app ni siquiera lo envía: lo envía el voluntario.
+**Pendiente:** mapeo asistido de plantillas de donante en Word o Excel, fotos dentro del documento y presentaciones en Slides. El diseño previsto:
 
 ### Plantillas propias de un donante (Word o Excel)
 
@@ -214,7 +192,7 @@ Un informe de unas 8 secciones redactadas cuesta del orden de céntimos con un m
 | Fase | Qué incluye |
 | --- | --- |
 | **2. Seguimiento** | "Añadir correo" en la ficha (`.eml`, `.msg` o texto con adjuntos), lectura automática del buzón de la app según [CORREO.md](CORREO.md), bandeja de correos sin asignar, carpetas por mes en `04_Seguimiento` y página de subida de fotos para la contraparte |
-| **3. Documentos con IA** | Plantillas, informes, presentación de captación y mapeo de plantillas de donante (diseño de arriba) |
+| **3. Documentos con IA** | Hecho: informes con plantillas de la app o de Google Docs. Falta: presentación de captación y mapeo de plantillas de donante en Word o Excel |
 | **4. Mejoras** | Ficha de solo lectura para donantes, estadísticas, formulario instalable sin conexión y WhatsApp si compensa |
 
 ## Fuentes

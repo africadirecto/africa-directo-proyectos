@@ -30,9 +30,20 @@ export interface Drive {
   aPapelera(id: string): Promise<void>;
   /** Convierte HTML en PDF (pasando por Google Docs) y lo guarda en la carpeta. */
   htmlAPdf(html: string, carpetaId: string, nombre: string): Promise<ArchivoDrive>;
+  /** Crea un Google Doc editable a partir de HTML. */
+  htmlADoc(html: string, carpetaId: string, nombre: string): Promise<ArchivoDrive>;
+  /** Copia un archivo (por ejemplo, una plantilla) en otra carpeta. */
+  copiar(id: string, carpetaId: string, nombre: string): Promise<ArchivoDrive>;
+  /** Busca una subcarpeta por nombre y, si no existe, la crea. */
+  carpetaHija(nombre: string, padreId: string): Promise<string>;
+  /** Todos los Google Docs de una unidad compartida, con la ruta de carpetas de cada uno. */
+  documentosDeUnidad(unidadId: string): Promise<(ArchivoDrive & { ruta: string })[]>;
   urlCarpeta(id: string): string;
   urlArchivo(id: string): string;
   urlMiniatura(id: string): string;
+  /** Dirección para abrir un documento (en Google, el editor de Docs). */
+  urlDocumento(id: string): string;
 }
 
 export const ES_CARPETA = 'application/vnd.google-apps.folder';
+export const ES_DOC = 'application/vnd.google-apps.document';

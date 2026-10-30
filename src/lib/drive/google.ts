@@ -4,7 +4,7 @@
 
 import { JWT } from 'google-auth-library';
 import { config } from '../config';
-import { ES_CARPETA, type ArchivoDrive, type Drive, type EstadoSubida } from './tipos';
+import { ES_CARPETA, ES_DOC, type ArchivoDrive, type Drive, type EstadoSubida } from './tipos';
 
 const API = 'https://www.googleapis.com/drive/v3';
 const SUBIDA = 'https://www.googleapis.com/upload/drive/v3';
@@ -180,19 +180,69 @@ export const driveGoogle: Drive = {
     });
   },
 
-  async htmlAPdf(html, carpetaId, nombre) {
-    // 1) Sube el HTML convirtiéndolo en Google Doc, 2) lo exporta a PDF, 3) borra el Doc temporal.
+  async htmlADoc(html, carpetaId, nombre) {
+    // Drive convierte el HTML en un Google Doc al subirlo con ese tipo.
     const limite = `limite${Date.now()}`;
     const cuerpo =
       `--${limite}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n` +
-      JSON.stringify({ name: `${nombre} (temporal)`, mimeType: 'application/vnd.google-apps.document', parents: [carpetaId] }) +
+      JSON.stringify({ name: nombre, mimeType: ES_DOC, parents: [carpetaId] }) +
       `\r\n--${limite}\r\nContent-Type: text/html; charset=UTF-8\r\n\r\n${html}\r\n--${limite}--`;
-    const res = await api(`${SUBIDA}/files?uploadType=multipart&${TODAS}&fields=id`, {
+    const res = await api(`${SUBIDA}/files?uploadType=multipart&${TODAS}&fields=${CAMPOS}`, {
       method: 'POST',
       headers: { 'Content-Type': `multipart/related; boundary=${limite}` },
       body: cuerpo,
     });
-    const { id } = (await res.json()) as { id: string };
+    return aArchivo((await res.json()) as Crudo);
+  },
+
+  async copiar(id, carpetaId, nombre) {
+    const res = await api(`${API}/files/${id}/copy?${TODAS}&fields=${CAMPOS}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: nombre, parents: [carpetaId] }),
+    });
+    return aArchivo((await res.json()) as Crudo);
+  },
+
+  async carpetaHija(nombre, padreId) {
+    const existente = (await this.listar([padreId])).find((a) => a.mime === ES_CARPETA && a.nombre === nombre);
+    return existente?.id ?? this.crearCarpeta(nombre, padreId);
+  },
+
+  async documentosDeUnidad(unidadId) {
+    // Una sola consulta por tipo a toda la unidad; la ruta se reconstruye con las carpetas.
+    const buscar = async (q: string) => {
+      const lista: Crudo[] = [];
+      let pagina = '';
+      do {
+        const params = new URLSearchParams({
+          q: `${q} and trashed = false`,
+          fields: `nextPageToken,files(${CAMPOS})`,
+          pageSize: '1000',
+          corpora: 'drive',
+          driveId: unidadId,
+          supportsAllDrives: 'true',
+          includeItemsFromAllDrives: 'true',
+        });
+        if (pagina) params.set('pageToken', pagina);
+        const datos = (await (await api(`${API}/files?${params}`)).json()) as { files: Crudo[]; nextPageToken?: string };
+        lista.push(...datos.files);
+        pagina = datos.nextPageToken ?? '';
+      } while (pagina);
+      return lista;
+    };
+    const [docs, carpetas] = await Promise.all([buscar(`mimeType = '${ES_DOC}'`), buscar(`mimeType = '${ES_CARPETA}'`)]);
+    const porId = new Map(carpetas.map((c) => [c.id, c]));
+    const ruta = (id?: string): string[] => {
+      const c = id ? porId.get(id) : undefined;
+      return c ? [...ruta(c.parents?.[0]), c.name] : [];
+    };
+    return docs.map((d) => ({ ...aArchivo(d), ruta: ruta(d.parents?.[0]).join(' / ') }));
+  },
+
+  async htmlAPdf(html, carpetaId, nombre) {
+    // 1) Sube el HTML convirtiéndolo en Google Doc, 2) lo exporta a PDF, 3) borra el Doc temporal.
+    const { id } = await this.htmlADoc(html, carpetaId, `${nombre} (temporal)`);
     try {
       const pdf = await api(`${API}/files/${id}/export?mimeType=application/pdf`);
       return await this.subir(carpetaId, `${nombre}.pdf`, 'application/pdf', Buffer.from(await pdf.arrayBuffer()));
@@ -207,4 +257,13 @@ export const driveGoogle: Drive = {
   urlArchivo: (id) => `https://drive.google.com/file/d/${id}/view`,
   // Funciona en el navegador de quien tenga sesión de Google con acceso a la unidad compartida.
   urlMiniatura: (id) => `https://drive.google.com/thumbnail?id=${id}&sz=w480`,
+  urlDocumento: (id) => `https://docs.google.com/document/d/${id}/edit`,
 };
+
+/**
+ * Llamada a otra API de Google (Docs) con la misma cuenta de servicio. El permiso de Drive
+ * basta para leer y editar los documentos de las unidades compartidas.
+ */
+export async function apiGoogle<T>(url: string, init: RequestInit = {}): Promise<T> {
+  return (await (await api(url, init)).json()) as T;
+}

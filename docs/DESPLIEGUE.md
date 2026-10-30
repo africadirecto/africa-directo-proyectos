@@ -2,7 +2,7 @@
 
 Guía para dejar la app funcionando con los servicios reales de la ONG. Está pensada para alguien con permisos de administración de Google Workspace, pero sin experiencia técnica especial: cada paso dice dónde pulsar y qué copiar.
 
-- **Coste:** todo es gratuito salvo la API de OpenAI (del orden de 1 $ al mes, con límite).
+- **Coste:** todo es gratuito salvo la IA en OpenRouter (del orden de 1 $ al mes, con límite).
 - **Tiempo:** dos o tres tardes la primera vez, sobre todo por las esperas del DNS.
 - **Documentos relacionados:**
   - [ARQUITECTURA.md](ARQUITECTURA.md): cómo funciona el sistema.
@@ -19,7 +19,7 @@ Guía para dejar la app funcionando con los servicios reales de la ONG. Está pe
 5. [Google Drive: unidades compartidas](#paso-5-google-drive-unidades-compartidas)
 6. [Correos a las contrapartes: no hay nada que configurar](#paso-6-correos-a-las-contrapartes-no-hay-nada-que-configurar)
 7. [Google Chat: avisos](#paso-7-google-chat-avisos)
-8. [OpenAI](#paso-8-openai)
+8. [IA con OpenRouter](#paso-8-ia-con-openrouter)
 9. [Vercel: publicar la app](#paso-9-vercel-publicar-la-app)
 10. [Primer arranque y comprobaciones](#paso-10-primer-arranque-y-comprobaciones)
 11. [Mantenimiento](#paso-11-mantenimiento)
@@ -35,7 +35,7 @@ Necesitas:
 - Una persona con rol de **superadministrador** en la consola de Google Workspace (<https://admin.google.com>).
 - Acceso al panel del **DNS** de `africadirecto.org` (normalmente en el hosting o en el registrador del dominio). Solo hace falta para el subdominio de la app y, si se elige, el de correo.
 - Un **gestor de contraseñas** compartido por al menos dos administradores, por ejemplo Bitwarden, gratuito para organizaciones sin ánimo de lucro. Ahí se guardan la contraseña de la cuenta técnica y los secretos.
-- Una tarjeta para cargar saldo en OpenAI (unos 10 $ duran meses).
+- Una tarjeta para cargar saldo en OpenRouter (unos 10 $ duran meses).
 
 Decisiones previas (pregúntalas al equipo):
 
@@ -53,7 +53,7 @@ Todo en <https://admin.google.com>, con una cuenta de superadministrador.
 
 ### 1.1. Cuenta técnica
 
-Es la dueña de todos los servicios (Firebase, Vercel, OpenAI, GitHub y las unidades compartidas). Así nada depende del correo personal de un voluntario que se va.
+Es la dueña de todos los servicios (Firebase, Vercel, OpenRouter, GitHub y las unidades compartidas). Así nada depende del correo personal de un voluntario que se va.
 
 La cuenta técnica es **`gestion@africadirecto.org`**, que ya existe y es superadministradora de Workspace. Asegúrate de que:
 
@@ -200,7 +200,8 @@ La app usa la cuenta de servicio de Firebase (`firebase-adminsdk-xxxxx@…iam.gs
 En <https://console.cloud.google.com>, con el proyecto elegido arriba, entra en **APIs y servicios › Biblioteca** y activa:
 
 - **Google Drive API**: necesaria desde ya.
-- **Google Docs API** y **Google Slides API**: para los informes de la fase 3. Puedes activarlas ya.
+- **Google Docs API**: para rellenar las plantillas de informe hechas en Google Docs (ver [INFORMES.md](INFORMES.md)).
+- **Google Slides API**: para las presentaciones, más adelante. Puedes activarla ya.
 
 ---
 
@@ -273,7 +274,7 @@ La estructura completa, los permisos y su porqué están en [DRIVE.md](DRIVE.md)
 5. Copia los identificadores. Abre cada unidad: la dirección es `https://drive.google.com/drive/folders/0AbCdEf…`, y lo que va tras `folders/` es el ID.
    - `AD · Proyectos` → `DRIVE_UNIDAD_PROYECTOS_ID`
    - `AD · Sistema` → `DRIVE_UNIDAD_SISTEMA_ID`
-   - `AD · Plantillas` se usará en la fase 3.
+   - `AD · Plantillas` → `DRIVE_UNIDAD_PLANTILLAS_ID` (plantillas de informe, ver [INFORMES.md](INFORMES.md)). La cuenta de servicio necesita ahí al menos el rol de **Lector**.
 
 ---
 
@@ -296,26 +297,23 @@ La app avisa en un espacio de Chat de los accesos pendientes, las solicitudes re
 
 ---
 
-## Paso 8. OpenAI
+## Paso 8. IA con OpenRouter
 
-La IA traduce y resume las solicitudes y traduce los comentarios del revisor. En la fase 3 redactará borradores de informes.
+La IA traduce y resume las solicitudes, traduce los comentarios del revisor y redacta los borradores de informe. Se usa [OpenRouter](https://openrouter.ai): una sola cuenta y un solo saldo para modelos de varios proveedores, así que cambiar de modelo es cambiar una variable.
 
-1. Crea una cuenta en <https://platform.openai.com> con `gestion@africadirecto.org`. Organización: "Africa Directo".
-2. **Settings › Organization › Members**: invita a un segundo administrador.
-3. **Settings › Billing**: añade una tarjeta y compra **10 $ de crédito prepago**. Desactiva la **recarga automática**: así nunca se gasta más de lo cargado. El crédito caduca al año.
-4. **Projects › Create project** → "Gestión de proyectos".
-5. En el proyecto, **Limits**: pon un presupuesto mensual (por ejemplo 3 $) y un aviso por correo al 50 %.
-6. En el proyecto, **API keys › Create new secret key**:
+1. Crea una cuenta en <https://openrouter.ai> con `gestion@africadirecto.org`.
+2. **Credits**: compra **10 $ de crédito**, sin recarga automática. Así nunca se gasta más de lo cargado. OpenRouter cobra una pequeña comisión al comprar crédito.
+3. **Keys › Create key**:
    - Nombre: "vercel-produccion".
-   - Permisos: *Restricted*, con permiso de escritura solo en **Responses** (o *All* si no aparece).
-   - Copia la clave (`sk-proj-…`) → `OPENAI_API_KEY`. Solo se muestra una vez.
-7. Revisa en <https://platform.openai.com/docs/models> que los modelos de `OPENAI_MODELO_RAPIDO` (por defecto `gpt-5-mini`) y `OPENAI_MODELO_REDACCION` (`gpt-5`) existen. Si no, pon el modelo pequeño y el intermedio actuales.
-8. **Privacidad:**
-   - La API no entrena con los datos por defecto.
-   - La app usa `store: false` y no envía nombres ni datos de contacto.
-   - Para que los datos se procesen en Europa hay que pedir la **residencia de datos europea** a OpenAI (opcional; depende de su disponibilidad para cuentas pequeñas).
+   - **Credit limit**: un tope para esa clave, por ejemplo 5 $.
+   - Copia la clave (`sk-or-v1-…`) → `OPENROUTER_API_KEY`. Solo se muestra una vez.
+4. Modelos (opcional): por defecto, `anthropic/claude-haiku-5.5` para lo rápido (traducir, resumir) y `google/gemini-3.7-flash` para redactar informes. Se cambian con `IA_MODELO_RAPIDO` e `IA_MODELO_REDACCION`. Tienen que admitir salida JSON (*structured outputs*) y tener proveedores sin retención de datos: búscalos en <https://openrouter.ai/models>.
+5. **Privacidad:**
+   - Cada petición exige proveedores **sin retención de datos** (`zdr`) y que **no los usen para entrenar** (`data_collection: deny`). Si un modelo no tiene proveedores así, la petición falla en vez de enviarse a otro sitio.
+   - La app no envía datos de contacto: quita correos y teléfonos de los textos, y no manda nombres de personas de contacto.
+   - OpenRouter y el proveedor del modelo son **encargados del tratamiento**. El procesamiento solo en Europa existe en los planes de empresa de OpenRouter.
 
-Sin `OPENAI_API_KEY`, la app funciona igual: no traduce, y el resumen es el principio del texto de la contraparte.
+Sin `OPENROUTER_API_KEY`, la app funciona igual: no traduce, el resumen es el principio del texto de la contraparte y los informes se crean con los apartados sin redactar.
 
 ---
 
@@ -390,7 +388,7 @@ Cada cambio en `main` se publica solo. Las ramas y *pull requests* generan una v
 | Secreto | Cómo rotarlo | Efecto |
 | --- | --- | --- |
 | `GOOGLE_SERVICE_ACCOUNT_KEY` | Firebase › Cuentas de servicio › generar clave nueva, ponerla en Vercel, redesplegar y borrar la antigua en Google Cloud › IAM › Cuentas de servicio › Claves | Ninguno visible |
-| `OPENAI_API_KEY` | Crear otra en OpenAI, cambiarla en Vercel y revocar la antigua | Ninguno visible |
+| `OPENROUTER_API_KEY` | Crear otra en OpenRouter, cambiarla en Vercel y borrar la antigua | Ninguno visible |
 | `ENLACES_SECRETO` | Cambiarlo en Vercel | **Invalida todos los enlaces de las contrapartes**: hay que reenviarlos. Solo si se ha filtrado |
 | `CRON_SECRET` | Cambiarlo en Vercel | Ninguno visible |
 
@@ -416,7 +414,7 @@ Cada cambio en `main` se publica solo. Las ramas y *pull requests* generan una v
 
 ### Vigilar el gasto y las cuotas
 
-- **OpenAI:** **Administración › Ajustes** muestra llamadas y tokens por mes; el gasto real se ve en platform.openai.com › Usage.
+- **IA:** **Administración › Ajustes** muestra llamadas, tokens y coste por mes; el saldo se ve en openrouter.ai › Credits.
 - **Firestore:** Firebase › Firestore › Uso. El límite es de 50.000 lecturas al día; la app gasta muy poco gracias al índice del panel.
 - **Vercel:** Settings › Usage.
 
@@ -441,11 +439,12 @@ Se ponen en Vercel (**Settings › Environment Variables**) y, para probar en lo
 | `NEXT_PUBLIC_FIREBASE_PROJECT_ID` | Paso 3.4 | No | igual que `FIREBASE_PROJECT_ID` |
 | `DRIVE_UNIDAD_PROYECTOS_ID` | Paso 5 | No | `0AbCdEf…` |
 | `DRIVE_UNIDAD_SISTEMA_ID` | Paso 5 | No | `0AxYz…` |
+| `DRIVE_UNIDAD_PLANTILLAS_ID` | Paso 5 (opcional) | No | `0AnMa…` |
 | `ENLACES_SECRETO` | `openssl rand -base64 32` | **Sí** | — |
 | `CRON_SECRET` | `openssl rand -base64 32` | **Sí** | — |
-| `OPENAI_API_KEY` | Paso 8 | **Sí** | `sk-proj-…` |
-| `OPENAI_MODELO_RAPIDO` | Paso 8.7 | No | `gpt-5-mini` |
-| `OPENAI_MODELO_REDACCION` | Paso 8.7 | No | `gpt-5` |
+| `OPENROUTER_API_KEY` | Paso 8 | **Sí** | `sk-or-v1-…` |
+| `IA_MODELO_RAPIDO` | Paso 8.4 (opcional) | No | `anthropic/claude-haiku-5.5` |
+| `IA_MODELO_REDACCION` | Paso 8.4 (opcional) | No | `google/gemini-3.7-flash` |
 | `GOOGLE_CHAT_WEBHOOK_URL` | Paso 7 | **Sí** | `https://chat.googleapis.com/v1/spaces/…` |
 | `MODO_DEMO` | Solo en local | — | `1` (nunca en Vercel) |
 
@@ -461,7 +460,8 @@ Se ponen en Vercel (**Settings › Environment Variables**) y, para probar en lo
 | "No se pudo iniciar sesión" | Clave de la cuenta de servicio mal copiada (los `\n`) | Vuelve a pegarla entera |
 | Nueva solicitud: "No se pudo crear la carpeta en Drive" | La cuenta de servicio no tiene acceso a `AD · Proyectos` o el ID está mal | [DRIVE.md](DRIVE.md#acceso-de-la-app-a-drive). Después, "Crear carpeta en Drive" en la ficha |
 | Los correos de la app llegan como spam | SPF/DKIM del remitente | Paso 4 o [CORREO.md](CORREO.md#correos-que-envía-la-app) |
-| La IA no resume | Clave o modelo incorrectos, o crédito agotado | Mira los registros de Vercel (Deployments › Logs) y el saldo en OpenAI |
+| La IA no resume o el informe sale sin redactar | Clave o modelo incorrectos, crédito agotado o modelo sin proveedores sin retención de datos | Mira los registros de Vercel (Logs) y el saldo en OpenRouter |
+| «Google Docs API has not been used…» al generar con una plantilla propia | La API de Docs no está activada | Paso 3.6 |
 | Todo va lento o da error a partir de cierta hora | Cuota diaria de Firestore agotada | Esperar al reinicio (medianoche del Pacífico) y revisar qué consume |
 | No llega la copia nocturna | `CRON_SECRET` o `DRIVE_UNIDAD_SISTEMA_ID` | Vercel › Settings › Cron Jobs › ver ejecuciones |
 
@@ -471,4 +471,5 @@ Se ponen en Vercel (**Settings › Environment Variables**) y, para probar en lo
 - [Comunidad de Vercel: repositorios privados de organizaciones en Hobby](https://community.vercel.com/t/unable-to-deploy-from-organizational-private-repository/16334)
 - [Google Workspace – registros MX (también para subdominios)](https://support.google.com/a/answer/61158?hl=es)
 - [Cuotas de Apps Script](https://developers.google.com/apps-script/guides/services/quotas)
-- [OpenAI – facturación prepago](https://help.openai.com/articles/8264644)
+- [OpenRouter: enrutado y privacidad de proveedores](https://openrouter.ai/docs/features/provider-routing)
+- [OpenRouter: salida estructurada](https://openrouter.ai/docs/features/structured-outputs)

@@ -9,7 +9,7 @@ const NOMBRES: Record<keyof ReturnType<typeof estadoIntegraciones>, [string, str
   firestore: ['Base de datos (Firestore)', 'FIREBASE_PROJECT_ID y la cuenta de servicio'],
   drive: ['Carpetas en Drive', 'DRIVE_UNIDAD_PROYECTOS_ID'],
   login: ['Entrar con Google', 'NEXT_PUBLIC_FIREBASE_* y ONG_DOMINIO'],
-  ia: ['IA: traducir y resumir', 'OPENAI_API_KEY'],
+  ia: ['IA: traducir, resumir y redactar informes (OpenRouter)', 'OPENROUTER_API_KEY'],
   chat: ['Avisos en Google Chat', 'GOOGLE_CHAT_WEBHOOK_URL'],
   copia: ['Copia nocturna', 'DRIVE_UNIDAD_SISTEMA_ID y CRON_SECRET'],
 };
@@ -23,7 +23,7 @@ const ESTADO = {
 export default async function Ajustes() {
   await requiere('admin');
   const integraciones = estadoIntegraciones();
-  const uso = (await (await almacen()).leer<{ meses?: Record<string, { llamadas: number; entrada: number; salida: number }> }>('ajustes/ia'))?.meses ?? {};
+  const uso = (await (await almacen()).leer<{ meses?: Record<string, { llamadas: number; entrada: number; salida: number; coste?: number }> }>('ajustes/ia'))?.meses ?? {};
   const meses = Object.entries(uso).sort(([a], [b]) => b.localeCompare(a)).slice(0, 6);
 
   return (
@@ -60,7 +60,7 @@ export default async function Ajustes() {
           Uso de la IA
         </h2>
         <p className="meta" style={{ margin: '0 0 12px' }}>
-          Modelo rápido: {config.ia.modeloRapido} · modelo de redacción: {config.ia.modeloRedaccion}. El gasto real y el límite mensual se ven en platform.openai.com.
+          Modelo rápido: {config.ia.modeloRapido} · modelo de redacción: {config.ia.modeloRedaccion}. El saldo y el límite de gasto se ven en openrouter.ai.
         </p>
         {meses.length ? (
           <table className="tbl">
@@ -76,6 +76,9 @@ export default async function Ajustes() {
                 <th scope="col" className="der">
                   Tokens de salida
                 </th>
+                <th scope="col" className="der">
+                  Coste
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -85,6 +88,7 @@ export default async function Ajustes() {
                   <td className="der">{m.llamadas.toLocaleString('es-ES')}</td>
                   <td className="der">{m.entrada.toLocaleString('es-ES')}</td>
                   <td className="der">{m.salida.toLocaleString('es-ES')}</td>
+                  <td className="der">{m.coste != null ? `${m.coste.toLocaleString('es-ES', { maximumFractionDigits: 3 })} $` : '—'}</td>
                 </tr>
               ))}
             </tbody>

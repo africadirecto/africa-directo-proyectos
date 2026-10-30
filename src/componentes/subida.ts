@@ -1,11 +1,16 @@
-// Subida de archivos desde el navegador de la contraparte, pensada para conexiones
-// lentas o que se cortan: las fotos se reducen antes de subir, los archivos van a
-// trozos de 1 MiB y, si se corta la conexión, se reanuda donde se quedó.
+// Subida de archivos desde el navegador a Drive, pensada para conexiones lentas o que
+// se cortan: los archivos van a trozos de 1 MiB y, si se corta la conexión, se reanuda
+// donde se quedó. La usan el formulario de la contraparte (/api/f/<token>) y la ficha
+// del proyecto (/api/proyectos/<código>/subida).
 //
 // Primero se intenta subir directo a Drive (la app solo abre la sesión). Si el
 // navegador no puede (CORS), los trozos pasan por la app, que los reenvía.
-
-import type { ArchivoSubido } from '@/lib/tipos';
+//
+// La API de cada lado responde igual:
+//   POST subida          { url, firma }
+//   PUT  trozo           { recibido, resultado? }   (resultado al terminar)
+//   POST estado-subida   { recibido, resultado? }
+//   POST confirmar       { resultado }
 
 const TROZO = 1024 * 1024; // múltiplo de 256 KiB, como pide Drive
 const CLAVE_PROXY = 'ad-subida-por-app';
@@ -45,20 +50,21 @@ export async function prepararArchivo(f: File): Promise<{ blob: Blob; nombre: st
 }
 
 /**
- * Sube un archivo y devuelve la lista de archivos del borrador.
+ * Sube un archivo y devuelve el `resultado` que da la API al registrarlo.
+ * `base` es la ruta de la API (sin la acción); `extra` se manda al abrir la subida.
  * `avance` recibe los bytes subidos; `sinRed` avisa cuando se espera a la conexión.
  */
-export async function subirArchivo(
-  token: string,
+export async function subirArchivo<T>(
+  base: string,
   blob: Blob,
   nombre: string,
   mime: string,
   avance: (subido: number) => void,
   sinRed: (esperando: boolean) => void,
-): Promise<ArchivoSubido[]> {
-  const base = `/api/f/${token}`;
+  extra: Record<string, unknown> = {},
+): Promise<T> {
   const total = blob.size;
-  const { url, firma } = await postJson<{ url: string; firma: string }>(`${base}/subida`, { nombre, mime, tamano: total });
+  const { url, firma } = await postJson<{ url: string; firma: string }>(`${base}/subida`, { ...extra, nombre, mime, tamano: total });
   let directo = url.startsWith('https://') && sessionStorage.getItem(CLAVE_PROXY) !== '1';
   let inicio = 0;
   let fallos = 0;
@@ -74,7 +80,7 @@ export async function subirArchivo(
           inicio = rango ? Number(rango.split('-')[1]) + 1 : fin;
         } else if (res.ok) {
           const f = (await res.json()) as { id: string };
-          return (await postJson<{ archivos: ArchivoSubido[] }>(`${base}/confirmar`, { id: f.id })).archivos;
+          return (await postJson<{ resultado: T }>(`${base}/confirmar`, { id: f.id })).resultado;
         } else if (res.status === 404 || res.status === 410) {
           throw new ErrorDefinitivo('La sesión de subida ha caducado');
         } else {
@@ -86,10 +92,10 @@ export async function subirArchivo(
           headers: { 'x-subida-url': url, 'x-subida-firma': firma, 'x-inicio': String(inicio), 'x-total': String(total) },
           body: trozo,
         });
-        const datos = (await res.json().catch(() => ({}))) as { recibido?: number; archivos?: ArchivoSubido[]; error?: string };
+        const datos = (await res.json().catch(() => ({}))) as { recibido?: number; resultado?: T; error?: string };
         if (res.status >= 400 && res.status < 500 && res.status !== 429) throw new ErrorDefinitivo(datos.error ?? `Error ${res.status}`);
         if (!res.ok) throw new Error(datos.error ?? `Error ${res.status}`);
-        if (datos.archivos) return datos.archivos;
+        if (datos.resultado) return datos.resultado;
         inicio = datos.recibido ?? fin;
       }
       fallos = 0;
@@ -113,8 +119,8 @@ export async function subirArchivo(
       }
       // Antes de seguir, se pregunta a Drive cuánto tiene ya.
       try {
-        const estado = await postJson<{ recibido: number; archivos?: ArchivoSubido[] }>(`${base}/estado-subida`, { url, firma, total });
-        if (estado.archivos) return estado.archivos;
+        const estado = await postJson<{ recibido: number; resultado?: T }>(`${base}/estado-subida`, { url, firma, total });
+        if (estado.resultado) return estado.resultado;
         inicio = estado.recibido;
         avance(inicio);
       } catch (e2) {

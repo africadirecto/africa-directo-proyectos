@@ -1,5 +1,5 @@
 // Capa propia de IA. El resto de la app llama a estas funciones y no sabe qué
-// proveedor hay detrás. Hoy es OpenAI (ver ./openai.ts); sin clave, se usa un
+// proveedor hay detrás. Hoy es OpenRouter (ver ./openrouter.ts); sin clave, se usa un
 // sustituto que no inventa nada y se limita a las comprobaciones automáticas.
 //
 // Privacidad: a la IA solo se envían datos del proyecto, nunca nombres ni datos de contacto.
@@ -8,9 +8,9 @@ import { config } from '../config';
 import { nombrePais } from '../paises';
 import { IDIOMAS_ES, nombreSector } from '../formulario/textos';
 import type { AnalisisSolicitud, Idioma, RespuestasSolicitud, TraduccionSolicitud } from '../tipos';
-import { pedirJson } from './openai';
+import { pedirJson } from './openrouter';
 
-export const iaDisponible = () => !!config.ia.openaiClave;
+export const iaDisponible = () => !!config.ia.clave;
 
 const ESQUEMA_ANALISIS = {
   type: 'object',
@@ -113,4 +113,102 @@ export async function traducir(texto: string, idioma: Idioma): Promise<{ texto: 
     console.error('IA: error al traducir', e);
     return { texto, traducido: false };
   }
+}
+
+// ── Informes ────────────────────────────────────────────────────────────────
+
+export interface ApartadoPedido {
+  clave: string;
+  /** Título orientativo; la IA lo devuelve en el idioma del informe. */
+  titulo: string;
+  palabras: number;
+  instruccion: string;
+}
+
+export interface ApartadoRedactado {
+  clave: string;
+  titulo: string;
+  texto: string;
+  /** Ids de los eventos u otras fuentes ("ficha", "aportaciones") de donde sale el texto. */
+  fuentes: string[];
+}
+
+export interface Redaccion {
+  apartados: ApartadoRedactado[];
+  pendientes: string[];
+  resumen: string;
+  hechoPorIA: boolean;
+}
+
+const ESQUEMA_INFORME = {
+  type: 'object',
+  additionalProperties: false,
+  required: ['apartados', 'pendientes', 'resumen'],
+  properties: {
+    apartados: {
+      type: 'array',
+      items: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['clave', 'titulo', 'texto', 'fuentes'],
+        properties: {
+          clave: { type: 'string' },
+          titulo: { type: 'string' },
+          texto: { type: 'string' },
+          fuentes: { type: 'array', items: { type: 'string' } },
+        },
+      },
+    },
+    pendientes: { type: 'array', items: { type: 'string' } },
+    resumen: { type: 'string' },
+  },
+};
+
+/**
+ * Redacta los apartados de un informe para un donante a partir de los datos del proyecto
+ * (`contexto`, ya sin datos de contacto). Lo que no consta queda como [PENDIENTE: …].
+ * Sin IA, devuelve cada apartado marcado como pendiente para que lo escriba un voluntario.
+ */
+export async function redactarInforme(contexto: object, apartados: ApartadoPedido[], idioma: Idioma, instrucciones: string): Promise<Redaccion> {
+  const sinIA: Redaccion = {
+    apartados: apartados.map((a) => ({ clave: a.clave, titulo: a.titulo, texto: `[PENDIENTE: ${a.instruccion}]`, fuentes: [] })),
+    pendientes: ['La IA no está configurada: hay que redactar todos los apartados.'],
+    resumen: '',
+    hechoPorIA: false,
+  };
+  if (!iaDisponible() || !apartados.length) return sinIA;
+
+  const palabras = apartados.reduce((s, a) => s + a.palabras, 0);
+  const res = await pedirJson<Omit<Redaccion, 'hechoPorIA'>>({
+    tarea: 'redaccion',
+    nombre: 'informe',
+    esquema: ESQUEMA_INFORME,
+    maxTokens: Math.min(16_000, 2000 + palabras * 4),
+    instrucciones: [
+      'Eres un voluntario experto de la ONG española Africa Directo, que financia proyectos en África con el lema «el 100 % llega».',
+      `Redacta, en ${IDIOMAS_ES[idioma].toLowerCase()}, los apartados de un informe para un donante, con tono profesional, cercano y honesto.`,
+      'Reglas:',
+      '- Usa SOLO los datos del JSON. No inventes cifras, fechas, nombres ni hechos.',
+      '- Si un dato necesario no consta, escribe en el texto «[PENDIENTE: qué falta]» (siempre en español) para que lo complete un voluntario.',
+      '- Cada apartado, aproximadamente con las palabras indicadas. Texto plano: párrafos separados por una línea en blanco, sin títulos, viñetas ni Markdown.',
+      '- "titulo": el título del apartado traducido al idioma del informe.',
+      '- "fuentes": los ids de los eventos que usas (por ejemplo "E3"), o "ficha", "aportaciones" o "solicitud".',
+      '- No incluyas datos de contacto ni nombres de beneficiarios concretos; nunca identifiques a menores.',
+      '- "pendientes": lista en español de lo que el voluntario debería completar o comprobar.',
+      '- "resumen": dos frases en español que resuman el informe.',
+      'Devuelve los apartados en el mismo orden y con la misma "clave" que se piden.',
+      instrucciones ? `Indicaciones del voluntario: ${instrucciones}` : '',
+    ]
+      .filter(Boolean)
+      .join('\n'),
+    entrada: JSON.stringify({ ...contexto, apartadosPedidos: apartados }),
+  });
+  // Se respeta el orden pedido y no se pierde ningún apartado aunque la IA lo omita.
+  const porClave = new Map(res.apartados.map((a) => [a.clave, a]));
+  return {
+    apartados: apartados.map((a) => porClave.get(a.clave) ?? { clave: a.clave, titulo: a.titulo, texto: `[PENDIENTE: ${a.instruccion}]`, fuentes: [] }),
+    pendientes: res.pendientes,
+    resumen: res.resumen,
+    hechoPorIA: true,
+  };
 }

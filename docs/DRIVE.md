@@ -46,7 +46,7 @@ AD · Proyectos/
 
 ### `AD · Plantillas`
 
-Plantillas de informes y presentaciones, de la ONG y de cada donante. Se usan en la fase 3 (ver [ARQUITECTURA.md › Plantillas](ARQUITECTURA.md#plantillas-e-informes-con-ia)). **Se crea a mano.**
+Plantillas de informes y presentaciones, de la ONG y de cada donante. Cualquier Google Doc de esta unidad aparece al generar un informe (ver [INFORMES.md](INFORMES.md)). **Se crea a mano.**
 
 ```
 AD · Plantillas/
@@ -101,7 +101,7 @@ Asignación recomendada (en cada unidad, **Gestionar miembros**):
 | `gestion@` (cuenta técnica) | Gestor | Gestor | Gestor |
 | `coordinacion@` (grupo de administradores) | Gestor | Gestor | Gestor |
 | `voluntarios-proyectos@` (grupo) | **Colaborador** | Lector | — |
-| Cuenta de servicio de la app | **Gestor de contenido** | Lector (Colaborador en la fase 3) | **Gestor de contenido** |
+| Cuenta de servicio de la app | **Gestor de contenido** | Lector (copia las plantillas de informe) | **Gestor de contenido** |
 
 **Por qué así:**
 

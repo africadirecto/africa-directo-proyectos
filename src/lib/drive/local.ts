@@ -126,7 +126,28 @@ export const driveLocal: Drive = {
     return this.subir(carpetaId, `${nombre}.html`, 'text/html', Buffer.from(html));
   },
 
+  async htmlADoc(html, carpetaId, nombre) {
+    return this.subir(carpetaId, `${nombre}.html`, 'text/html', Buffer.from(html));
+  },
+
+  async copiar(id, carpetaId, nombre) {
+    const origen = rutaLocal(id);
+    if (!origen) throw new Error('Archivo no encontrado');
+    return this.subir(carpetaId, nombre, origen.meta.mime, fs.readFileSync(origen.ruta));
+  },
+
+  async carpetaHija(nombre, padreId) {
+    const existente = hijosLocales(padreId).find((a) => a.mime === ES_CARPETA && a.nombre === nombre);
+    return existente?.id ?? this.crearCarpeta(nombre, padreId);
+  },
+
+  // En demo no hay unidad de plantillas: solo se usan las plantillas de la app.
+  async documentosDeUnidad() {
+    return [];
+  },
+
   urlCarpeta: (id) => `/api/drive-local/${id}`,
   urlArchivo: (id) => `/api/drive-local/${id}`,
   urlMiniatura: (id) => `/api/drive-local/${id}`,
+  urlDocumento: (id) => `/api/drive-local/${id}`,
 };

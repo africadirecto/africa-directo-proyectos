@@ -5,7 +5,8 @@ Aplicación web para que los voluntarios de Africa Directo lleven los proyectos 
 El contexto completo (la ONG, el flujo y las decisiones de partida) está en [CLAUDE.md](CLAUDE.md) y el diseño de referencia en [design/](design/DESIGN.md). Documentación:
 
 - [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md): cómo funciona el sistema, datos, seguridad y cómo funcionarán las plantillas de informes.
-- [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md): puesta en marcha paso a paso (Google Workspace, Firebase, Drive, Chat, OpenAI y Vercel).
+- [docs/DESPLIEGUE.md](docs/DESPLIEGUE.md): puesta en marcha paso a paso (Google Workspace, Firebase, Drive, Chat, OpenRouter y Vercel).
+- [docs/INFORMES.md](docs/INFORMES.md): generar informes con IA y preparar plantillas propias en Google Docs.
 - [docs/DRIVE.md](docs/DRIVE.md): estructura de carpetas de las unidades compartidas y permisos.
 - [docs/CORREO.md](docs/CORREO.md): cómo llegan a la app los correos de las contrapartes, dado que el correo del dominio está en un hosting externo.
 
@@ -18,12 +19,13 @@ El contexto completo (la ONG, el flujo y las decisiones de partida) está en [CL
 - **Al enviarse**: nueva versión, paso a "En revisión", traducción y resumen con IA, aviso de lo que falta, PDF de la solicitud en `01_Solicitud` y aviso a Google Chat.
 - **Revisión**: validar, pedir cambios (reabre el mismo enlace con los comentarios traducidos) o rechazar.
 - **Correos a las contrapartes**: la app no los envía. Prepara el texto en el idioma de la contraparte (enlace, cambios pedidos, rechazo) para que un voluntario lo copie y lo envíe desde el buzón de proyectos (ver [docs/CORREO.md](docs/CORREO.md)).
-- **Ficha del proyecto**: resumen, seguimiento (cronología y notas), financiación (aportaciones por donante; pasa sola a "Aprobado" al cubrirse el presupuesto), archivos (carpetas y fotos publicables) y versiones de la solicitud. Cada cambio de estado guarda quién, cuándo y por qué.
+- **Ficha del proyecto**: resumen, archivos (carpetas, fotos publicables, informes y un diálogo para añadir archivos arrastrándolos), seguimiento (cronología y notas), financiación (aportaciones por donante; pasa sola a "Aprobado" al cubrirse el presupuesto) y versiones de la solicitud. Cada cambio de estado guarda quién, cuándo y por qué.
+- **Informes con IA**: borrador en Google Docs con la plantilla de la app o una propia con marcadores, para revisar y aprobar antes de enviarlo (ver [docs/INFORMES.md](docs/INFORMES.md)).
 - **Donantes**: ficha de cada donante con sus aportaciones e informes que pide.
 - **Administración**: usuarios y permisos, contrapartes y estado de las integraciones y del uso de IA.
 - **Cada noche**: copia de la base de datos en la unidad "Sistema" de Drive y, los lunes, resumen de pendientes en Google Chat.
 
-Quedan para las siguientes fases: lectura del buzón de proyectos con Apps Script y bandeja de correos sin asignar (fase 2), informes y presentaciones con IA en Google Docs y Slides (fase 3), y la ficha para donantes y estadísticas (fase 4).
+Quedan para las siguientes fases: lectura del buzón de proyectos y bandeja de correos sin asignar (fase 2), presentaciones en Slides y plantillas de donante en Word o Excel (fase 3), y la ficha para donantes y estadísticas (fase 4).
 
 ## Probarla en local (modo demo)
 
@@ -45,7 +47,7 @@ npm run dev
 
 Abre <http://localhost:3000>. En modo demo no hace falta Google ni Firebase: se entra eligiendo un usuario de ejemplo, los datos se guardan en la carpeta `.datos/` y Drive se imita con carpetas en disco. No se envían correos (se muestran en la consola). Para empezar de cero, borra `.datos/`.
 
-Si además pones `OPENAI_API_KEY`, la traducción y el resumen funcionan de verdad.
+Si además pones `OPENROUTER_API_KEY`, la traducción, el resumen y la redacción de informes funcionan de verdad.
 
 ## Comprobaciones
 
@@ -75,7 +77,7 @@ src/
   lib/
     almacen/           Acceso a datos: Firestore o fichero local (demo)
     drive/             Google Drive por su API REST, o disco (demo)
-    ia/                IA detrás de una interfaz propia (hoy OpenAI)
+    ia/                IA detrás de una interfaz propia (hoy OpenRouter)
     dominio/           Reglas de negocio: proyectos, solicitudes, aportaciones…
     acciones/          Acciones de servidor que llaman las pantallas
     formulario/        Textos en cuatro idiomas y validación del formulario
@@ -93,5 +95,5 @@ Para cambiar de proveedor (por ejemplo, otra base de datos u otra IA) basta con 
 - **Enlaces de las contrapartes firmados, no guardados.** El token es `id.firma` (HMAC con `ENLACES_SECRETO`). La base de datos guarda el id con su proyecto, caducidad (180 días) y revocación, pero no el token, y aun así la app puede volver a mostrar el enlace para reenviarlo. Cambiar el secreto invalida todos los enlaces.
 - **Subida directa a Drive con plan B.** El servidor abre una sesión reanudable de Drive y el navegador intenta subir directo. Si el navegador no puede (CORS), los trozos pasan por la app, que nunca recibe más de 4 MiB por petición (límite de Vercel: 4,5 MB). Comprobado con Drive real (octubre de 2026): la subida directa desde el navegador funciona.
 - **Donantes en el menú principal.** Las maquetas los ponen en Administración, pero los voluntarios con permiso de edición tienen que poder añadirlos al buscar financiación.
-- **Sin IA no se inventa nada.** Si falta la clave de OpenAI o falla, el resumen es el principio del texto de la contraparte y los avisos de "falta información" son comprobaciones automáticas.
+- **Sin IA no se inventa nada.** Si falta la clave de OpenRouter o falla, el resumen es el principio del texto de la contraparte y los avisos de "falta información" son comprobaciones automáticas.
 - **`jwks-rsa` fijado en la versión 3 (`overrides` en `package.json`).** `firebase-admin` 14 trae `jwks-rsa` 4, que carga `jose` 6 (solo ESM) con `require()`. En Vercel eso falla con `ERR_REQUIRE_ESM` y no se puede entrar. La versión 3 usa `jose` 4, que sí funciona con `require()`, y la API que usa `firebase-admin` es la misma. Al actualizar `firebase-admin`, prueba `node --no-experimental-require-module -e "require('firebase-admin/auth')"`: si carga sin error, el override ya no hace falta.

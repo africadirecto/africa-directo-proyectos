@@ -137,6 +137,7 @@ img { max-width: 100%; }
 .desplegable-marca { flex: none; color: var(--boton); font-weight: 700; }
 .desplegable-check { width: 18px; height: 18px; flex: none; border: 1.5px solid var(--borde-campo); border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; line-height: 1; color: #fff; }
 .desplegable-opcion[aria-selected='true'] .desplegable-check { background: var(--boton); border-color: var(--boton); }
+.desplegable-grupo { padding: 10px 10px 4px; font-size: 12px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--texto-2); }
 .desplegable-vacio { padding: 12px 10px; color: var(--texto-2); font-size: 14px; font-weight: 400; }
 .desplegable-peq .desplegable-boton { min-height: 36px; font-size: 14px; padding: 0 10px; }
 .field[data-error] .desplegable-boton { border-color: var(--error); }
@@ -296,6 +297,9 @@ dialog.dialogo h2 { margin: 0; font-size: 20px; font-weight: 700; }
 .subidas { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .subidas li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--borde); border-radius: 8px; font-size: 14px; background: #fff; }
 .subidas progress { width: 120px; accent-color: var(--acento); }
+.zona-soltar { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 28px 16px; border: 2px dashed var(--borde-campo); border-radius: 12px; background: var(--fondo); color: var(--texto-3); text-align: center; transition: border-color 0.15s, background 0.15s; }
+.zona-soltar[data-encima] { border-color: var(--acento); background: var(--activo-fondo); }
+.logo-drive { flex: none; }
 
 @media (max-width: 640px) {
   .principal { padding: 20px 16px 40px; }

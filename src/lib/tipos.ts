@@ -284,3 +284,31 @@ export interface Enlace {
   caduca: string;
   revocado: boolean;
 }
+
+export type TipoInforme = 'seguimiento' | 'final';
+export type ExtensionInforme = 'breve' | 'normal' | 'detallado';
+
+/** proyectos/{codigo}/informes/{id}: borradores de informe hechos con IA, en Google Docs. */
+export interface Informe {
+  titulo: string;
+  tipo: TipoInforme;
+  plantilla: { id: string; nombre: string };
+  desde: string;
+  hasta: string;
+  donante: { id: string; nombre: string } | null;
+  idioma: Idioma;
+  extension: ExtensionInforme;
+  docId: string;
+  url: string;
+  /** Ningún informe sale hacia un donante sin aprobación humana. */
+  estado: 'borrador' | 'aprobado';
+  /** Cuántos [PENDIENTE: …] dejó la IA para que los complete un voluntario. */
+  pendientes: number;
+  /** Resumen en español, para el siguiente informe y para la lista. */
+  resumen: string;
+  hechoPorIA: boolean;
+  creado: string;
+  creadoPor: Persona;
+  aprobado?: string;
+  aprobadoPor?: Persona;
+}

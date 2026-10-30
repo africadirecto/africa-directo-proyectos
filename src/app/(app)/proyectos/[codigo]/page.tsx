@@ -15,6 +15,11 @@ import { FormAccion, Enviar } from '@/componentes/FormAccion';
 import { Desplegable } from '@/componentes/Desplegable';
 import { cambiarEstadoAccion, crearCarpetaAccion } from '@/lib/acciones/proyectos';
 import { EditarProyecto } from './EditarProyecto';
+import { GenerarInforme } from './GenerarInforme';
+import { LogoDrive } from '@/componentes/Iconos';
+import { desdePropuesto, listarInformes, listarPlantillas } from '@/lib/dominio/informes';
+import { aportacionesDeProyecto } from '@/lib/dominio/aportaciones';
+import { iaDisponible } from '@/lib/ia';
 import { Resumen } from './Resumen';
 import { Seguimiento } from './Seguimiento';
 import { Financiacion } from './Financiacion';
@@ -24,11 +29,14 @@ import type { Proyecto } from '@/lib/tipos';
 
 const PESTANAS = {
   resumen: 'Resumen',
+  archivos: 'Archivos',
   seguimiento: 'Seguimiento',
   financiacion: 'Financiación',
-  archivos: 'Archivos',
   solicitud: 'Solicitud',
 } as const;
+
+// Generar un informe hace una llamada larga a la IA: se da margen a las acciones de esta página.
+export const maxDuration = 180;
 type Pestana = keyof typeof PESTANAS;
 
 export async function generateMetadata({ params }: { params: Promise<{ codigo: string }> }): Promise<Metadata> {
@@ -107,7 +115,7 @@ export default async function FichaProyecto({
           <div className="botones">
             {p.drive ? (
               <a className="btn btn-s" href={d.urlCarpeta(p.drive.carpetaId)} target="_blank" rel="noreferrer">
-                Carpeta en Drive ↗
+                <LogoDrive /> Carpeta en Drive
               </a>
             ) : editor ? (
               <FormAccion accion={crearCarpetaAccion}>
@@ -119,6 +127,17 @@ export default async function FichaProyecto({
             ) : null}
             {editor ? (
               <EditarProyecto p={p} />
+            ) : null}
+            {editor && p.drive ? (
+              <GenerarInforme
+                codigo={p.codigo}
+                plantillas={await listarPlantillas()}
+                donantes={[...new Map((await aportacionesDeProyecto(p.codigo)).map((a) => [a.donanteId, { id: a.donanteId, nombre: a.donanteNombre }])).values()]}
+                tipo={['completado', 'cerrado'].includes(p.estado) ? 'final' : 'seguimiento'}
+                desde={desdePropuesto(p, await listarInformes(p.codigo))}
+                hoy={new Date().toISOString().slice(0, 10)}
+                ia={iaDisponible()}
+              />
             ) : null}
             {editor && opciones.length ? (
               <Dialogo boton="Cambiar estado" claseBoton="btn btn-p" titulo="Cambiar estado">

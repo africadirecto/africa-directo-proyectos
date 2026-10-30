@@ -18,6 +18,8 @@ export interface Opcion {
   /** Icono a la izquierda; por ejemplo, <Bandera codigo="CD" />. */
   icono?: React.ReactNode;
   desactivada?: boolean;
+  /** Las opciones seguidas con el mismo grupo van bajo un encabezado con ese texto. */
+  grupo?: string;
 }
 
 interface Comunes {
@@ -335,7 +337,13 @@ export function Desplegable(props: PropsDesplegable) {
           <ul ref={lista} id={idLista} role="listbox" className="desplegable-lista" aria-multiselectable={multiple || undefined} tabIndex={-1}>
             {visibles.map((o, i) => {
               const sel = elegidos.includes(o.valor);
-              return (
+              const cabecera = o.grupo && o.grupo !== visibles[i - 1]?.grupo;
+              return [
+                cabecera ? (
+                  <li key={`grupo-${o.grupo}-${i}`} role="presentation" className="desplegable-grupo">
+                    {o.grupo}
+                  </li>
+                ) : null,
                 <li
                   key={o.valor}
                   id={idOpcion(i)}
@@ -360,8 +368,8 @@ export function Desplegable(props: PropsDesplegable) {
                       ✓
                     </span>
                   ) : null}
-                </li>
-              );
+                </li>,
+              ];
             })}
             {!visibles.length ? <li className="desplegable-vacio">{sinResultados}</li> : null}
           </ul>
