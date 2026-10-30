@@ -6,7 +6,7 @@ Drive es el almacén de archivos del sistema. La app crea las carpetas, sube lo 
 
 - **Los archivos son de la ONG, no de las personas.** Todo vive en unidades compartidas; si un voluntario se va, nada se pierde.
 - **Las contrapartes nunca entran en Drive.** Suben a través del formulario de la app.
-- **Los donantes no reciben acceso a Drive.** Reciben PDF o Word exportados y aprobados por un voluntario.
+- **Los donantes no reciben acceso a Drive.** Reciben el PDF o el Word que descarga y envía un voluntario.
 - **Fotos de menores:** se guardan como cualquier foto, pero solo las marcadas como **publicables** en la app pueden ir a informes y presentaciones.
 - **Pocos permisos y por grupos.** Se dan a grupos de Workspace, no a personas sueltas.
 
@@ -20,22 +20,31 @@ Una carpeta por proyecto, agrupadas por año. **La crea la app** al registrar un
 AD · Proyectos/
 ├── 2026/                                      ← la app crea una por año
 │   ├── P-2026-014 Aula escuela primaria/      ← una por proyecto (código + título)
-│   │   ├── 01_Solicitud/      Formulario de la contraparte: PDF de cada versión,
-│   │   │                      presupuesto, planos y fotos que subió
-│   │   ├── 02_Propuesta/      Presupuesto validado, planos definitivos,
-│   │   │                      ficha y presentación para donantes
-│   │   ├── 03_Financiacion/   Convenios y cartas de compromiso de los donantes,
-│   │   │                      correspondencia con ellos
-│   │   ├── 04_Seguimiento/    Lo que llega durante la ejecución
-│   │   │   ├── 2026-08/       ← una por mes (fase 2): correos (.eml y PDF),
-│   │   │   └── 2026-09/          fotos y documentos de avance
-│   │   ├── 05_Informes/       Borradores de IA (Google Docs) e informes enviados (PDF)
-│   │   ├── 06_Economico/      Transferencias a la contraparte, facturas, justificantes
-│   │   └── 07_Cierre/         Informe final, fotos finales, carta o acta de cierre
+│   │   ├── 01_Solicitud/        Lo que envía la contraparte con el formulario
+│   │   │                        (presupuesto, planos, fotos) y el PDF de cada versión
+│   │   ├── 02_Seguimiento/      Fotos, documentos y correos que llegan durante la obra
+│   │   ├── 03_Informes/         Lo que va a los donantes: presentación para buscar
+│   │   │                        financiación e informes de seguimiento y final
+│   │   └── 04_Administración/   Convenios y cartas de los donantes, transferencias a la
+│   │                            contraparte, facturas, justificantes y acta de cierre
 │   └── P-2026-015 Dormitorio del internado/
 ├── 2025/
+├── _Informes generales/       ← informes de varios proyectos: Cartera, Contrapartes, Donantes
 └── _Sin asignar/              ← fase 2: adjuntos de correos aún sin proyecto
 ```
+
+**Qué hace la app en cada carpeta:**
+
+| Carpeta | La app guarda sola | A mano |
+| --- | --- | --- |
+| `01_Solicitud` | Los archivos que sube la contraparte en el formulario y el PDF de cada versión («2026-10-30 Solicitud v1»). Si la contraparte quita un adjunto, va a la papelera | — |
+| `02_Seguimiento` | Lo que se sube con **Añadir archivos** en la ficha (es la carpeta por defecto) | Fotos y documentos de avance |
+| `03_Informes` | Los informes y presentaciones que se generan desde la ficha | Las versiones enviadas, si se quieren guardar |
+| `04_Administración` | — | Convenios, cartas de compromiso, transferencias, facturas, justificantes, acta de cierre |
+
+Para saber dónde va algo: ¿lo mandó la contraparte al pedir el proyecto? **01**. ¿Llega durante la obra? **02**. ¿Va a un donante? **03**. ¿Es papeleo de dinero o de acuerdos? **04**.
+
+Todo va directamente en cada carpeta, sin subcarpetas: el prefijo de fecha ya los ordena. Las fotos de cualquier carpeta aparecen en la pestaña **Archivos** de la ficha, para marcar cuáles son publicables.
 
 **Reglas para los voluntarios:**
 
@@ -43,6 +52,7 @@ AD · Proyectos/
 - No muevas carpetas de proyecto **fuera** de `AD · Proyectos`: la app perdería el acceso. Dentro de la unidad, se pueden reorganizar.
 - No hace falta duplicar en Drive lo que ya está en la app (estado, donantes, notas).
 - Las subcarpetas numeradas se pueden renombrar, pero conviene no hacerlo: todo el mundo sabe dónde buscar.
+- El nombre de la carpeta del proyecto sigue al título: la app la renombra al cambiar el título en la ficha.
 
 ### `AD · Plantillas`
 
@@ -156,7 +166,7 @@ La cuenta de servicio actúa **en nombre de** `gestion@africadirecto.org`. No ha
 
 ## Compartir con donantes
 
-- Lo normal: exportar el informe aprobado a PDF o Word desde la app y enviarlo por correo.
+- Lo normal: descargar el informe en PDF o Word desde la app, ya revisado, y enviarlo por correo.
 - Si un donante necesita ver una carpeta, comparte **solo esa carpeta o archivo**, como Lector y con **fecha de caducidad** (Compartir › nombre › ⋯ › Añadir fecha de caducidad). Nunca compartas fotos no publicables.
 
 ## Fuentes

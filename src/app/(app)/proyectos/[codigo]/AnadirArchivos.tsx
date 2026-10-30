@@ -11,14 +11,17 @@ import { subirArchivo } from '@/componentes/subida';
 import { tamanoArchivo } from '@/lib/formato';
 
 const CARPETAS = [
-  { valor: 'seguimiento', texto: '04 Seguimiento (carpeta de este mes)' },
   { valor: 'solicitud', texto: '01 Solicitud' },
-  { valor: 'propuesta', texto: '02 Propuesta' },
-  { valor: 'financiacion', texto: '03 Financiación' },
-  { valor: 'informes', texto: '05 Informes' },
-  { valor: 'economico', texto: '06 Económico' },
-  { valor: 'cierre', texto: '07 Cierre' },
+  { valor: 'seguimiento', texto: '02 Seguimiento' },
+  { valor: 'informes', texto: '03 Informes' },
+  { valor: 'administracion', texto: '04 Administración' },
 ];
+const PARA_QUE: Record<string, string> = {
+  solicitud: 'Lo que mandó la contraparte para pedir el proyecto.',
+  seguimiento: 'Fotos, documentos y correos que llegan durante la obra.',
+  informes: 'Informes y presentaciones que se envían a los donantes.',
+  administracion: 'Convenios y cartas de donantes, transferencias, facturas, justificantes y acta de cierre.',
+};
 
 interface Subida {
   clave: string;
@@ -95,6 +98,7 @@ export function AnadirArchivos({ codigo }: { codigo: string }) {
       <label className="field">
         Guardar en
         <Desplegable value={carpeta} onChange={setCarpeta} opciones={CARPETAS} />
+        <span className="pista">{PARA_QUE[carpeta]}</span>
       </label>
 
       <div

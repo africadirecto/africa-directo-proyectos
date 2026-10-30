@@ -41,7 +41,7 @@ export default async function Donante({ params }: { params: Promise<{ id: string
         </div>
         {tienePermiso(yo, 'edicion') && aportaciones.length ? <BotonInformeGeneral tipo="donante" sobre={d.id} claseBoton="btn btn-p" /> : null}
       </div>
-      <ListaInformes informes={await listarInformesGenerales('donante', d.id)} editor={tienePermiso(yo, 'edicion')} titulo="Informes para este donante" />
+      <ListaInformes informes={await listarInformesGenerales('donante', d.id)} titulo="Informes para este donante" />
       <div className="fila">
         <section className="card col-ancha" style={{ gap: 8 }}>
           <h2 className="h3">Aportaciones</h2>

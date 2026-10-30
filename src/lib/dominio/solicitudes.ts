@@ -11,7 +11,7 @@ import { avisosAutomaticos, totalPresupuesto } from '../formulario/respuestas';
 import { CORREOS, nombreSector, IDIOMAS_ES } from '../formulario/textos';
 import { nombrePais } from '../paises';
 import { aEurosHoy } from '../cambio';
-import { actualizarProyecto, cambiarEstado, leerProyecto, nombreCarpeta } from './proyectos';
+import { actualizarProyecto, cambiarEstado, leerProyecto } from './proyectos';
 import { anotarEvento } from './eventos';
 import type {
   ArchivoProyecto,
@@ -243,7 +243,6 @@ export async function procesarSolicitud(codigo: string, version: number): Promis
   const d = await drive();
   if (p.drive) {
     try {
-      if (cambios.titulo && cambios.titulo !== p.titulo) await d.renombrar(p.drive.carpetaId, nombreCarpeta(actualizado));
       const pdf = await d.htmlAPdf(htmlSolicitud(actualizado, { ...v, analisis }), p.drive.subcarpetas.solicitud, conFecha(`Solicitud v${version}`));
       await db.guardar(ruta, { pdf: { id: pdf.id, nombre: pdf.nombre } }, { fusionar: true });
     } catch (e) {

@@ -146,6 +146,10 @@ export async function actualizarProyecto(codigo: string, cambios: Partial<Proyec
   };
   await db.guardar(`proyectos/${codigo}`, { ...cambios, fechas: nuevo.fechas, formulario: nuevo.formulario }, { fusionar: true });
   await actualizarIndice(nuevo);
+  // La carpeta de Drive lleva el título: se renombra con él (si falla, no se pierde nada).
+  if (p.drive && cambios.titulo && cambios.titulo !== p.titulo) {
+    await (await drive()).renombrar(p.drive.carpetaId, nombreCarpeta(nuevo)).catch((e) => console.error('Drive: no se pudo renombrar la carpeta', codigo, e));
+  }
   return nuevo;
 }
 

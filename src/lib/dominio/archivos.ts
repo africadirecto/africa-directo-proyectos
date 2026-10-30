@@ -35,15 +35,12 @@ export async function archivosDelProyecto(p: Proyecto): Promise<{ carpetas: Carp
   let error: string | undefined;
   try {
     enDrive = await d.listar(Object.values(sub));
-    // 04_Seguimiento se ordena en carpetas por mes (AAAA-MM): también se mira dentro.
-    const meses = enDrive.filter((a) => a.mime === ES_CARPETA && a.carpetaId === sub.seguimiento).map((a) => a.id);
-    if (meses.length) enDrive = [...enDrive, ...(await d.listar(meses))];
   } catch (e) {
     console.error('Drive: no se pudo listar', e);
     error = 'No se pudo leer la carpeta de Drive.';
   }
 
-  const carpetas = (Object.entries(SUBCARPETAS) as [Subcarpeta, string][]).map(([clave, nombre]) => ({
+  const carpetas = (Object.entries(SUBCARPETAS) as [Subcarpeta, string][]).filter(([clave]) => sub[clave]).map(([clave, nombre]) => ({
     clave,
     nombre: nombre.replace('_', ' '),
     id: sub[clave],
@@ -62,14 +59,6 @@ export async function archivosDelProyecto(p: Proyecto): Promise<{ carpetas: Carp
   for (const r of registros) if (r.esFoto) anadir(r.id, r.nombre, r.fecha);
   fotos.sort((a, b) => b.fecha.localeCompare(a.fecha));
   return { carpetas, fotos, error };
-}
-
-/** Carpeta donde guardar lo que se sube a una subcarpeta; en 04_Seguimiento, la del mes (AAAA-MM). */
-export async function carpetaDestino(p: Proyecto, clave: Subcarpeta, fecha = new Date()): Promise<string> {
-  if (!p.drive) throw new Error('El proyecto no tiene carpeta en Drive.');
-  const id = p.drive.subcarpetas[clave];
-  if (clave !== 'seguimiento') return id;
-  return (await drive()).carpetaHija(fecha.toISOString().slice(0, 7), id);
 }
 
 /** Anota en la cronología un archivo que ha subido un voluntario y, si es foto, lo registra. */

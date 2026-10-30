@@ -302,7 +302,8 @@ export type FormatoInforme = 'docs' | 'slides' | 'sheets';
 
 /**
  * Borradores hechos con IA, en Google Docs o Slides. Los de un proyecto están en
- * proyectos/{codigo}/informes/{id}; los de conjunto, en informes/{id}.
+ * proyectos/{codigo}/informes/{id}; los de conjunto, en informes/{id}. La app no los envía:
+ * un voluntario los revisa en Google y los descarga para enviarlos.
  */
 export interface Informe {
   titulo: string;
@@ -318,8 +319,6 @@ export interface Informe {
   extension: ExtensionInforme;
   docId: string;
   url: string;
-  /** Ningún informe sale hacia un donante sin aprobación humana. */
-  estado: 'borrador' | 'aprobado';
   /** Cuántos [PENDIENTE: …] dejó la IA para que los complete un voluntario. */
   pendientes: number;
   /** Notas para la revisión (pendientes y fuentes); también van al final del documento. */
@@ -329,6 +328,4 @@ export interface Informe {
   hechoPorIA: boolean;
   creado: string;
   creadoPor: Persona;
-  aprobado?: string;
-  aprobadoPor?: Persona;
 }

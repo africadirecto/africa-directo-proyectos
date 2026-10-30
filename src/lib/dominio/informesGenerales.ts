@@ -3,7 +3,7 @@
 // - contraparte: los proyectos de una contraparte (o de todas);
 // - donante: lo que ha financiado un donante y cómo van esos proyectos.
 // Se guardan en «AD - PROYECTOS / _Informes generales» y en informes/{id}. Como los de
-// proyecto, son borradores que un voluntario revisa y aprueba antes de enviarlos.
+// proyecto, son borradores que un voluntario revisa en Google antes de enviarlos.
 
 import { almacen } from '../almacen';
 import { drive, conFecha } from '../drive';
@@ -20,7 +20,7 @@ import { ES_HOJA } from '../drive/tipos';
 import { rellenarLibro, type Celda, type Hoja } from '../drive/sheets';
 import { eurDe as eurFila } from '../panel';
 import { leerProyecto } from './proyectos';
-import { aprobar, contarPendientes, crearArchivoInforme, FACTOR, LOCALE, notasRevision, sinContactos, type EventoContexto, type InformeConId } from './informesComun';
+import { contarPendientes, crearArchivoInforme, FACTOR, LOCALE, notasRevision, sinContactos, type EventoContexto, type InformeConId } from './informesComun';
 import type { EstadoProyecto, ExtensionInforme, FilaPanel, FormatoInforme, Idioma, Informe, Persona } from '../tipos';
 
 export type TipoInformeGeneral = 'cartera' | 'contraparte' | 'donante';
@@ -236,7 +236,6 @@ export async function generarInformeGeneral(o: OpcionesInformeGeneral, autor: Pe
     extension: o.extension,
     docId: archivo.id,
     url: archivo.url,
-    estado: 'borrador',
     pendientes: contarPendientes(r),
     notas,
     resumen: r.resumen,
@@ -351,7 +350,6 @@ async function libroDeProyectos(filas: FilaPanel[], o: OpcionesInformeGeneral, a
     extension: 'normal',
     docId: id,
     url: d.urlHoja(id),
-    estado: 'borrador',
     pendientes: 0,
     notas: [],
     resumen: `${orden.length} proyectos.`,
@@ -361,9 +359,4 @@ async function libroDeProyectos(filas: FilaPanel[], o: OpcionesInformeGeneral, a
   };
   const idInforme = await (await almacen()).crear('informes', { ...informe });
   return { ...informe, id: idInforme };
-}
-
-export async function aprobarInformeGeneral(id: string, autor: Persona): Promise<void> {
-  if (!/^[\w-]+$/.test(id)) throw new Error('Informe no válido');
-  await aprobar(`informes/${id}`, autor);
 }

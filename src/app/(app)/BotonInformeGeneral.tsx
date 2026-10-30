@@ -56,7 +56,7 @@ export function BotonInformeGeneral({
         <p className="meta" style={{ margin: 0 }}>
           {formato === 'sheets'
             ? 'Un libro con todos los datos de los proyectos elegidos y resúmenes por estado, país, sector, contraparte y año, con gráficas. Los resúmenes son fórmulas: si corriges un dato en la hoja «Proyectos», se recalculan. No usa IA.'
-            : `${explicacion} La IA lo redacta con los datos de la app; lo que no consta queda como [PENDIENTE]. Revísalo y apruébalo antes de enviarlo.`}
+            : `${explicacion} La IA lo redacta con los datos de la app; lo que no consta queda como [PENDIENTE]. Revísalo en Google antes de enviarlo.`}
         </p>
         <ElegirFormato valor={formato} onChange={setFormato} conHoja={tipo === 'cartera'} />
         <div className="campos">

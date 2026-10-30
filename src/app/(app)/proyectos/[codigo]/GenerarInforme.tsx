@@ -2,7 +2,7 @@
 
 // Diálogo para generar un borrador con IA a partir de un proyecto: informe (Google Docs) o
 // presentación (Google Slides), de seguimiento, final o para buscar financiación. Queda en
-// 05_Informes para revisarlo y aprobarlo.
+// 03_Informes para revisarlo en Google y descargarlo.
 
 import { useActionState, useState } from 'react';
 import { Dialogo } from '@/componentes/Dialogo';
@@ -48,7 +48,7 @@ export function GenerarInforme({
       <form action={ejecutar} className="pila">
         <input type="hidden" name="codigo" value={codigo} />
         <p className="meta" style={{ margin: 0 }}>
-          La IA redacta un borrador con los datos del proyecto, su cronología y la financiación. Lo que no consta queda marcado como [PENDIENTE]. Nada se envía al donante: revísalo y apruébalo en la pestaña Archivos.
+          La IA redacta un borrador con los datos del proyecto, su cronología y la financiación. Lo que no consta queda marcado como [PENDIENTE]. Nada se envía al donante: revísalo en Google y descárgalo desde la pestaña Archivos.
         </p>
         {!ia ? (
           <p className="aviso" style={{ margin: 0 }}>

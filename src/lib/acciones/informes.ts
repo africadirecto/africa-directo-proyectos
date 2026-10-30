@@ -3,8 +3,8 @@
 import { revalidatePath } from 'next/cache';
 import { unstable_rethrow } from 'next/navigation';
 import { permitido, persona } from '../sesion';
-import { aprobarInforme, generarInforme, type TipoInformeProyecto } from '../dominio/informes';
-import { aprobarInformeGeneral, generarInformeGeneral, type TipoInformeGeneral } from '../dominio/informesGenerales';
+import { generarInforme, type TipoInformeProyecto } from '../dominio/informes';
+import { generarInformeGeneral, type TipoInformeGeneral } from '../dominio/informesGenerales';
 import { ESTADOS } from '../estados';
 import { PAISES } from '../paises';
 import { esIdioma } from '../formulario/textos';
@@ -31,7 +31,6 @@ function mensajeListo(i: Informe): string {
   return [
     `${i.formato === 'slides' ? 'Presentación creada' : i.formato === 'sheets' ? 'Hoja de cálculo creada' : 'Borrador creado'}.`,
     !i.hechoPorIA && i.formato !== 'sheets' ? 'La IA no está configurada: los apartados están sin redactar.' : '',
-    i.formato === 'sheets' ? 'Revísala y apruébala para poder descargarla.' : '',
     i.pendientes ? `Tiene ${i.pendientes} ${i.pendientes === 1 ? 'dato pendiente' : 'datos pendientes'} marcados como [PENDIENTE].` : '',
   ]
     .filter(Boolean)
@@ -99,22 +98,5 @@ export async function generarInformeGeneralAccion(_: ResultadoInforme, fd: FormD
     );
     revalidatePath('/', 'layout');
     return informe;
-  });
-}
-
-export async function aprobarInformeAccion(_: Resultado, fd: FormData): Promise<Resultado> {
-  return intentar(async () => {
-    const yo = await permitido('edicion');
-    const codigo = texto(fd, 'codigo', 20);
-    const id = texto(fd, 'id', 100);
-    // Sin código de proyecto es un informe de conjunto.
-    if (codigo) {
-      await aprobarInforme(codigo, id, persona(yo));
-      revalidatePath(`/proyectos/${codigo}`);
-    } else {
-      await aprobarInformeGeneral(id, persona(yo));
-      revalidatePath('/', 'layout');
-    }
-    return 'Informe aprobado. Ya puedes descargarlo y enviarlo.';
   });
 }

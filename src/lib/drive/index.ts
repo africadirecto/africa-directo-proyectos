@@ -12,15 +12,18 @@ export async function drive(): Promise<Drive> {
   return instancia;
 }
 
-/** Subcarpetas fijas de cada proyecto. La base de datos guarda sus identificadores, no sus nombres. */
+/**
+ * Subcarpetas fijas de cada proyecto. La base de datos guarda sus identificadores, no sus nombres.
+ * - Solicitud: lo que envía la contraparte con el formulario y el PDF de cada versión.
+ * - Seguimiento: fotos, documentos y correos de la ejecución (todo junto, con fecha delante).
+ * - Informes: lo que va a los donantes (los informes y presentaciones que hace la app).
+ * - Administración: convenios y cartas de donantes, transferencias, facturas, justificantes y cierre.
+ */
 export const SUBCARPETAS = {
   solicitud: '01_Solicitud',
-  propuesta: '02_Propuesta',
-  financiacion: '03_Financiacion',
-  seguimiento: '04_Seguimiento',
-  informes: '05_Informes',
-  economico: '06_Economico',
-  cierre: '07_Cierre',
+  seguimiento: '02_Seguimiento',
+  informes: '03_Informes',
+  administracion: '04_Administración',
 } as const;
 
 export type Subcarpeta = keyof typeof SUBCARPETAS;

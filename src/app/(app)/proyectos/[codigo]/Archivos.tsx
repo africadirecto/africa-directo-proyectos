@@ -28,7 +28,7 @@ export async function Archivos({ p, editor }: { p: Proyecto; editor: boolean }) 
 
   return (
     <div className="pila" style={{ gap: 20 }}>
-      <Informes p={p} editor={editor} />
+      <Informes p={p} />
       <div className="fila">
         <section className="card" style={{ flex: '1 1 340px', minWidth: 0 }}>
           <div className="card-cab">

@@ -69,7 +69,7 @@ Qué ocurre por dentro en cada paso:
    - Al cambiar una, se recalcula lo comprometido. La primera pasa el proyecto a «Financiación», y cuando lo comprometido cubre el presupuesto pasa solo a «Aprobado».
 6. **Ejecución y seguimiento:** notas, cambios de estado y, en la fase 2, correos y fotos que llegan.
    - La app avisa de los proyectos sin noticias en más de 30 días.
-7. **Informes:** borradores de IA en Google Docs que un voluntario revisa y aprueba. Ver [INFORMES.md](INFORMES.md).
+7. **Informes:** borradores de IA en Google Docs o Slides que un voluntario revisa en Google y descarga para enviarlos. Ver [INFORMES.md](INFORMES.md).
 
 ## Datos
 
@@ -156,12 +156,12 @@ Capas propias                → almacén (Firestore o fichero), Drive (API o di
 
 ## Plantillas e informes con IA
 
-**Hecho:** generar un borrador desde la ficha, con las plantillas de la app o con cualquier Google Doc de `AD · Plantillas` con marcadores (`{{proyecto.titulo}}`, `{{ia:avance|150 palabras|instrucción}}`), aprobarlo y descargarlo en PDF o Word. Cómo se usa y lista de marcadores: [INFORMES.md](INFORMES.md).
+**Hecho:** generar un borrador desde la ficha, con las plantillas de la app o con cualquier Google Doc de `AD · Plantillas` con marcadores (`{{proyecto.titulo}}`, `{{ia:avance|150 palabras|instrucción}}`), y descargarlo en PDF o Word. Cómo se usa y lista de marcadores: [INFORMES.md](INFORMES.md).
 
 Cómo funciona por dentro (`lib/dominio/informes.ts`):
 
 1. Reúne el contexto: ficha, aportaciones, eventos del periodo (sin correos ni teléfonos), número de fotos publicables y el resumen del informe anterior.
-2. Con una plantilla de la app, pide a la IA sus apartados y crea el Google Doc a partir de HTML. Con una plantilla de Google Docs, la copia en `05_Informes`, lee sus marcadores con la API de Docs y los sustituye (`replaceAllText`), así que el formato se mantiene.
+2. Con una plantilla de la app, pide a la IA sus apartados y crea el Google Doc a partir de HTML. Con una plantilla de Google Docs, la copia en `03_Informes`, lee sus marcadores con la API de Docs y los sustituye (`replaceAllText`), así que el formato se mantiene.
 3. La IA redacta **todos los apartados en una sola llamada** con salida JSON: texto, de qué eventos sale cada uno y lo que falta. Lo que no consta queda como `[PENDIENTE: …]`.
 4. Al final del documento se añaden notas para la revisión (pendientes y fuentes), que el voluntario borra antes de enviar.
 5. Se guarda en `proyectos/{código}/informes` con estado **Borrador → Aprobado** y queda en la cronología. Solo los aprobados muestran la descarga en PDF y Word.
@@ -191,7 +191,7 @@ Un informe de unas 8 secciones redactadas cuesta del orden de céntimos con un m
 
 | Fase | Qué incluye |
 | --- | --- |
-| **2. Seguimiento** | "Añadir correo" en la ficha (`.eml`, `.msg` o texto con adjuntos), lectura automática del buzón de la app según [CORREO.md](CORREO.md), bandeja de correos sin asignar, carpetas por mes en `04_Seguimiento` y página de subida de fotos para la contraparte |
+| **2. Seguimiento** | "Añadir correo" en la ficha (`.eml`, `.msg` o texto con adjuntos), lectura automática del buzón de la app según [CORREO.md](CORREO.md), bandeja de correos sin asignar y página de subida de fotos para la contraparte |
 | **3. Documentos con IA** | Hecho: informes con plantillas de la app o de Google Docs. Falta: presentación de captación y mapeo de plantillas de donante en Word o Excel |
 | **4. Mejoras** | Ficha de solo lectura para donantes, estadísticas, formulario instalable sin conexión y WhatsApp si compensa |
 

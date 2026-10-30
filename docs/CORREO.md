@@ -18,7 +18,7 @@ En cada proyecto, un botón **"Añadir correo"** con tres formas de hacerlo:
 2. **Reenviarlo como adjunto** a la dirección de la app, si existe (opción B).
 3. **Pegar el texto** y añadir los adjuntos (fotos, PDF) a mano, para quien no sepa guardar el correo.
 
-La app lee remitente, fecha, asunto, texto y adjuntos; guarda el original y los adjuntos en `04_Seguimiento/AAAA-MM` del proyecto; añade el evento a la cronología con un resumen de IA y su tipo (avance, incidencia, económico); marca las fotos para decidir si son publicables, y actualiza la "última noticia".
+La app lee remitente, fecha, asunto, texto y adjuntos; guarda el original y los adjuntos en `02_Seguimiento` del proyecto; añade el evento a la cronología con un resumen de IA y su tipo (avance, incidencia, económico); marca las fotos para decidir si son publicables, y actualiza la "última noticia".
 
 - **Ventajas:** no necesita buzones, DNS ni cuentas nuevas. Funciona también con los correos que llegan a buzones personales de los voluntarios. El voluntario elige qué es relevante, así que no entra ruido.
 - **Inconvenientes:** depende de que alguien lo haga. Para que no se olvide, la app ya avisa de los proyectos sin noticias en más de 30 días.

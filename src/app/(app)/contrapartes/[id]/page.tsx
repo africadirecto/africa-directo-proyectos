@@ -123,7 +123,7 @@ export default async function ContraparteFicha({ params }: { params: Promise<{ i
           )}
         </section>
       </div>
-      <ListaInformes informes={await listarInformesGenerales('contraparte', c.id)} editor={editor} titulo="Informes de esta contraparte" />
+      <ListaInformes informes={await listarInformesGenerales('contraparte', c.id)} titulo="Informes de esta contraparte" />
     </main>
   );
 }

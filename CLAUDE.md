@@ -15,7 +15,7 @@ Africa Directo es una ONG española que financia proyectos en varios países de 
 
 | Usuario | Qué hace | Cómo accede |
 | --- | --- | --- |
-| Voluntarios | Revisan propuestas, buscan financiación, siguen la ejecución, aprueban informes | Web app con su cuenta de Google Workspace de la ONG |
+| Voluntarios | Revisan propuestas, buscan financiación, siguen la ejecución, revisan y envían informes | Web app con su cuenta de Google Workspace de la ONG |
 | Contrapartes locales (normalmente congregaciones religiosas) | Envían la solicitud, documentos, fotos y avances | Enlace seguro sin cuenta, o por correo. Suelen escribir en francés, inglés o portugués, a menudo con conexión lenta o intermitente |
 | Donantes (fundaciones, empresas, particulares, entidades públicas) | Reciben presentaciones e informes, a veces con su propia plantilla | Reciben documentos; no usan la app de momento |
 
@@ -118,7 +118,7 @@ Orientativo; ajústalo si encuentras una forma mejor. La idea central: `proyecto
   - Proyectos.
   - Plantillas.
   - Sistema: copias de la base de datos, solo para administradores.
-- **Carpeta por proyecto**, creada por la app con subcarpetas fijas: `01_Solicitud`, `02_Propuesta`, `03_Financiacion`, `04_Seguimiento` (correos y fotos por mes), `05_Informes`, `06_Economico` y `07_Cierre`.
+- **Carpeta por proyecto**, creada por la app con cuatro subcarpetas fijas, sin subcarpetas por debajo: `01_Solicitud` (lo que envía la contraparte), `02_Seguimiento` (fotos, documentos y correos de la ejecución), `03_Informes` (lo que va a los donantes) y `04_Administración` (convenios, transferencias, facturas, justificantes y cierre).
 - La base de datos guarda el **identificador** de cada carpeta, no su nombre, para que renombrar o mover no rompa nada.
 - Los archivos llevan un prefijo de fecha AAAA-MM-DD.
 - Las contrapartes nunca entran en Drive: suben a través de la app.
@@ -145,15 +145,15 @@ Orientativo; ajústalo si encuentras una forma mejor. La idea central: `proyecto
 - **Plantillas de donante en Word o Excel:** se importan a Google; la IA propone una vez qué dato o instrucción va en cada campo y un voluntario valida ese mapeo, que queda guardado.
 - **Contexto de la IA:** solo datos del proyecto (ficha, eventos del periodo, aportaciones, fotos publicables e informe anterior).
 - **Salida estructurada:** cada párrafo indica de qué eventos sale, y lo que no consta se marca como `[PENDIENTE: …]` en vez de inventarse.
-- **Resultado:** un Google Doc en `05_Informes`. El voluntario lo edita, lo aprueba en la app y lo exporta a PDF o Word.
-- **Ningún documento sale hacia un donante sin aprobación humana.**
+- **Resultado:** un Google Doc en `03_Informes`. El voluntario lo revisa y lo edita en Google y lo descarga en PDF o Word desde la app.
+- **Ningún documento sale hacia un donante sin que lo revise una persona:** la app no envía nada. No hay un paso de aprobación en la app, para no complicar el flujo.
 
 ## Accesos y permisos
 
 - **Solo con login y autorización.** Quien entra con Google por primera vez queda en "acceso pendiente" hasta que un administrador lo aprueba.
 - **Tres permisos:**
   - Lectura (el inicial): ver todo.
-  - Edición: además revisar solicitudes, cambiar estados, gestionar donantes y notas, y generar y aprobar informes.
+  - Edición: además revisar solicitudes, cambiar estados, gestionar donantes y notas, y generar informes.
   - Administración: además gestionar usuarios, contrapartes, donantes y plantillas.
 - En la interfaz, lo que el usuario no puede hacer se oculta, pero **los permisos se comprueban siempre en el servidor**.
 
@@ -186,7 +186,7 @@ Cada fase debería entregar algo útil por sí sola. Es una sugerencia; reordén
 
 1. **Núcleo:** autenticación y permisos, contrapartes, proyectos y donantes, creación de carpetas en Drive, formulario por enlace con subida a Drive, revisión, estados y panel.
 2. **Seguimiento:** ingesta de correo con Apps Script, cronología, bandeja de sin asignar, avisos y página de subida de fotos.
-3. **Documentos con IA:** plantillas, informe por defecto, presentación de captación, mapeo de plantillas de donante y aprobación.
+3. **Documentos con IA:** plantillas, informe por defecto, presentación de captación, mapeo de plantillas de donante.
 4. **Mejoras:** ficha de solo lectura para donantes, estadísticas, formulario instalable sin conexión, WhatsApp si compensa.
 
 ## Principios de trabajo

@@ -12,7 +12,7 @@ import { drive, conFecha, SUBCARPETAS, type ArchivoDrive, type Subcarpeta } from
 import { comprobarFirmaSubida, firmaSubida } from '@/lib/enlaces';
 import { permitido, persona, SinPermiso } from '@/lib/sesion';
 import { leerProyecto } from '@/lib/dominio/proyectos';
-import { carpetaDestino, registrarSubida } from '@/lib/dominio/archivos';
+import { registrarSubida } from '@/lib/dominio/archivos';
 import type { Proyecto, Usuario } from '@/lib/tipos';
 
 export const maxDuration = 60;
@@ -26,8 +26,7 @@ const idFirma = (codigo: string) => `ficha:${codigo}`;
 /** Comprueba que el archivo está en una carpeta del proyecto, lo anota y devuelve sus datos. */
 async function registrar(p: Proyecto, a: ArchivoDrive, yo: Usuario) {
   const sub = p.drive!.subcarpetas;
-  let clave = (Object.keys(sub) as Subcarpeta[]).find((k) => sub[k] === a.carpetaId);
-  if (!clave && (await (await drive()).metadatos(a.carpetaId))?.carpetaId === sub.seguimiento) clave = 'seguimiento';
+  const clave = (Object.keys(sub) as Subcarpeta[]).find((k) => sub[k] === a.carpetaId);
   if (!clave) throw new Error('Archivo fuera de la carpeta del proyecto');
   await registrarSubida(p, a, clave, persona(yo));
   revalidatePath(`/proyectos/${p.codigo}`);
@@ -64,10 +63,10 @@ async function manejar(req: Request, codigo: string, accion: string): Promise<Re
       const tamano = Number(cuerpo.tamano);
       const clave = String(cuerpo.carpeta ?? 'seguimiento') as Subcarpeta;
       if (!nombre) return error('Falta el nombre del archivo');
-      if (!(clave in SUBCARPETAS)) return error('Carpeta no válida');
+      if (!Object.hasOwn(SUBCARPETAS, clave) || !p.drive.subcarpetas[clave]) return error('Carpeta no válida');
       if (!Number.isSafeInteger(tamano) || tamano <= 0 || tamano > MAX_BYTES) return error('El archivo es demasiado grande (máximo 500 MB).');
       const url = await d.iniciarSubida({
-        carpetaId: await carpetaDestino(p, clave),
+        carpetaId: p.drive.subcarpetas[clave],
         nombre: conFecha(nombre),
         mime,
         tamano,

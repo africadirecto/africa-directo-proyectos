@@ -39,7 +39,7 @@ export default async function Contrapartes() {
         ) : null}
       </div>
       <PanelContrapartes contrapartes={contrapartes} filas={filas} admin={tienePermiso(yo, 'admin')} />
-      <ListaInformes informes={await listarInformesGenerales('contraparte')} editor={editor} titulo="Informes de contrapartes" />
+      <ListaInformes informes={await listarInformesGenerales('contraparte')} titulo="Informes de contrapartes" />
     </main>
   );
 }

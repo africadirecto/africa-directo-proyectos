@@ -1,13 +1,12 @@
 // Piezas comunes de los informes (de proyecto y de conjunto): plantillas, notas para la
 // revisión, HTML del documento, creación del Google Doc o de la presentación y registro.
 
-import { almacen } from '../almacen';
 import { config } from '../config';
 import { drive } from '../drive';
 import { ES_PRESENTACION } from '../drive/tipos';
 import { rellenarPresentacion, type Diapositiva } from '../drive/slides';
 import type { Redaccion } from '../ia';
-import type { ExtensionInforme, FormatoInforme, Idioma, Informe, Persona } from '../tipos';
+import type { ExtensionInforme, FormatoInforme, Idioma, Informe } from '../tipos';
 
 export type InformeConId = Informe & { id: string };
 
@@ -154,7 +153,7 @@ export async function crearArchivoInforme(c: Contenido, formato: FormatoInforme,
 export const contarPendientes = (r: Redaccion) =>
   [...r.apartados.map((a) => a.texto), ...r.proyectos.map((p) => p.texto)].reduce((s, t) => s + (t.match(/\[PENDIENTE/g)?.length ?? 0), 0);
 
-/** Direcciones de descarga de Google para un informe aprobado. */
+/** Direcciones de descarga de Google para un informe (exportan el documento tal como está). */
 export function descargas(i: Pick<Informe, 'docId' | 'formato'>): { texto: string; url: string }[] {
   if (i.formato === 'sheets') {
     return [
@@ -172,12 +171,4 @@ export function descargas(i: Pick<Informe, 'docId' | 'formato'>): { texto: strin
     { texto: 'PDF', url: `https://docs.google.com/document/d/${i.docId}/export?format=pdf` },
     { texto: 'Word', url: `https://docs.google.com/document/d/${i.docId}/export?format=docx` },
   ];
-}
-
-export async function aprobar(ruta: string, autor: Persona): Promise<Informe> {
-  const db = await almacen();
-  const informe = await db.leer<Informe>(ruta);
-  if (!informe) throw new Error('Informe no encontrado');
-  await db.guardar(ruta, { estado: 'aprobado', aprobado: new Date().toISOString(), aprobadoPor: autor }, { fusionar: true });
-  return informe;
 }

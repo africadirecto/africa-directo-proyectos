@@ -1,6 +1,6 @@
 # Informes con IA
 
-La app prepara **borradores de informe (Google Docs) y presentaciones (Google Slides) para donantes**, y un libro de análisis de proyectos en Google Sheets. La IA los redacta con los datos del proyecto; un voluntario los revisa, los corrige y los aprueba. **Ningún informe sale hacia un donante sin aprobación**, y la app no los envía: los descarga y envía una persona.
+La app prepara **borradores de informe (Google Docs) y presentaciones (Google Slides) para donantes**, y un libro de análisis de proyectos en Google Sheets. La IA los redacta con los datos del proyecto; un voluntario los revisa y los corrige en Google. **La app no envía nada**: lo descarga y lo envía una persona.
 
 ## Generar un informe
 
@@ -19,11 +19,11 @@ La app prepara **borradores de informe (Google Docs) y presentaciones (Google Sl
    | **Fotos publicables** | Añade la lista de fotos marcadas como publicables, con su enlace |
    | **Indicaciones para la IA** | Lo que quieras destacar u orientar, en tus palabras |
 
-3. **Generar.** Tarda de unos segundos a un minuto. El archivo queda en `05_Informes` y en la pestaña **Archivos › Informes**, como **Borrador**.
+3. **Generar.** Tarda de unos segundos a un minuto. El archivo queda en `03_Informes` y en la pestaña **Archivos › Informes**.
 4. Ábrelo en Google Docs o Slides y revísalo:
    - Completa lo marcado como **`[PENDIENTE: …]`**: es lo que no consta en la app. La IA no inventa datos.
    - Al final hay unas **notas para la revisión** (en las presentaciones, una última diapositiva): lo pendiente y de qué evento de la cronología sale cada apartado. **Bórralas antes de enviar.** También se ven en la app, en «Notas para la revisión».
-5. Pulsa **Aprobar** en la lista de informes. Solo entonces aparecen los botones de descarga: **PDF** y **Word** (documentos) o **PDF** y **PowerPoint** (presentaciones).
+5. Descárgalo desde la lista de informes: **PDF** y **Word** (documentos) o **PDF** y **PowerPoint** (presentaciones). La descarga sale del documento tal como esté en Google en ese momento.
 
 ## Informes de conjunto
 
@@ -35,7 +35,7 @@ Además del de cada proyecto, con **Generar informe** se pueden preparar, tambi�
 | **Contrapartes** y la ficha de cada una | Una contraparte (o todas): sus proyectos y lo más relevante | La contraparte y los estados |
 | La ficha de cada **donante** | Lo que ha financiado ese donante y cómo van esos proyectos, para enviárselo | — |
 
-Todos piden el periodo de las novedades, el idioma, la extensión e indicaciones para la IA. Se guardan en `AD · Proyectos / _Informes generales` y aparecen bajo cada página para revisarlos y aprobarlos. La IA ve el detalle de hasta 30 proyectos (los más recientes); el resto cuenta en las cifras.
+Todos piden el periodo de las novedades, el idioma, la extensión e indicaciones para la IA. Se guardan en `AD · Proyectos / _Informes generales` y aparecen bajo cada página para abrirlos y descargarlos. La IA ve el detalle de hasta 30 proyectos (los más recientes); el resto cuenta en las cifras.
 
 ### Hoja de cálculo de proyectos
 
@@ -47,7 +47,7 @@ En la página **Proyectos**, **Generar informe** ofrece también el formato **Ho
 | **Proyectos** | Una fila por proyecto: código, título, país, lugar, sector, contraparte, estado, año, presupuesto y comprometido en euros, porcentaje y lo que falta, presupuesto en moneda local y fechas |
 | **Por estado, país, sector, contraparte y año** | Número de proyectos, presupuesto, comprometido y porcentaje, con una gráfica de barras |
 
-Los resúmenes son **fórmulas** sobre la hoja «Proyectos»: si se corrige un dato allí, se recalculan. El libro es una copia del momento en que se genera; no se actualiza con la app. Como los demás, queda en `_Informes generales/Cartera` como borrador y, una vez aprobado, se descarga en **Excel** o **PDF**.
+Los resúmenes son **fórmulas** sobre la hoja «Proyectos»: si se corrige un dato allí, se recalculan. El libro es una copia del momento en que se genera; no se actualiza con la app. Como los demás, queda en `_Informes generales/Cartera` y se descarga en **Excel** o **PDF**.
 
 ## Qué datos usa la IA
 
@@ -71,7 +71,7 @@ AD · Plantillas/
 └── Donantes/Fundación Horizonte/Informe intermedio
 ```
 
-Para generar el informe, la app **copia la plantilla** en `05_Informes` y **sustituye los marcadores** sin tocar el formato: logos, tablas, estilos, encabezados y pies se mantienen.
+Para generar el informe, la app **copia la plantilla** en `03_Informes` y **sustituye los marcadores** sin tocar el formato: logos, tablas, estilos, encabezados y pies se mantienen.
 
 Hace falta:
 

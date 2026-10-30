@@ -1,6 +1,6 @@
 // Informes de un proyecto para donantes: borradores en Google Docs o Slides redactados con
-// IA a partir de los datos del proyecto. Un voluntario los revisa y los aprueba antes de
-// enviarlos. Tipos: seguimiento, final y financiación (para presentar el proyecto a donantes).
+// IA a partir de los datos del proyecto. Un voluntario los revisa en Google y los descarga
+// para enviarlos. Tipos: seguimiento, final y financiación (para presentar el proyecto a donantes).
 //
 // Plantillas:
 // - Las de la app se crean a partir del contenido (ver informesComun.ts).
@@ -8,7 +8,7 @@
 //     {{proyecto.titulo}}                         un dato (ver valoresDatos)
 //     {{ia:avance}}                               un apartado redactado por la IA
 //     {{ia:avance|150 palabras|Describe la obra}} con extensión e instrucción
-//   Se copia en 05_Informes y se sustituyen los marcadores sin tocar el formato.
+//   Se copia en 03_Informes y se sustituyen los marcadores sin tocar el formato.
 
 import { almacen } from '../almacen';
 import { drive, conFecha } from '../drive';
@@ -25,7 +25,6 @@ import { leerIndice } from './indice';
 import { leerProyecto } from './proyectos';
 import { listarVersiones } from './solicitudes';
 import {
-  aprobar,
   contarPendientes,
   crearArchivoInforme,
   FACTOR,
@@ -347,7 +346,6 @@ export async function generarInforme(codigo: string, o: OpcionesInforme, autor: 
     extension: o.extension,
     docId: archivo.id,
     url: archivo.url,
-    estado: 'borrador',
     pendientes: contarPendientes(r),
     notas,
     resumen: r.resumen,
@@ -359,13 +357,8 @@ export async function generarInforme(codigo: string, o: OpcionesInforme, autor: 
   await anotarEvento(codigo, {
     tipo: 'sistema',
     autor,
-    texto: `Borrador: ${clase.toLowerCase()} ${etiqueta}${informe.donante ? ` para ${informe.donante.nombre}` : ''} (${plantilla.nombre}). Revísalo y apruébalo antes de enviarlo.`,
+    texto: `Borrador: ${clase.toLowerCase()} ${etiqueta}${informe.donante ? ` para ${informe.donante.nombre}` : ''} (${plantilla.nombre}). Revísalo antes de enviarlo.`,
     enlaces: [{ texto: o.formato === 'slides' ? 'Abrir en Google Slides' : 'Abrir en Google Docs', url: informe.url }],
   });
   return { ...informe, id };
-}
-
-export async function aprobarInforme(codigo: string, id: string, autor: Persona): Promise<void> {
-  const informe = await aprobar(`proyectos/${codigo}/informes/${id}`, autor);
-  await anotarEvento(codigo, { tipo: 'sistema', autor, texto: `Informe aprobado: ${informe.titulo}.`, enlaces: [{ texto: 'Abrir', url: informe.url }] });
 }

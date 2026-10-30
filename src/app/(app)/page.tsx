@@ -44,7 +44,7 @@ export default async function Proyectos() {
         porRevisar={atencion.porRevisar.length}
         sinResponder={atencion.sinResponder.length}
       />
-      <ListaInformes informes={await listarInformesGenerales('cartera')} editor={editor} titulo="Informes de proyectos" />
+      <ListaInformes informes={await listarInformesGenerales('cartera')} titulo="Informes de proyectos" />
     </main>
   );
 }
