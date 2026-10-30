@@ -26,7 +26,7 @@ Quedan para las siguientes fases: lectura del buzón de proyectos con Apps Scrip
 
 ## Probarla en local (modo demo)
 
-Necesitas [Node.js](https://nodejs.org) 22 o posterior.
+Necesitas [Node.js](https://nodejs.org) 24 (la misma versión que usa Vercel, fijada en `package.json`).
 
 ```bash
 npm install
