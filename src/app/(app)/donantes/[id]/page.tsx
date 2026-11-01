@@ -4,9 +4,7 @@ import { notFound } from 'next/navigation';
 import { requiere, tienePermiso } from '@/lib/sesion';
 import { leerDonante, TIPOS_DONANTE } from '@/lib/dominio/donantes';
 import { aportacionesDeDonante } from '@/lib/dominio/aportaciones';
-import { ESTADOS_APORTACION } from '@/lib/estados';
 import { dinero, fechaCorta } from '@/lib/formato';
-import { Etiqueta } from '@/componentes/Basicos';
 import { FormDonante } from '../FormDonante';
 import { BotonInformeGeneral } from '../../BotonInformeGeneral';
 import { ListaInformes } from '@/componentes/ListaInformes';
@@ -52,9 +50,14 @@ export default async function Donante({ params }: { params: Promise<{ id: string
                   <tr>
                     <th scope="col">Proyecto</th>
                     <th scope="col" className="der">
-                      Importe
+                      Comprometido
                     </th>
-                    <th scope="col">Estado</th>
+                    <th scope="col" className="der">
+                      Cobrado
+                    </th>
+                    <th scope="col" className="der">
+                      Por cobrar
+                    </th>
                     <th scope="col">Actualizada</th>
                   </tr>
                 </thead>
@@ -68,9 +71,8 @@ export default async function Donante({ params }: { params: Promise<{ id: string
                         <span className="sub">{a.proyecto}</span>
                       </td>
                       <td className="der">{dinero(a.importe)}</td>
-                      <td>
-                        <Etiqueta clase={ESTADOS_APORTACION[a.estado].clase}>{ESTADOS_APORTACION[a.estado].nombre}</Etiqueta>
-                      </td>
+                      <td className="der">{a.recibido ? dinero(a.recibido) : '—'}</td>
+                      <td className="der">{a.importe > a.recibido ? dinero(a.importe - a.recibido) : '—'}</td>
                       <td>{fechaCorta(a.actualizado)}</td>
                     </tr>
                   ))}

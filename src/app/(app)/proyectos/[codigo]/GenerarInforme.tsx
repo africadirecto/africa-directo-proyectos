@@ -81,6 +81,8 @@ export function GenerarInforme({
             {tipo === 'financiacion' ? 'Para presentar a' : 'Para el donante'}
             <Desplegable
               name="donante"
+              buscar
+              textoBuscar="Buscar donante…"
               defaultValue=""
               placeholder="Ninguno en concreto"
               opciones={[{ valor: '', texto: 'Ninguno en concreto' }, ...donantes.map((d) => ({ valor: d.id, texto: d.nombre }))]}

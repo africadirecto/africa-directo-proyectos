@@ -63,7 +63,7 @@ export function BotonInformeGeneral({
           {opcionesSobre ? (
             <label className="field ancho">
               {etiquetaSobre}
-              <Desplegable name="sobre" defaultValue={opcionesSobre[0]?.valor ?? ''} opciones={opcionesSobre} />
+              <Desplegable name="sobre" buscar textoBuscar="Buscar…" defaultValue={opcionesSobre[0]?.valor ?? ''} opciones={opcionesSobre} />
             </label>
           ) : null}
           {tipo !== 'donante' ? (

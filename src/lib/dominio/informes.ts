@@ -65,7 +65,7 @@ const APARTADOS: Record<TipoInformeProyecto, ApartadoPedido[]> = {
     { clave: 'resumen', titulo: 'Resumen del periodo', palabras: 100, instruccion: 'Qué se ha hecho en el periodo y en qué punto está el proyecto.' },
     { clave: 'actividades', titulo: 'Actividades realizadas', palabras: 200, instruccion: 'Avance de las obras o actividades, con las fechas y cifras que consten.' },
     { clave: 'incidencias', titulo: 'Incidencias', palabras: 100, instruccion: 'Problemas o retrasos y cómo se han resuelto. Si no hubo, dilo en una frase.' },
-    { clave: 'economia', titulo: 'Situación económica', palabras: 100, instruccion: 'Presupuesto, financiación comprometida y recibida y gastos que consten.' },
+    { clave: 'economia', titulo: 'Situación económica', palabras: 100, instruccion: 'Presupuesto, financiación comprometida, recibida y enviada a la contraparte, y gastos que consten.' },
     { clave: 'proximos', titulo: 'Próximos pasos', palabras: 80, instruccion: 'Qué falta por hacer y cuándo está previsto.' },
   ],
   final: [
@@ -135,10 +135,10 @@ async function reunirDatos(p: Proyecto, o: OpcionesInforme): Promise<Datos> {
     listarVersiones(p.codigo),
     o.tipo === 'financiacion' ? leerIndice() : Promise.resolve([]),
   ]);
-  const validas = aportaciones.filter((a) => a.estado === 'comprometida' || a.estado === 'recibida');
+  const validas = aportaciones.filter((a) => a.importe > 0);
   const delDonante = validas.filter((a) => a.donanteId === o.donanteId);
   const donante = delDonante.length ? { id: o.donanteId, nombre: delDonante[0].donanteNombre, importe: delDonante.reduce((s, a) => s + a.importe, 0) } : null;
-  const { comprometido, recibido } = totales(aportaciones);
+  const { comprometido, recibido, enviado } = totales(aportaciones, p.envios ?? []);
   const objetivo = presupuestoEnEuros(p);
 
   // En la presentación para buscar financiación cuenta toda la historia; en el resto, el periodo.
@@ -176,6 +176,7 @@ async function reunirDatos(p: Proyecto, o: OpcionesInforme): Promise<Datos> {
       monedaLocal: p.moneda,
       comprometidoEur: comprometido,
       recibidoEur: recibido,
+      enviadoAContraparteEur: enviado,
       faltaEur: objetivo != null ? Math.max(0, objetivo - comprometido) : null,
       plazoMeses: v?.respuestas.plazoMeses ?? null,
       aportacionLocal: sinContactos(v?.analisis?.traduccion?.aportacionLocal || v?.respuestas.aportacionLocal || ''),
@@ -184,7 +185,8 @@ async function reunirDatos(p: Proyecto, o: OpcionesInforme): Promise<Datos> {
     },
     presupuestoDetallado: lineas.length ? { moneda: v?.respuestas.moneda, lineas } : null,
     otrosProyectosDeLaContraparte: otros.map((f) => ({ titulo: f.titulo, estado: ESTADOS[f.estado].nombre, anio: f.anio })),
-    aportaciones: validas.map((a) => ({ donante: a.donanteNombre, importeEur: a.importe, estado: a.estado })),
+    aportaciones: validas.map((a) => ({ donante: a.donanteNombre, comprometidoEur: a.importe, cobradoEur: a.recibido })),
+    enviosAContraparte: (p.envios ?? []).map((e) => ({ fecha: e.fecha, importeEur: e.importe, nota: e.nota })),
     eventos: delPeriodo,
     fotosPublicables: fotos.length,
     informeAnterior: anterior ? { fecha: anterior.creado.slice(0, 10), resumen: anterior.resumen } : null,
@@ -213,6 +215,7 @@ function valoresDatos({ p, o, donante }: Datos): Record<string, string> {
     'proyecto.presupuesto_local': dinero(p.presupuesto, p.moneda),
     'proyecto.financiado': dinero(p.comprometido),
     'proyecto.recibido': dinero(p.recibido),
+    'proyecto.enviado': dinero(p.enviado ?? 0),
     'proyecto.falta': objetivo != null ? dinero(Math.max(0, objetivo - p.comprometido)) : '',
     'proyecto.moneda': p.moneda,
     'proyecto.inicio': fecha(p.fechas.inicio),

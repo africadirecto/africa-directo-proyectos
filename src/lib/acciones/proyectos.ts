@@ -6,7 +6,7 @@ import { actualizarProyecto, asegurarCarpetas, cambiarEstado, leerProyecto } fro
 import { recalcularFinanciacion } from '../dominio/aportaciones';
 import { anotarEvento } from '../dominio/eventos';
 import { marcarPublicable } from '../dominio/archivos';
-import { ESTADOS } from '../estados';
+import { ESTADOS, estadosManuales } from '../estados';
 import { MONEDAS, PAISES } from '../paises';
 import { aEurosHoy } from '../cambio';
 import { SECTORES } from '../formulario/textos';
@@ -26,6 +26,10 @@ export async function cambiarEstadoAccion(_: Resultado, fd: FormData): Promise<R
     const motivo = texto(fd, 'motivo', 1000);
     if (!ESTADOS[estado]) throw new Error('Elige el nuevo estado.');
     if (motivo.length < 3) throw new Error('Explica brevemente el motivo del cambio.');
+    const p = await leerProyecto(codigo);
+    if (p && !estadosManuales(p.estado).includes(estado)) {
+      throw new Error('Las solicitudes se validan, se devuelven o se rechazan desde Solicitudes.');
+    }
     await cambiarEstado(codigo, estado, motivo, persona(yo));
     rutas(codigo);
     return `Estado cambiado a «${ESTADOS[estado].nombre}».`;

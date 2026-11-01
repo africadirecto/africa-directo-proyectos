@@ -77,3 +77,11 @@ export function iniciales(nombre: string): string {
     .map((p) => p[0]?.toUpperCase())
     .join('');
 }
+
+/** Número escrito a la española: "12.000", "1200,5" o "12 000". */
+export function aNumero(valor: string): number | null {
+  const t = valor.slice(0, 40).replace(/\s/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
+  if (!t) return null;
+  const n = Number(t);
+  return Number.isFinite(n) ? n : null;
+}

@@ -46,3 +46,53 @@ export function LogoSheets({ tamano = 18 }: { tamano?: number }) {
     </svg>
   );
 }
+
+// Iconos de línea (del juego Tabler, licencia MIT) para los botones de la financiación.
+function Linea({ tamano, children }: { tamano: number; children: React.ReactNode }) {
+  return (
+    <svg width={tamano} height={tamano} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ flex: 'none' }}>
+      {children}
+    </svg>
+  );
+}
+
+/** Compromiso de un donante: un acuerdo firmado. */
+export function IconoCompromiso({ tamano = 16 }: { tamano?: number }) {
+  return (
+    <Linea tamano={tamano}>
+      <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
+      <path d="M9 5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2a2 2 0 0 1-2 2h-2a2 2 0 0 1-2-2z" />
+      <path d="m9 14 2 2 4-4" />
+    </Linea>
+  );
+}
+
+/** Cobro: dinero que entra en Africa Directo. */
+export function IconoCobro({ tamano = 16 }: { tamano?: number }) {
+  return (
+    <Linea tamano={tamano}>
+      <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+      <path d="m7 11 5 5 5-5" />
+      <path d="M12 4v12" />
+    </Linea>
+  );
+}
+
+/** Envío: dinero que sale hacia la contraparte. */
+export function IconoEnvio({ tamano = 16 }: { tamano?: number }) {
+  return (
+    <Linea tamano={tamano}>
+      <path d="M10 14 21 3" />
+      <path d="m21 3-6.5 18a.55.55 0 0 1-1 0L10 14l-7-3.5a.55.55 0 0 1 0-1z" />
+    </Linea>
+  );
+}
+
+/** Marca de «hecho». */
+export function IconoHecho({ tamano = 16 }: { tamano?: number }) {
+  return (
+    <Linea tamano={tamano}>
+      <path d="m5 12 5 5L20 7" />
+    </Linea>
+  );
+}

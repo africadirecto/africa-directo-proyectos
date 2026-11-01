@@ -99,6 +99,7 @@ export async function crearProyecto(o: {
     presupuestoEur: null,
     comprometido: 0,
     recibido: 0,
+    enviado: 0,
     numDonantes: 0,
     descripcion: '',
     resumen: '',
@@ -158,10 +159,12 @@ export async function cambiarEstado(
   a: EstadoProyecto,
   motivo: string,
   autor: Persona | null,
+  /** Saltarse el ciclo de estados (solo para deshacer una decisión de revisión). */
+  { forzar = false }: { forzar?: boolean } = {},
 ): Promise<Proyecto> {
   const p = await leerProyecto(codigo);
   if (!p) throw new Error('Proyecto no encontrado');
-  if (!puedePasar(p.estado, a)) {
+  if (!forzar && !puedePasar(p.estado, a)) {
     throw new Error(`No se puede pasar de «${ESTADOS[p.estado].nombre}» a «${ESTADOS[a].nombre}».`);
   }
   const ahora = new Date().toISOString();

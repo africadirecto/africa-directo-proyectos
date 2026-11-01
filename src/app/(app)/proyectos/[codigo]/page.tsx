@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { requiere, tienePermiso } from '@/lib/sesion';
 import { leerProyecto } from '@/lib/dominio/proyectos';
 import { drive } from '@/lib/drive';
-import { ESTADOS, FASES, esFinal, indiceFase, transicionesDesde } from '@/lib/estados';
+import { ESTADOS, FASES, esFinal, estadosManuales, indiceFase } from '@/lib/estados';
 import { dinero, diasDesde } from '@/lib/formato';
 import { nombrePais } from '@/lib/paises';
 import { nombreSector } from '@/lib/formulario/textos';
@@ -53,7 +53,7 @@ function siguientePaso(p: Proyecto): { texto: string; enlace?: [string, string] 
     case 'revision':
       return { texto: 'revisar la solicitud y decidir.', enlace: ['Revisar', `/solicitudes?p=${p.codigo}`] };
     case 'validada':
-      return { texto: 'buscar financiación: añade los donantes a los que se presenta el proyecto.', enlace: ['Financiación', '?pestana=financiacion'] };
+      return { texto: 'buscar financiación. Cuando un donante se comprometa, añádelo en Financiación.', enlace: ['Financiación', '?pestana=financiacion'] };
     case 'financiacion':
       return { texto: falta > 0 ? `faltan ${dinero(falta)} por comprometer.` : 'revisa el presupuesto: la financiación ya lo cubre.', enlace: ['Financiación', '?pestana=financiacion'] };
     case 'aprobado':
@@ -90,7 +90,7 @@ export default async function FichaProyecto({
   const d = await drive();
   const fase = indiceFase(p.estado);
   const siguiente = siguientePaso(p);
-  const opciones = transicionesDesde(p.estado).filter((e) => !(p.estado === 'revision' && e === 'solicitud'));
+  const opciones = estadosManuales(p.estado);
 
   return (
     <main className="principal" style={{ paddingTop: 20, gap: 20 }}>
@@ -142,11 +142,16 @@ export default async function FichaProyecto({
             ) : null}
             {editor && opciones.length ? (
               <Dialogo boton="Cambiar estado" claseBoton="btn btn-p" titulo="Cambiar estado">
-                <FormAccion accion={cambiarEstadoAccion} className="pila">
+                <FormAccion accion={cambiarEstadoAccion} className="pila" limpiar>
                   <input type="hidden" name="codigo" value={p.codigo} />
                   <p className="meta" style={{ margin: 0 }}>
                     Estado actual: {ESTADOS[p.estado].nombre}. Queda anotado quién, cuándo y por qué.
                   </p>
+                  {p.estado === 'solicitud' || p.estado === 'revision' ? (
+                    <p className="meta" style={{ margin: 0 }}>
+                      Para validar, pedir cambios o rechazar la solicitud, usa <Link href={`/solicitudes?p=${p.codigo}`}>Solicitudes</Link>.
+                    </p>
+                  ) : null}
                   <label className="field">
                     Nuevo estado
                     <Desplegable name="estado" required opciones={opciones.map((e) => ({ valor: e, texto: ESTADOS[e].nombre }))} />

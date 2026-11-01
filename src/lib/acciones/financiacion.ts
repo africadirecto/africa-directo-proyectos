@@ -3,21 +3,35 @@
 import { revalidatePath } from 'next/cache';
 import { permitido, persona } from '../sesion';
 import { leerProyecto } from '../dominio/proyectos';
-import { actualizarAportacion, crearAportacion, eliminarAportacion, ESTADOS_APORTACION, renombrarDonanteEnAportaciones } from '../dominio/aportaciones';
+import {
+  fechaValida,
+  importeValido,
+  quitarCobro,
+  quitarCompromiso,
+  quitarEnvio,
+  registrarCobro,
+  registrarCompromiso,
+  registrarEnvio,
+  renombrarDonanteEnAportaciones,
+} from '../dominio/aportaciones';
 import { actualizarDonante, crearDonante, leerDonante, TIPOS_DONANTE } from '../dominio/donantes';
+import { exportarFinanciacion } from '../dominio/financiacionHoja';
 import { intentar, numero, texto, type Resultado } from './resultado';
-import type { EstadoAportacion, TipoDonante } from '../tipos';
+import type { TipoDonante } from '../tipos';
 
-function estadoValido(e: string): e is EstadoAportacion {
-  return e in ESTADOS_APORTACION;
+function rutas(codigo: string) {
+  revalidatePath(`/proyectos/${codigo}`);
+  revalidatePath('/', 'layout');
 }
 
-export async function anadirAportacion(_: Resultado, fd: FormData): Promise<Resultado> {
+/** Un donante (nuevo o ya registrado) se compromete con un importe. */
+export async function compromisoAccion(_: Resultado, fd: FormData): Promise<Resultado> {
   return intentar(async () => {
     const yo = await permitido('edicion');
     const codigo = texto(fd, 'codigo', 20);
     const p = await leerProyecto(codigo);
     if (!p) throw new Error('Proyecto no encontrado');
+    const importe = importeValido(numero(fd, 'importe'), 'el importe comprometido');
 
     let donanteId = texto(fd, 'donante', 100);
     if (donanteId === 'nuevo') {
@@ -39,57 +53,79 @@ export async function anadirAportacion(_: Resultado, fd: FormData): Promise<Resu
     const donante = await leerDonante(donanteId);
     if (!donante) throw new Error('Elige un donante.');
 
-    const importe = numero(fd, 'importe');
-    if (!importe || importe <= 0) throw new Error('Escribe el importe en euros.');
-    const estado = texto(fd, 'estado', 20);
-    if (!estadoValido(estado)) throw new Error('Elige el estado de la aportación.');
-
-    await crearAportacion(
+    const r = await registrarCompromiso(
       codigo,
-      { donanteId, donanteNombre: donante.nombre, importe, estado, notas: texto(fd, 'notas', 1000) },
+      { donanteId, donanteNombre: donante.nombre, importe, fecha: fechaValida(texto(fd, 'fecha', 10)), nota: texto(fd, 'nota', 200) },
       persona(yo),
     );
-    revalidatePath(`/proyectos/${codigo}`);
-    revalidatePath('/', 'layout');
-    return 'Aportación añadida.';
+    rutas(codigo);
+    revalidatePath('/donantes', 'layout');
+    return r === 'sumado' ? `Sumado a lo que ya había comprometido ${donante.nombre}.` : 'Compromiso registrado.';
   });
 }
 
-export async function cambiarAportacion(_: Resultado, fd: FormData): Promise<Resultado> {
+export async function quitarCompromisoAccion(_: Resultado, fd: FormData): Promise<Resultado> {
   return intentar(async () => {
     const yo = await permitido('edicion');
-    const estado = texto(fd, 'estado', 20);
-    if (!estadoValido(estado)) throw new Error('Estado no válido.');
-    await actualizarAportacion(texto(fd, 'id', 100), { estado }, persona(yo));
-    revalidatePath(`/proyectos/${texto(fd, 'codigo', 20)}`);
-    revalidatePath('/', 'layout');
+    const codigo = await quitarCompromiso(texto(fd, 'aportacion', 100), texto(fd, 'registro', 40), persona(yo));
+    rutas(codigo);
     revalidatePath('/donantes', 'layout');
   });
 }
 
-/** Corrige una aportación: importe (en euros), estado y notas. */
-export async function editarAportacion(_: Resultado, fd: FormData): Promise<Resultado> {
+export async function cobroAccion(_: Resultado, fd: FormData): Promise<Resultado> {
   return intentar(async () => {
     const yo = await permitido('edicion');
-    const estado = texto(fd, 'estado', 20);
-    if (!estadoValido(estado)) throw new Error('Estado no válido.');
-    const importe = numero(fd, 'importe');
-    if (!importe || importe <= 0) throw new Error('Escribe el importe en euros.');
-    await actualizarAportacion(texto(fd, 'id', 100), { importe, estado, notas: texto(fd, 'notas', 1000) }, persona(yo));
-    revalidatePath(`/proyectos/${texto(fd, 'codigo', 20)}`);
-    revalidatePath('/', 'layout');
-    return 'Aportación guardada.';
+    const id = texto(fd, 'aportacion', 100);
+    if (!id) throw new Error('Elige de qué donante es el cobro.');
+    const codigo = await registrarCobro(
+      id,
+      { importe: importeValido(numero(fd, 'importe')), fecha: fechaValida(texto(fd, 'fecha', 10)), nota: texto(fd, 'nota', 200) },
+      persona(yo),
+    );
+    rutas(codigo);
+    revalidatePath('/donantes', 'layout');
+    return 'Cobro registrado.';
   });
 }
 
-export async function eliminarAportacionAccion(_: Resultado, fd: FormData): Promise<Resultado> {
+export async function quitarCobroAccion(_: Resultado, fd: FormData): Promise<Resultado> {
   return intentar(async () => {
     const yo = await permitido('edicion');
-    const codigo = await eliminarAportacion(texto(fd, 'id', 100), persona(yo));
-    revalidatePath(`/proyectos/${codigo}`);
-    revalidatePath('/', 'layout');
-    return 'Aportación eliminada.';
+    const codigo = await quitarCobro(texto(fd, 'aportacion', 100), texto(fd, 'registro', 40), persona(yo));
+    rutas(codigo);
+    revalidatePath('/donantes', 'layout');
   });
+}
+
+export async function envioAccion(_: Resultado, fd: FormData): Promise<Resultado> {
+  return intentar(async () => {
+    const yo = await permitido('edicion');
+    const codigo = texto(fd, 'codigo', 20);
+    await registrarEnvio(codigo, { importe: importeValido(numero(fd, 'importe')), fecha: fechaValida(texto(fd, 'fecha', 10)), nota: texto(fd, 'nota', 200) }, persona(yo));
+    rutas(codigo);
+    return 'Envío registrado.';
+  });
+}
+
+export async function quitarEnvioAccion(_: Resultado, fd: FormData): Promise<Resultado> {
+  return intentar(async () => {
+    const yo = await permitido('edicion');
+    const codigo = texto(fd, 'codigo', 20);
+    await quitarEnvio(codigo, texto(fd, 'registro', 40), persona(yo));
+    rutas(codigo);
+  });
+}
+
+/** Libro de Google Sheets con la financiación del proyecto; devuelve su dirección para abrirlo. */
+export async function exportarFinanciacionAccion(_: Resultado & { url?: string }, fd: FormData): Promise<Resultado & { url?: string }> {
+  let url = '';
+  const r = await intentar(async () => {
+    const yo = await permitido('edicion');
+    url = await exportarFinanciacion(texto(fd, 'codigo', 20), persona(yo));
+    return 'Hoja de cálculo creada en 04_Administración.';
+  });
+  return r.ok ? { ...r, url } : r;
 }
 
 export async function guardarDonante(_: Resultado, fd: FormData): Promise<Resultado> {

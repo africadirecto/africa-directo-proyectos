@@ -61,7 +61,7 @@ const APARTADOS: Record<TipoInformeGeneral, ApartadoPedido[]> = {
     { clave: 'resumen', titulo: 'Resumen', palabras: 100, instruccion: 'Qué ha hecho posible el donante con Africa Directo.' },
     { clave: 'impacto', titulo: 'Proyectos e impacto', palabras: 150, instruccion: 'Los proyectos que apoya, a quién benefician y en qué punto están.' },
     { clave: 'destacados', titulo: 'Novedades del periodo', palabras: 150, instruccion: 'Lo más relevante de la cronología del periodo en esos proyectos.' },
-    { clave: 'economia', titulo: 'Aportaciones', palabras: 100, instruccion: 'Lo que ha aportado el donante (en euros), a qué proyectos y en qué estado está cada aportación.' },
+    { clave: 'economia', titulo: 'Aportaciones', palabras: 100, instruccion: 'Lo que ha aportado el donante (en euros), a qué proyectos, y cuánto ha pagado ya.' },
     { clave: 'agradecimiento', titulo: 'Agradecimiento', palabras: 60, instruccion: 'Agradecimiento en nombre de las contrapartes y de Africa Directo. Recuerda que el 100 % llega.' },
   ],
 };
@@ -99,10 +99,10 @@ export async function generarInformeGeneral(o: OpcionesInformeGeneral, autor: Pe
     const donante = await leerDonante(o.sobre);
     if (!donante) throw new Error('Donante no encontrado.');
     sobre = { id: donante.id, nombre: donante.nombre };
-    const aps = (await aportacionesDeDonante(donante.id)).filter((a) => a.estado !== 'descartada');
-    aportadoPorProyecto = aps.reduce((m, a) => m.set(a.proyecto, (m.get(a.proyecto) ?? 0) + (a.estado === 'comprometida' || a.estado === 'recibida' ? a.importe : 0)), new Map<string, number>());
+    const aps = (await aportacionesDeDonante(donante.id)).filter((a) => a.importe > 0);
+    aportadoPorProyecto = aps.reduce((m, a) => m.set(a.proyecto, (m.get(a.proyecto) ?? 0) + a.importe), new Map<string, number>());
     filas = indice.filter((f) => aps.some((a) => a.proyecto === f.codigo));
-    contextoSobre = { donante: donante.nombre, tipo: TIPOS_DONANTE[donante.tipo], aportaciones: aps.map((a) => ({ proyecto: a.proyectoTitulo || a.proyecto, importeEur: a.importe, estado: a.estado })) };
+    contextoSobre = { donante: donante.nombre, tipo: TIPOS_DONANTE[donante.tipo], aportaciones: aps.map((a) => ({ proyecto: a.proyectoTitulo || a.proyecto, comprometidoEur: a.importe, cobradoEur: a.recibido })) };
   } else if (o.tipo === 'contraparte' && o.sobre) {
     const c = await leerContraparte(o.sobre);
     if (!c) throw new Error('Contraparte no encontrada.');

@@ -5,54 +5,47 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { ESTADOS_APORTACION } from '@/lib/estados';
 import { dinero } from '@/lib/formato';
 import { Desplegable } from '@/componentes/Desplegable';
 import { Barras, Cifras, Columnas, formatear } from '@/componentes/Graficos';
-import type { Aportacion, Donante, EstadoAportacion, TipoDonante } from '@/lib/tipos';
+import type { Aportacion, Donante, TipoDonante } from '@/lib/tipos';
 
 type D = Donante & { id: string };
 type A = Aportacion & { id: string };
 
-const CUENTAN: EstadoAportacion[] = ['comprometida', 'recibida'];
-const EN_CURSO: EstadoAportacion[] = ['ofrecida', 'interesado'];
-const ORDEN_EMBUDO: EstadoAportacion[] = ['ofrecida', 'interesado', 'comprometida', 'recibida', 'descartada'];
-// Colores del embudo: paleta categórica validada, en orden fijo (descartada en gris).
-const COLOR_EMBUDO: Record<EstadoAportacion, string> = { ofrecida: '#2a78d6', interesado: '#eb6834', comprometida: '#1baf7a', recibida: '#008300', descartada: '#a3a29b' };
+// Como en la ficha del proyecto: más claro lo comprometido, más oscuro lo cobrado.
+const COLOR = { porCobrar: '#f4b49a', cobrado: '#e54611' };
 const alternar = (lista: string[], v: string) => (lista.includes(v) ? lista.filter((x) => x !== v) : [...lista, v]);
 
 export function PanelDonantes({ donantes, aportaciones, tipos }: { donantes: D[]; aportaciones: A[]; tipos: Record<TipoDonante, string> }) {
   const [buscar, setBuscar] = useState('');
   const [tiposSel, setTipos] = useState<string[]>([]);
-  const [estados, setEstados] = useState<string[]>([]);
   const [anios, setAnios] = useState<string[]>([]);
   const [elegidos, setElegidos] = useState<string[]>([]);
 
   const anioDe = (a: A) => a.creado.slice(0, 4);
-  // Las aportaciones que cumplen los filtros de estado y año.
-  const aps = useMemo(
-    () => aportaciones.filter((a) => (!estados.length || estados.includes(a.estado)) && (!anios.length || anios.includes(anioDe(a)))),
-    [aportaciones, estados, anios],
-  );
+  // Las aportaciones que cumplen el filtro de año.
+  const aps = useMemo(() => aportaciones.filter((a) => !anios.length || anios.includes(anioDe(a))), [aportaciones, anios]);
   const visibles = useMemo(() => {
     const q = buscar.trim().toLowerCase();
     return donantes.filter((d) => {
       if (tiposSel.length && !tiposSel.includes(d.tipo)) return false;
       if (elegidos.length && !elegidos.includes(d.id)) return false;
-      if ((estados.length || anios.length) && !aps.some((a) => a.donanteId === d.id)) return false;
+      if (anios.length && !aps.some((a) => a.donanteId === d.id)) return false;
       if (q && ![d.nombre, d.contactoNombre, tipos[d.tipo]].some((t) => (t ?? '').toLowerCase().includes(q))) return false;
       return true;
     });
-  }, [donantes, tiposSel, elegidos, estados, anios, aps, buscar, tipos]);
+  }, [donantes, tiposSel, elegidos, anios, aps, buscar, tipos]);
   const ids = new Set(visibles.map((d) => d.id));
   const susAps = aps.filter((a) => ids.has(a.donanteId));
 
-  const suma = (lista: A[], estadosOk: EstadoAportacion[]) => lista.filter((a) => estadosOk.includes(a.estado)).reduce((s, a) => s + a.importe, 0);
+  const suma = (lista: A[], campo: 'importe' | 'recibido') => lista.reduce((s, a) => s + (a[campo] ?? 0), 0);
   const de = (id: string) => {
     const l = susAps.filter((a) => a.donanteId === id);
-    return { proyectos: new Set(l.map((a) => a.proyecto)).size, comprometido: suma(l, CUENTAN), recibido: suma(l, ['recibida']), enCurso: suma(l, EN_CURSO) };
+    return { proyectos: new Set(l.map((a) => a.proyecto)).size, comprometido: suma(l, 'importe'), recibido: suma(l, 'recibido') };
   };
-  const comprometido = suma(susAps, CUENTAN);
+  const comprometido = suma(susAps, 'importe');
+  const recibido = suma(susAps, 'recibido');
   const porTipo = new Map<string, number>();
   for (const d of visibles) porTipo.set(d.tipo, (porTipo.get(d.tipo) ?? 0) + de(d.id).comprometido);
   const listaAnios = [...new Set(aportaciones.map(anioDe))].sort();
@@ -68,16 +61,6 @@ export function PanelDonantes({ donantes, aportaciones, tipos }: { donantes: D[]
           Tipo
           <Desplegable multiple value={tiposSel} onChange={setTipos} placeholder="Todos" opciones={Object.entries(tipos).map(([valor, texto]) => ({ valor, texto }))} />
         </label>
-        <label className="field" style={{ flex: '1 1 170px' }}>
-          Estado de la aportación
-          <Desplegable
-            multiple
-            value={estados}
-            onChange={setEstados}
-            placeholder="Todos"
-            opciones={ORDEN_EMBUDO.map((e) => ({ valor: e, texto: ESTADOS_APORTACION[e].nombre }))}
-          />
-        </label>
         <label className="field" style={{ flex: '1 1 110px' }}>
           Año
           <Desplegable multiple value={anios} onChange={setAnios} placeholder="Todos" opciones={[...listaAnios].reverse().map((a) => ({ valor: a, texto: a }))} />
@@ -89,7 +72,6 @@ export function PanelDonantes({ donantes, aportaciones, tipos }: { donantes: D[]
           onClick={() => {
             setBuscar('');
             setTipos([]);
-            setEstados([]);
             setAnios([]);
             setElegidos([]);
           }}
@@ -110,10 +92,10 @@ export function PanelDonantes({ donantes, aportaciones, tipos }: { donantes: D[]
                   Comprometido
                 </th>
                 <th scope="col" className="der">
-                  Recibido
+                  Cobrado
                 </th>
                 <th scope="col" className="der">
-                  En conversación
+                  Por cobrar
                 </th>
                 <th scope="col">Informes que pide</th>
               </tr>
@@ -133,7 +115,7 @@ export function PanelDonantes({ donantes, aportaciones, tipos }: { donantes: D[]
                     <td>{r.proyectos || '—'}</td>
                     <td className="der">{r.comprometido ? dinero(r.comprometido) : '—'}</td>
                     <td className="der">{r.recibido ? dinero(r.recibido) : '—'}</td>
-                    <td className="der">{r.enCurso ? dinero(r.enCurso) : '—'}</td>
+                    <td className="der">{r.comprometido > r.recibido ? dinero(r.comprometido - r.recibido) : '—'}</td>
                     <td className="meta">{d.informes || '—'}</td>
                   </tr>
                 );
@@ -143,7 +125,7 @@ export function PanelDonantes({ donantes, aportaciones, tipos }: { donantes: D[]
           {!visibles.length ? <p className="vacio">No hay donantes con estos filtros.</p> : null}
         </div>
         <p className="pie-tabla">
-          Mostrando {visibles.length} de {donantes.length} donantes. Importes en euros; «comprometido» incluye lo ya recibido.
+          Mostrando {visibles.length} de {donantes.length} donantes. Importes en euros; «cobrado» es lo que ya ha llegado a AD.
         </p>
       </section>
 
@@ -160,9 +142,9 @@ export function PanelDonantes({ donantes, aportaciones, tipos }: { donantes: D[]
           items={[
             { etiqueta: 'Donantes', valor: formatear(visibles.length) },
             { etiqueta: 'Comprometido', valor: formatear(comprometido, 'euros') },
-            { etiqueta: 'Recibido', valor: formatear(suma(susAps, ['recibida']), 'euros'), detalle: comprometido ? `${Math.round((suma(susAps, ['recibida']) / comprometido) * 100)} % de lo comprometido` : undefined },
-            { etiqueta: 'En conversación', valor: formatear(suma(susAps, EN_CURSO), 'euros') },
-            { etiqueta: 'Proyectos apoyados', valor: formatear(new Set(susAps.filter((a) => CUENTAN.includes(a.estado)).map((a) => a.proyecto)).size) },
+            { etiqueta: 'Cobrado', valor: formatear(recibido, 'euros'), detalle: comprometido ? `${Math.round((recibido / comprometido) * 100)} % de lo comprometido` : undefined },
+            { etiqueta: 'Por cobrar', valor: formatear(Math.max(0, comprometido - recibido), 'euros') },
+            { etiqueta: 'Proyectos apoyados', valor: formatear(new Set(susAps.filter((a) => a.importe > 0).map((a) => a.proyecto)).size) },
           ]}
         />
         <div className="analiticas-rejilla">
@@ -183,24 +165,22 @@ export function PanelDonantes({ donantes, aportaciones, tipos }: { donantes: D[]
             vacio="Aún no hay aportaciones comprometidas."
           />
           <Barras
-            titulo="Aportaciones por estado (embudo)"
+            titulo="Comprometido: cobrado y por cobrar"
             formato="euros"
             ordenar={false}
-            datos={ORDEN_EMBUDO.map((e) => {
-              const l = susAps.filter((a) => a.estado === e);
-              return { clave: e, etiqueta: ESTADOS_APORTACION[e].nombre, valor: l.reduce((s, a) => s + a.importe, 0), color: COLOR_EMBUDO[e], detalle: `${l.length} aportaciones` };
-            })}
-            seleccion={estados}
-            onElegir={(e) => setEstados((x) => alternar(x, e))}
+            datos={[
+              { clave: 'cobrado', etiqueta: 'Cobrado', valor: recibido, color: COLOR.cobrado, detalle: 'Ya ha llegado a AD' },
+              { clave: 'porCobrar', etiqueta: 'Por cobrar', valor: Math.max(0, comprometido - recibido), color: COLOR.porCobrar, detalle: 'Comprometido, aún sin llegar a AD' },
+            ]}
           />
         </div>
         <Columnas
-          titulo="Comprometido y recibido por año (según la fecha de la aportación)"
+          titulo="Comprometido y cobrado por año (según la fecha de la aportación)"
           formato="euros"
           periodos={listaAnios}
           series={[
-            { nombre: 'Comprometido', valores: listaAnios.map((y) => suma(susAps.filter((a) => anioDe(a) === y), CUENTAN)) },
-            { nombre: 'Recibido', valores: listaAnios.map((y) => suma(susAps.filter((a) => anioDe(a) === y), ['recibida'])) },
+            { nombre: 'Comprometido', valores: listaAnios.map((y) => suma(susAps.filter((a) => anioDe(a) === y), 'importe')) },
+            { nombre: 'Cobrado', valores: listaAnios.map((y) => suma(susAps.filter((a) => anioDe(a) === y), 'recibido')) },
           ]}
         />
       </section>

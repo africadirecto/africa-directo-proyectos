@@ -4,7 +4,7 @@
 //                 ↓ (pide cambios: vuelve a Solicitud)                  ↕ Parado
 //             Rechazada                                   (Cancelado posible desde cualquier estado)
 
-import type { EstadoAportacion, EstadoProyecto } from './tipos';
+import type { EstadoProyecto } from './tipos';
 
 export const ESTADOS: Record<EstadoProyecto, { nombre: string; clase: string; color: string }> = {
   solicitud: { nombre: 'Solicitud', clase: 's-sol', color: '#6B6A63' },
@@ -68,6 +68,15 @@ export function transicionesDesde(estado: EstadoProyecto): EstadoProyecto[] {
   return FINALES.includes(estado) ? base : [...base, 'cancelado'];
 }
 
+/**
+ * Cambios que se pueden hacer a mano desde la ficha. Mientras es una solicitud, solo cancelar:
+ * la contraparte la envía con el formulario y el revisor decide desde Solicitudes.
+ */
+export function estadosManuales(estado: EstadoProyecto): EstadoProyecto[] {
+  const todos = transicionesDesde(estado);
+  return estado === 'solicitud' || estado === 'revision' ? todos.filter((e) => e === 'cancelado') : todos;
+}
+
 export function puedePasar(de: EstadoProyecto, a: EstadoProyecto): boolean {
   return transicionesDesde(de).includes(a);
 }
@@ -81,12 +90,3 @@ export function indiceFase(estado: EstadoProyecto): number {
 export function esFinal(estado: EstadoProyecto): boolean {
   return FINALES.includes(estado);
 }
-
-/** Embudo de una aportación: de ofrecida a recibida (o descartada). */
-export const ESTADOS_APORTACION: Record<EstadoAportacion, { nombre: string; clase: string }> = {
-  ofrecida: { nombre: 'Ofrecida', clase: 's-sol' },
-  interesado: { nombre: 'Interesado', clase: 's-rev' },
-  comprometida: { nombre: 'Comprometida', clase: 's-fin' },
-  recibida: { nombre: 'Recibida', clase: 's-apr' },
-  descartada: { nombre: 'Descartada', clase: 's-cer' },
-};

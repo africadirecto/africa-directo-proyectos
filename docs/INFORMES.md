@@ -54,7 +54,7 @@ Los resúmenes son **fórmulas** sobre la hoja «Proyectos»: si se corrige un d
 Solo los del proyecto, y sin datos de contacto:
 
 - **Ficha:** título, sector, país, lugar, contraparte, estado, descripción, resumen de la solicitud, beneficiarios, presupuesto y fechas.
-- **Financiación:** aportaciones comprometidas y recibidas, por donante.
+- **Financiación:** por donante, lo comprometido y lo cobrado; y los envíos a la contraparte, con su fecha.
 - **Cronología del periodo:** notas, cambios de estado, archivos, correos y aportaciones. Se quitan correos y teléfonos. No entran los eventos internos (revisiones, enlaces).
 - **Fotos publicables:** solo cuántas hay. Las fotos no se envían a la IA.
 - **Informe anterior:** su resumen, para dar continuidad.
@@ -88,7 +88,7 @@ Se escriben tal cual en el documento, con llaves dobles:
 | `{{proyecto.codigo}}`, `{{proyecto.titulo}}` | Código y título |
 | `{{proyecto.sector}}`, `{{proyecto.pais}}`, `{{proyecto.lugar}}` | Sector y país en el idioma del informe; lugar |
 | `{{proyecto.contraparte}}`, `{{proyecto.beneficiarios}}`, `{{proyecto.estado}}` | Contraparte, beneficiarios, estado |
-| `{{proyecto.presupuesto}}`, `{{proyecto.financiado}}`, `{{proyecto.recibido}}`, `{{proyecto.falta}}` | Cifras en euros (la financiación va en euros) |
+| `{{proyecto.presupuesto}}`, `{{proyecto.financiado}}`, `{{proyecto.recibido}}`, `{{proyecto.enviado}}`, `{{proyecto.falta}}` | Cifras en euros (la financiación va en euros). `recibido` es lo cobrado por AD; `enviado`, lo enviado a la contraparte |
 | `{{proyecto.presupuesto_local}}`, `{{proyecto.moneda}}` | Presupuesto en la moneda de la solicitud, y esa moneda |
 | `{{proyecto.inicio}}`, `{{proyecto.fin_previsto}}` | Fechas de la obra |
 | `{{informe.fecha}}`, `{{informe.desde}}`, `{{informe.hasta}}`, `{{informe.periodo}}` | Fecha de hoy y periodo del informe |

@@ -1,30 +1,38 @@
 'use client';
 
+// «Compromiso»: un donante dice que pone un importe. Si ya estaba en el proyecto, se suma.
+
 import { useState } from 'react';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
 import { Desplegable } from '@/componentes/Desplegable';
-import { anadirAportacion } from '@/lib/acciones/financiacion';
-import { ESTADOS_APORTACION } from '@/lib/estados';
+import { compromisoAccion } from '@/lib/acciones/financiacion';
 
-export function FormAportacion({
+export function FormCompromiso({
   codigo,
   donantes,
   tipos,
+  enProyecto,
+  hoy,
 }: {
   codigo: string;
   donantes: { id: string; nombre: string }[];
   tipos: Record<string, string>;
+  /** Donantes que ya tienen compromiso en este proyecto: el importe se les suma. */
+  enProyecto: string[];
+  hoy: string;
 }) {
   const [donante, setDonante] = useState('');
 
   return (
-    <FormAccion accion={anadirAportacion} className="pila" limpiar>
+    <FormAccion accion={compromisoAccion} className="pila" limpiar>
       <input type="hidden" name="codigo" value={codigo} />
       <label className="field">
-        Donante
+        ¿Quién se compromete?
         <Desplegable
           name="donante"
           required
+          buscar
+          textoBuscar="Buscar donante…"
           value={donante}
           onChange={setDonante}
           opciones={[...donantes.map((d) => ({ valor: d.id, texto: d.nombre })), { valor: 'nuevo', texto: '＋ Donante nuevo' }]}
@@ -46,21 +54,21 @@ export function FormAportacion({
         <label className="field">
           Importe (€)
           <input name="importe" inputMode="decimal" required placeholder="12000" />
+          {enProyecto.includes(donante) ? <span className="pista">Se suma a lo que ya tenía comprometido.</span> : null}
         </label>
         <label className="field">
-          Estado
-          <Desplegable name="estado" defaultValue="ofrecida" opciones={Object.entries(ESTADOS_APORTACION).map(([valor, v]) => ({ valor, texto: v.nombre }))} />
+          Fecha
+          <input name="fecha" type="date" required defaultValue={hoy} max={hoy} />
         </label>
       </div>
       <label className="field">
-        <span>Notas <span className="ayuda">opcional</span></span>
-        <input name="notas" placeholder="Por ejemplo: pide informe intermedio el 15 de noviembre" />
+        <span>
+          Nota <span className="ayuda">opcional</span>
+        </span>
+        <input name="nota" maxLength={200} placeholder="Convocatoria 2026" />
       </label>
-      <p className="meta" style={{ margin: 0 }}>
-        Ofrecida: se le ha presentado el proyecto · Interesado: lo está estudiando · Comprometida: ha dicho que sí · Recibida: ya ha pagado.
-      </p>
       <div className="botones">
-        <Enviar pendiente="Guardando…">Añadir</Enviar>
+        <Enviar pendiente="Guardando…">Guardar</Enviar>
       </div>
     </FormAccion>
   );

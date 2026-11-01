@@ -72,9 +72,12 @@ export interface Proyecto {
    * recibir la solicitud y un voluntario puede corregirlo en «Editar datos».
    */
   presupuestoEur: number | null;
-  /** Suma de aportaciones comprometidas o recibidas, en euros. */
+  /** En euros: lo comprometido por los donantes, lo cobrado por AD y lo enviado a la contraparte. */
   comprometido: number;
   recibido: number;
+  /** Pueden faltar en los proyectos guardados antes de registrar envíos. */
+  enviado?: number;
+  envios?: Envio[];
   numDonantes: number;
   descripcion: string;
   /** Resumen en español hecho por IA a partir de la última solicitud. */
@@ -264,18 +267,36 @@ export interface Donante {
   actualizado: string;
 }
 
-export type EstadoAportacion = 'ofrecida' | 'interesado' | 'comprometida' | 'recibida' | 'descartada';
+/** Un registro de dinero: compromiso de un donante, cobro de AD o envío a la contraparte. */
+export interface Movimiento {
+  id: string;
+  /** En euros. */
+  importe: number;
+  /** AAAA-MM-DD. */
+  fecha: string;
+  nota: string;
+}
 
-/** aportaciones/{id}: relación proyecto–donante. */
+/** Dinero que un donante se compromete a dar. */
+export type Compromiso = Movimiento;
+/** Dinero que llega a Africa Directo de un donante. */
+export type Cobro = Movimiento;
+/** Transferencia de Africa Directo a la contraparte (por proyecto, no por donante). */
+export type Envio = Movimiento;
+
+/** aportaciones/{id}: relación proyecto–donante (una por donante en cada proyecto). */
 export interface Aportacion {
   proyecto: string;
   proyectoTitulo: string;
   donanteId: string;
   donanteNombre: string;
-  /** Siempre en euros: la ONG financia en euros. */
+  /** Lo que se ha comprometido, por fechas (un donante puede ampliar su compromiso). */
+  compromisos: Compromiso[];
+  /** Lo que ya ha llegado a AD. */
+  cobros: Cobro[];
+  /** Sumas de compromisos y cobros, en euros, copiadas para las listas y los informes. */
   importe: number;
-  estado: EstadoAportacion;
-  notas: string;
+  recibido: number;
   creado: string;
   actualizado: string;
   actualizadoPor: Persona;

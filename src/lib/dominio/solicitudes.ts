@@ -296,7 +296,7 @@ ${fila('Número de beneficiarios', r.numBeneficiarios)}${fila('Plazo (meses)', r
 
 // ── Revisión ────────────────────────────────────────────────────────────────
 
-export async function listarRevisiones(codigo: string): Promise<Revision[]> {
+export async function listarRevisiones(codigo: string): Promise<(Revision & { id: string })[]> {
   return (await almacen()).consultar<Revision>(`proyectos/${codigo}/revisiones`, { orden: ['fecha', 'desc'] });
 }
 
@@ -348,4 +348,58 @@ export async function decidir(
     await cambiarEstado(codigo, 'rechazada', comentario.trim() ? `Rechazada: ${comentario.trim()}` : 'Solicitud rechazada.', autor);
   }
   return { traducido };
+}
+
+/** Estado al que lleva cada decisión. */
+const RESULTADO: Record<Decision, Proyecto['estado']> = { validar: 'validada', cambios: 'solicitud', rechazar: 'rechazada' };
+
+/**
+ * La última decisión se puede corregir o deshacer mientras el proyecto siga donde ella lo dejó:
+ * la contraparte no ha enviado otra versión, y una propuesta validada aún no tiene donantes.
+ */
+export async function decisionAbierta(p: Proyecto): Promise<(Revision & { id: string }) | null> {
+  const r = (await listarRevisiones(p.codigo))[0];
+  if (!r || r.version !== p.formulario.version || p.estado !== RESULTADO[r.decision]) return null;
+  if (r.decision === 'cambios' && p.formulario.estado !== 'cambios') return null;
+  return r;
+}
+
+/** Corrige el comentario de la última decisión (pedir cambios o rechazar) y lo vuelve a traducir. */
+export async function corregirComentario(codigo: string, comentario: string, autor: Persona): Promise<Revision['decision']> {
+  const p = await leerProyecto(codigo);
+  if (!p) throw new Error('Proyecto no encontrado');
+  const r = await decisionAbierta(p);
+  if (!r || r.decision === 'validar') throw new Error('Esta decisión ya no se puede corregir.');
+  const limpio = comentario.trim();
+  if (r.decision === 'cambios' && !limpio) throw new Error('Escribe qué cambios necesitas.');
+
+  const idioma = p.contraparte.idioma;
+  const t = limpio ? await traducir(limpio, idioma) : null;
+  const traducido = t?.traducido ? t.texto : '';
+  await (await almacen()).guardar(`proyectos/${codigo}/revisiones/${r.id}`, { comentario: limpio, comentarioTraducido: traducido }, { fusionar: true });
+  if (r.decision === 'cambios') {
+    await actualizarProyecto(codigo, { formulario: { ...p.formulario, comentarios: { es: limpio, traducido, idioma } } });
+  }
+  await anotarEvento(codigo, {
+    tipo: 'revision',
+    autor,
+    texto: `${r.decision === 'cambios' ? 'Cambios pedidos' : 'Motivo del rechazo'} corregido: ${limpio || '(sin comentario)'}`,
+  });
+  return r.decision;
+}
+
+/** Deshace la última decisión: la solicitud vuelve a «En revisión» con la misma versión. */
+export async function deshacerDecision(codigo: string, autor: Persona): Promise<void> {
+  const db = await almacen();
+  const p = await leerProyecto(codigo);
+  if (!p) throw new Error('Proyecto no encontrado');
+  const r = await decisionAbierta(p);
+  if (!r) throw new Error('Esta decisión ya no se puede deshacer.');
+  const nombre = { validar: 'validar', cambios: 'pedir cambios', rechazar: 'rechazar' }[r.decision];
+
+  await db.borrar(`proyectos/${codigo}/revisiones/${r.id}`);
+  await cambiarEstado(codigo, 'revision', `Se deshace la decisión de ${nombre}.`, autor, { forzar: true });
+  await actualizarProyecto(codigo, { revisor: null, formulario: { ...p.formulario, estado: 'enviado', comentarios: null } });
+  if (r.decision === 'validar') await db.borrarCampo(`proyectos/${codigo}`, ['fechas', 'validada']);
+  if (r.decision === 'rechazar') await db.borrarCampo(`proyectos/${codigo}`, ['fechas', 'cierre']);
 }
