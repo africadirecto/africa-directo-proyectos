@@ -16,7 +16,8 @@ import { cambiarEstadoAccion, crearCarpetaAccion } from '@/lib/acciones/proyecto
 import { EditarProyecto } from './EditarProyecto';
 import { GenerarInforme } from './GenerarInforme';
 import { LogoDrive } from '@/componentes/Iconos';
-import { desdePropuesto, listarInformes, listarPlantillas } from '@/lib/dominio/informes';
+import { desdePropuesto, listarInformes } from '@/lib/dominio/informes';
+import { plantillasActivas } from '@/lib/dominio/plantillas';
 import { presupuestoEnEuros } from '@/lib/dominio/aportaciones';
 import { listarDonantes } from '@/lib/dominio/donantes';
 import { iaDisponible } from '@/lib/ia';
@@ -35,8 +36,8 @@ const PESTANAS = {
   solicitud: 'Solicitud',
 } as const;
 
-// Generar un informe hace una llamada larga a la IA: se da margen a las acciones de esta página.
-export const maxDuration = 180;
+// Al pedir un informe, su preparación sigue en segundo plano dentro de la misma petición.
+export const maxDuration = 300;
 type Pestana = keyof typeof PESTANAS;
 
 export async function generateMetadata({ params }: { params: Promise<{ codigo: string }> }): Promise<Metadata> {
@@ -101,7 +102,7 @@ export default async function FichaProyecto({
             {editor && p.drive ? (
               <GenerarInforme
                 codigo={p.codigo}
-                plantillas={await listarPlantillas()}
+                plantillas={await plantillasActivas(['seguimiento', 'final', 'financiacion'])}
                 donantes={(await listarDonantes()).map((d) => ({ id: d.id, nombre: d.nombre }))}
                 tipo={['completado', 'cerrado'].includes(p.estado) ? 'final' : ['revision', 'validada', 'financiacion'].includes(p.estado) ? 'financiacion' : 'seguimiento'}
                 desde={desdePropuesto(p, await listarInformes(p.codigo))}

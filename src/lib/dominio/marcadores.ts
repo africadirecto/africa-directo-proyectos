@@ -196,6 +196,8 @@ export interface Relleno {
   fotos: Record<string, FotoRelleno[]>;
   /** «presupuesto» → filas; la primera es la cabecera. */
   tablas: Record<string, string[][]>;
+  /** Tablas sin fila de cabecera (etiqueta → valor). */
+  tablasSinCabecera?: string[];
   /** Texto fijo original → traducido, si el informe va en otro idioma que la plantilla. */
   traducciones?: Record<string, string>;
 }

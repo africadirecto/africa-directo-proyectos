@@ -362,6 +362,25 @@ export async function borrarPlantilla(id: string): Promise<'papelera' | 'conserv
   return 'papelera';
 }
 
+/** Una plantilla para elegir al generar un informe. */
+export interface OpcionPlantilla {
+  id: string;
+  nombre: string;
+  tipo: TipoInforme;
+  formato: FormatoPlantilla;
+  porDefecto: boolean;
+  idioma: Idioma;
+  donante: { id: string; nombre: string } | null;
+}
+
+/** Las plantillas activas de esos tipos, primero las propuestas por defecto. */
+export async function plantillasActivas(tipos: TipoInforme[]): Promise<OpcionPlantilla[]> {
+  return (await listarPlantillas())
+    .filter((p) => p.estado === 'activa' && tipos.includes(p.tipo))
+    .sort((a, b) => Number(b.porDefecto) - Number(a.porDefecto))
+    .map((p) => ({ id: p.id, nombre: p.nombre, tipo: p.tipo, formato: p.formato, porDefecto: p.porDefecto, idioma: p.idioma, donante: p.donante }));
+}
+
 /** Campos que la IA rellena y aún no tienen instrucción (para avisar en la lista). */
 export const camposSinInstruccion = (p: Pick<Plantilla, 'estructura' | 'instrucciones'>) =>
   p.estructura.campos.filter((c) => !c.huerfano && c.tipo === 'ia' && !p.instrucciones.campos[c.clave]?.trim()).map((c) => c.clave);

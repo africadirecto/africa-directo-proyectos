@@ -33,10 +33,17 @@ function bloques(ps: Parrafo[]): string {
 
 const imagen = (f: FotoRelleno) => `<img src="${escapar(f.url)}" alt="${escapar(f.pie ?? f.nombre)}" style="max-width:100%;max-height:45vh">`;
 
-const tablaHtml = (filas: string[][]) =>
+const tablaHtml = (filas: string[][], cabecera: boolean) =>
   `<table border="1" cellpadding="6" style="border-collapse:collapse">${filas
-    .map((f, i) => `<tr>${f.map((c) => (i === 0 && filas.length > 1 ? `<th>${escapar(c)}</th>` : `<td>${escapar(c)}</td>`)).join('')}</tr>`)
+    .map((f, i) => `<tr>${f.map((c) => (i === 0 && cabecera && filas.length > 1 ? `<th>${escapar(c)}</th>` : `<td>${escapar(c)}</td>`)).join('')}</tr>`)
     .join('')}</table>`;
+
+/** Textos fijos de una plantilla HTML (para traducirlos), sin los que solo son marcadores. */
+export function textosFijosHtml(html: string): string[] {
+  const cuerpo = html.replace(/<head[\s\S]*?<\/head>/i, '');
+  const textos = [...cuerpo.matchAll(/>([^<>]+)</g)].map((m) => m[1].trim()).filter((t) => /\p{L}/u.test(t.replace(MARCADOR, '')));
+  return [...new Set(textos)];
+}
 
 /** Marcadores de una plantilla HTML: `solo` si es lo único de su párrafo; los de imágenes, en `alt`. */
 export function marcadoresHtml(html: string): { original: string; solo: boolean; enTabla: boolean; enAlt: boolean }[] {
@@ -82,7 +89,7 @@ export function rellenarHtml(html: string, r: Relleno): { html: string; resultad
     if (m?.tipo === 'tabla') {
       const filas = r.tablas[m.clave];
       if (!filas?.length) desconocidos.push(original);
-      return filas?.length ? tablaHtml(filas) : enLinea(huecoDe(m, original));
+      return filas?.length ? tablaHtml(filas, !r.tablasSinCabecera?.includes(m.clave)) : enLinea(huecoDe(m, original));
     }
     const ps = m ? contenidoDe(m, r) : null;
     if (!ps) desconocidos.push(original);

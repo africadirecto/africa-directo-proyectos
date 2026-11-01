@@ -100,11 +100,47 @@ export async function pedirJson<T>(p: Peticion): Promise<T> {
   }
 }
 
+/**
+ * Texto libre (sin salida JSON), para redactar un campo de informe por la vía directa: el
+ * mismo formato que en los lotes (ver lotes.ts), así el resultado se lee igual.
+ */
+export async function pedirTexto(p: { tarea: Tarea; instrucciones: string; entrada: string; maxTokens?: number; timeoutMs?: number }): Promise<string> {
+  let res: Response;
+  try {
+    res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${config.ia.clave}`, 'Content-Type': 'application/json', 'HTTP-Referer': config.appUrl, 'X-Title': 'Africa Directo - Gestion de proyectos' },
+      body: JSON.stringify({
+        model: MODELO[p.tarea](),
+        messages: [
+          { role: 'system', content: p.instrucciones },
+          { role: 'user', content: p.entrada },
+        ],
+        reasoning: { effort: 'low' },
+        ...(p.maxTokens ? { max_tokens: p.maxTokens } : {}),
+        provider: { zdr: true, data_collection: 'deny', require_parameters: true },
+      }),
+      signal: AbortSignal.timeout(p.timeoutMs ?? 170_000),
+    });
+  } catch (e) {
+    throw new ErrorIA(`OpenRouter no respondió: ${e instanceof Error ? e.message : e}`, 0, true);
+  }
+  const datos = (await res.json().catch(() => ({}))) as Respuesta;
+  if (!res.ok || datos.error) {
+    const status = datos.error?.code ?? res.status;
+    throw new ErrorIA(`OpenRouter ${status}: ${datos.error?.message ?? ''}`, status, status === 408 || status === 429 || status >= 500);
+  }
+  await anotarUso(datos.usage?.prompt_tokens ?? 0, datos.usage?.completion_tokens ?? 0, datos.usage?.cost ?? 0).catch(() => undefined);
+  const texto = datos.choices?.[0]?.message?.content;
+  if (!texto) throw new ErrorIA(`OpenRouter no devolvió texto (${datos.choices?.[0]?.finish_reason ?? 'sin motivo'})`, 200, datos.choices?.[0]?.finish_reason !== 'length');
+  return texto;
+}
+
 /** Una imagen como parte de un mensaje (en base64: la imagen no queda accesible desde fuera). */
 export const parteImagen = (bytes: Buffer, mime: string): Parte => ({ type: 'image_url', image_url: { url: `data:${mime};base64,${bytes.toString('base64')}` } });
 
 /** Cuenta llamadas, tokens y coste por mes para vigilar el gasto (Administración › Ajustes). */
-async function anotarUso(entrada: number, salida: number, coste: number) {
+export async function anotarUso(entrada: number, salida: number, coste: number) {
   const mes = new Date().toISOString().slice(0, 7);
   const db = await almacen();
   await db.transaccion(async (tx) => {

@@ -1,6 +1,7 @@
-// Google Slides por su API REST: presentaciones de informe hechas por la app y plantillas
-// de Slides con marcadores. Usa la cuenta de servicio de Drive (ver ./google.ts). Hay que
-// activar la «Google Slides API» en el proyecto de Google Cloud.
+// Google Slides por su API REST: crea las presentaciones de las plantillas de la ONG (ver
+// dominio/plantillasApp.ts); rellenarlas es cosa de ./plantillaSlides.ts. Usa la cuenta de
+// servicio de Drive (ver ./google.ts). Hay que activar la «Google Slides API» en el proyecto
+// de Google Cloud.
 //
 // La presentación se crea vacía con Drive (así queda en la unidad compartida) y luego se
 // le añaden diapositivas con los diseños estándar: portada, título y texto, y título solo
@@ -142,24 +143,4 @@ function estiloTitulo(objectId: string, tamano: number) {
       fields: 'foregroundColor,bold,fontSize',
     },
   };
-}
-
-/** Todo el texto de una presentación (cuadros de texto y tablas), para buscar marcadores. */
-export async function textoPresentacion(id: string): Promise<string> {
-  const p = await apiGoogle<Presentacion>(`${SLIDES}/${id}`);
-  const runs = (t?: { textElements?: { textRun?: { content?: string } }[] }) => (t?.textElements ?? []).map((e) => e.textRun?.content ?? '').join('');
-  return (p.slides ?? [])
-    .flatMap((s) => s.pageElements ?? [])
-    .map((e) => runs(e.shape?.text) + (e.table?.tableRows ?? []).flatMap((f) => (f.tableCells ?? []).map((c) => runs(c.text))).join('\n'))
-    .join('\n');
-}
-
-/** Sustituye textos en toda la presentación, manteniendo el formato de la plantilla. */
-export async function reemplazarEnPresentacion(id: string, pares: [buscar: string, poner: string][]): Promise<void> {
-  if (!pares.length) return;
-  await apiGoogle(`${SLIDES}/${id}:batchUpdate`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ requests: pares.map(([buscar, poner]) => ({ replaceAllText: { containsText: { text: buscar, matchCase: true }, replaceText: poner } })) }),
-  });
 }

@@ -160,43 +160,63 @@ Capas propias                → almacén (Firestore o fichero), Drive (API o di
 
 ## Plantillas e informes con IA
 
-**Hecho:** generar un borrador desde la ficha, con las plantillas de la app o con cualquier Google Doc de `AD · Plantillas` con marcadores (`{{proyecto.titulo}}`, `{{ia:avance|150 palabras|instrucción}}`), y descargarlo en PDF o Word. Cómo se usa y lista de marcadores: [INFORMES.md](INFORMES.md).
+Uso y lista de marcadores: [INFORMES.md](INFORMES.md). Por dentro hay tres piezas.
 
-Cómo funciona por dentro (`lib/dominio/informes.ts`):
+**Plantillas** (`lib/dominio/plantillas.ts`, sección **Plantillas** de la app):
 
-1. Reúne el contexto: ficha, aportaciones, eventos del periodo (sin correos ni teléfonos), número de fotos publicables y el resumen del informe anterior.
-2. Con una plantilla de la app, pide a la IA sus apartados y crea el Google Doc a partir de HTML. Con una plantilla de Google Docs, la copia en `03_Informes`, lee sus marcadores con la API de Docs y los sustituye (`replaceAllText`), así que el formato se mantiene.
-3. La IA redacta **todos los apartados en una sola llamada** con salida JSON: texto, de qué eventos sale cada uno y lo que falta. Lo que no consta queda como `[PENDIENTE: …]`.
-4. Al final del documento se añaden notas para la revisión (pendientes y fuentes), que el voluntario borra antes de enviar.
-5. Se guarda en `proyectos/{código}/informes` con estado **Borrador → Aprobado** y queda en la cronología. Solo los aprobados muestran la descarga en PDF y Word.
+- Cada plantilla es un **Google Doc o Slides** de `AD · Plantillas` más su registro en `plantillas/{id}`.
+- En el registro van:
+  - el tipo de informe (seguimiento, final, financiación, cartera, contraparte o donante);
+  - el idioma del texto fijo;
+  - las **instrucciones para la IA**: una general y una por campo. Se guardan por versiones en `plantillas/{id}/versiones`.
+- Las de la ONG (`plantillasApp.ts`) las crea la app una vez y luego son plantillas como las demás.
+- «Sincronizar» lee el documento: qué campos, datos y tablas tiene, y avisa de lo que no va a salir bien.
+- «Cambiar con IA» propone instrucciones nuevas a partir de una petición; se revisan antes de guardarlas.
 
-**Pendiente:** mapeo asistido de plantillas de donante en Word o Excel, fotos dentro del documento y presentaciones en Slides. El diseño previsto:
+**Composición** (`lib/drive/plantillaDocs.ts`, `plantillaSlides.ts` y, en demo, `plantillaHtml.ts`):
 
-### Plantillas propias de un donante (Word o Excel)
+- Se copia la plantilla y se sustituyen sus marcadores (`lib/dominio/marcadores.ts`) del final al principio, sin tocar el formato.
+- El texto se inserta *dentro* del marcador para heredar su estilo. Se aplica el Markdown restringido de la IA (párrafos, viñetas, negrita, `###`).
+- Lo que no consta queda **resaltado en amarillo**. Las fuentes de cada apartado se ven en la app, no en el documento.
+- Las tablas de datos las hace la app con cifras exactas. Si el informe va en otro idioma, se traduce el texto fijo de la plantilla.
+- Fotos: Docs y Slides solo insertan imágenes desde una dirección pública. Por eso la app las sirve en `/api/foto/[token]`, con un token firmado que caduca en minutos, solo si son publicables y reducidas.
 
-Muchos donantes mandan su propia plantilla, normalmente en Word. El proceso es:
+**Generación en segundo plano** (`lib/trabajos/informe.ts`):
 
-1. **Subirla** desde la ficha del donante en la app, o dejarla en `AD · Plantillas/Donantes/<donante>/`. Se guarda el original sin tocar.
-2. La app la **convierte** a Google Docs (o Sheets si es un Excel).
-3. **La IA propone el mapeo una sola vez:** para cada apartado, pregunta o celda de la plantilla, sugiere qué va ahí. Puede ser un dato (`{{proyecto.presupuesto}}`), una instrucción para la IA ("resumen de actividades del periodo, 200 palabras") o "lo rellena una persona".
-4. Un voluntario **revisa el mapeo** en una tabla de la app (apartado → qué va), lo ajusta y lo **valida**. La app escribe los marcadores en la copia convertida y guarda el mapeo en la colección `plantillas`: donante, tipo, archivo, mapeo, quién lo validó y cuándo.
-5. A partir de ahí, los informes para ese donante salen ya con **su formato**. Al final se exportan a Word si el donante lo pide en ese formato. Conviene revisar que el formato se mantiene: la conversión Word ↔ Google Docs puede mover algún estilo.
-6. **Plantillas de Excel** (justificación económica): mismo proceso, mapeando celdas a datos de aportaciones y gastos. Dependen de que la ONG decida si lleva el control económico en la app (pregunta abierta).
+```
+en_cola ──preparar──▶ redactando ──▶ componiendo ──▶ listo   (o error, con «Reintentar»)
+```
 
-### Presentaciones para donantes
+1. **Preparar.** Reúne los datos:
+   - de un proyecto: ficha, financiación y eventos del periodo, sin correos ni teléfonos;
+   - de conjunto: los proyectos elegidos.
+   
+   Después pide a la IA **un texto por cada campo** de la plantilla (`lib/ia/informes.ts`). La petición lleva lo común primero (reglas y datos) y lo del campo al final, y el texto vuelve en Markdown con una última línea `FUENTES:`.
+2. **Redactar.** En producción, las peticiones van en un **lote** de la Batch API de OpenRouter (`lib/ia/lotes.ts`): sin límite de tiempo y a mitad de precio.
+   - Al terminar, OpenRouter avisa a `/api/ia/lotes`. La app lee el lote, guarda los textos, reenvía una vez los que fallaron y **borra el lote**.
+   - En local, en demo o con `IA_LOTES=0`, se redacta por la vía directa.
+3. **Componer.** Copia la plantilla en `03_Informes` (o en `_Informes generales`), la rellena y anota el borrador en la cronología. Con lote, avisa también en Google Chat.
 
-Igual, con una plantilla de **Google Slides**: los marcadores van en cuadros de texto, y las fotos sustituyen a formas marcadas como `{{foto}}`.
+`avanzarInforme` hace el paso que toque y lo llaman varias piezas:
+- la acción que pide el informe (con `after()`);
+- el aviso de OpenRouter;
+- la consulta de estado de la pantalla (`/api/informes/estado`);
+- el cron nocturno.
+
+Un bloqueo con caducidad evita que dos ejecuciones lo hagan a la vez, y ningún paso pasa de los 300 s de una función. Los informes a medias se apuntan en `trabajos/{ruta}`, y los lotes que no se pudieron borrar, en `lotesPorBorrar`.
+
+Las decisiones y las pruebas con los servicios reales (Batch API, fotos, conversión de .docx y marcadores) están en [`scripts/pruebas/README.md`](../scripts/pruebas/README.md).
 
 ### Coste
 
-Un informe de unas 8 secciones redactadas cuesta del orden de céntimos con un modelo intermedio. El presupuesto de 1 $ al mes da para decenas de informes además de las traducciones.
+Con `anthropic/claude-haiku-5.5` en lotes, un informe de unas 6 secciones cuesta del orden de **0,02 $**. Cada campo es una petición con los mismos datos, pero los lotes van a mitad de precio. El presupuesto de 1 $ al mes da para decenas de informes además de las traducciones. El gasto del mes se ve en Administración › Ajustes.
 
 ## Qué falta (siguientes fases)
 
 | Fase | Qué incluye |
 | --- | --- |
 | **2. Seguimiento** | "Añadir correo" en la ficha (`.eml`, `.msg` o texto con adjuntos), lectura automática del buzón de la app según [CORREO.md](CORREO.md), bandeja de correos sin asignar y página de subida de fotos para la contraparte |
-| **3. Documentos con IA** | Hecho: informes con plantillas de la app o de Google Docs. Falta: presentación de captación y mapeo de plantillas de donante en Word o Excel |
+| **3. Documentos con IA** | Hecho: plantillas unificadas con sus instrucciones, generación en segundo plano por lotes y presentaciones. Falta: fotos dentro del informe y archivos del proyecto como contexto, y crear una plantilla a partir de un informe de ejemplo (Word o PowerPoint) |
 | **4. Mejoras** | Ficha de solo lectura para donantes, estadísticas, formulario instalable sin conexión y WhatsApp si compensa |
 
 ## Fuentes

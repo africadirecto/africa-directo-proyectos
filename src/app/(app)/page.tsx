@@ -6,11 +6,12 @@ import { ACTIVOS } from '@/lib/estados';
 import { nombrePais } from '@/lib/paises';
 import { Bandera } from '@/componentes/Desplegable';
 import { ListaInformes } from '@/componentes/ListaInformes';
+import { plantillasActivas } from '@/lib/dominio/plantillas';
 import { PanelProyectos } from './PanelProyectos';
 import { BotonInformeGeneral } from './BotonInformeGeneral';
 
-// Generar un informe de conjunto hace una llamada larga a la IA.
-export const maxDuration = 180;
+// Al pedir un informe, su preparación sigue en segundo plano dentro de la misma petición.
+export const maxDuration = 300;
 
 export default async function Proyectos() {
   const yo = await requiere('lectura');
@@ -32,6 +33,7 @@ export default async function Proyectos() {
         {editor ? (
           <BotonInformeGeneral
             tipo="cartera"
+            plantillas={await plantillasActivas(['cartera'])}
             paises={[...new Set(filas.map((f) => f.pais).filter(Boolean))]
               .sort((a, b) => nombrePais(a).localeCompare(nombrePais(b), 'es'))
               .map((p) => ({ valor: p, texto: nombrePais(p), icono: <Bandera codigo={p} /> }))}
@@ -44,7 +46,7 @@ export default async function Proyectos() {
         porRevisar={atencion.porRevisar.length}
         sinResponder={atencion.sinResponder.length}
       />
-      <ListaInformes informes={await listarInformesGenerales('cartera')} titulo="Informes de proyectos" />
+      <ListaInformes informes={await listarInformesGenerales('cartera')} coleccion="informes" editable={editor} titulo="Informes de proyectos" />
     </main>
   );
 }

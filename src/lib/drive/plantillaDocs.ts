@@ -294,7 +294,7 @@ export function planTablas(doc: DocumentoDocs, r: Relleno): { requests: object[]
         return reemplazarRango(h.seg, h.inicio, h.fin, [huecoDe(m, h.original)], h.enLista);
       }
       if (!cabe) return reemplazarRango(h.seg, h.inicio, h.fin, filas.map((f) => ({ tipo: 'p' as const, trozos: [{ texto: f.join(' · ') }] })), h.enLista);
-      return [borrar, ...tabla(h.inicio, filas, { cabecera: filas.length > 1, sinBordes: false })];
+      return [borrar, ...tabla(h.inicio, filas, { cabecera: filas.length > 1 && !r.tablasSinCabecera?.includes(m.clave), sinBordes: false })];
     }
     const fotos = r.fotos[m.clave] ?? [];
     // Sin fotos, la galería desaparece.

@@ -1,102 +1,79 @@
 'use server';
 
+// Pedir informes. El informe queda en cola y se hace en segundo plano (lib/trabajos/informe.ts):
+// la acción responde enseguida con su ruta y la pantalla sigue su progreso. La hoja de cálculo
+// de proyectos (sin IA) se hace en el momento.
+
 import { revalidatePath } from 'next/cache';
+import { after } from 'next/server';
 import { unstable_rethrow } from 'next/navigation';
 import { permitido, persona } from '../sesion';
-import { generarInforme, type TipoInformeProyecto } from '../dominio/informes';
-import { generarInformeGeneral, type TipoInformeGeneral } from '../dominio/informesGenerales';
+import { generarHojaDeProyectos, type TipoInformeGeneral } from '../dominio/informesGenerales';
+import { avanzarInforme, pedirInforme, reintentarInforme } from '../trabajos/informe';
 import { ESTADOS } from '../estados';
 import { PAISES } from '../paises';
 import { esIdioma } from '../formulario/textos';
 import { intentar, texto, type Resultado } from './resultado';
-import type { EstadoProyecto, ExtensionInforme, FormatoInforme, Informe } from '../tipos';
+import type { EstadoProyecto } from '../tipos';
 
-type ResultadoInforme = Resultado & { url?: string };
+export interface ResultadoPedido extends Resultado {
+  /** Ruta del informe en cola, para seguir su progreso. */
+  ruta?: string;
+  /** Dirección del archivo, si ya está hecho (la hoja de cálculo). */
+  url?: string;
+}
 
 const fecha = (v: string) => (/^\d{4}-\d{2}-\d{2}$/.test(v) ? v : '');
-const formato = (fd: FormData): FormatoInforme => {
-  const f = texto(fd, 'formato', 10);
-  return f === 'slides' || f === 'sheets' ? f : 'docs';
-};
-const extension = (fd: FormData): ExtensionInforme => {
-  const e = texto(fd, 'extension', 20);
-  return e === 'breve' || e === 'detallado' ? e : 'normal';
-};
-const idioma = (fd: FormData) => {
-  const i = texto(fd, 'idioma', 2);
-  return esIdioma(i) ? i : 'es';
-};
+/** Rutas de informe válidas: proyectos/{codigo}/informes/{id} o informes/{id}. */
+export const rutaValida = async (r: string) => /^(proyectos\/[A-Z0-9-]{1,30}\/)?informes\/[\w-]{1,40}$/.test(r);
 
-function mensajeListo(i: Informe): string {
-  return [
-    `${i.formato === 'slides' ? 'Presentación creada' : i.formato === 'sheets' ? 'Hoja de cálculo creada' : 'Borrador creado'}.`,
-    !i.hechoPorIA && i.formato !== 'sheets' ? 'La IA no está configurada: los apartados están sin redactar.' : '',
-    i.pendientes ? `Tiene ${i.pendientes} ${i.pendientes === 1 ? 'dato pendiente' : 'datos pendientes'} marcados como [PENDIENTE].` : '',
-  ]
-    .filter(Boolean)
-    .join(' ');
-}
-
-async function conUrl(fn: () => Promise<Informe>): Promise<ResultadoInforme> {
+export async function pedirInformeAccion(_: ResultadoPedido, fd: FormData): Promise<ResultadoPedido> {
   try {
-    const i = await fn();
-    return { ok: true, mensaje: mensajeListo(i), url: i.url, vez: Date.now() };
-  } catch (e) {
-    unstable_rethrow(e);
-    console.error(e);
-    return { ok: false, mensaje: e instanceof Error ? e.message : 'No se pudo generar el informe.', vez: Date.now() };
-  }
-}
-
-/** Informe de un proyecto; devuelve también su dirección para abrirlo en Google. */
-export async function generarInformeAccion(_: ResultadoInforme, fd: FormData): Promise<ResultadoInforme> {
-  return conUrl(async () => {
     const yo = await permitido('edicion');
-    const codigo = texto(fd, 'codigo', 20);
-    const tipo = texto(fd, 'tipo', 20);
-    const informe = await generarInforme(
-      codigo,
+    const codigo = texto(fd, 'codigo', 30);
+    const tipo = texto(fd, 'conjunto', 20) as TipoInformeGeneral;
+    const plantilla = texto(fd, 'plantilla', 100);
+    const estados = fd.getAll('estados').map(String).filter((e): e is EstadoProyecto => e in ESTADOS);
+    const paises = fd.getAll('paises').map(String).filter((p) => p in PAISES);
+
+    if (plantilla === 'sheets') {
+      const i = await generarHojaDeProyectos({ estados, paises }, persona(yo));
+      revalidatePath('/', 'layout');
+      return { ok: true, mensaje: 'Hoja de cálculo creada.', url: i.url, vez: Date.now() };
+    }
+    if (!codigo && !['cartera', 'contraparte', 'donante'].includes(tipo)) throw new Error('Tipo de informe no válido.');
+    const idioma = texto(fd, 'idioma', 2);
+    const ruta = await pedirInforme(
       {
-        plantilla: texto(fd, 'plantilla', 200),
-        formato: formato(fd),
-        tipo: (['final', 'financiacion'].includes(tipo) ? tipo : 'seguimiento') as TipoInformeProyecto,
+        plantillaId: plantilla,
+        ...(codigo ? { codigo } : { conjunto: { tipo, sobre: texto(fd, 'sobre', 100), estados, paises } }),
         desde: fecha(texto(fd, 'desde', 10)),
         hasta: fecha(texto(fd, 'hasta', 10)),
         donanteId: texto(fd, 'donante', 100),
-        idioma: idioma(fd),
-        extension: extension(fd),
-        fotos: fd.get('fotos') === 'on',
-        instrucciones: texto(fd, 'instrucciones', 1500),
+        idioma: esIdioma(idioma) ? idioma : 'es',
+        indicaciones: texto(fd, 'indicaciones', 1500),
       },
       persona(yo),
     );
-    revalidatePath(`/proyectos/${codigo}`);
-    return informe;
-  });
+    // Se prepara al terminar la respuesta, sin hacer esperar al voluntario.
+    after(() => avanzarInforme(ruta));
+    revalidatePath(codigo ? `/proyectos/${codigo}` : '/', codigo ? 'page' : 'layout');
+    return { ok: true, ruta, vez: Date.now() };
+  } catch (e) {
+    unstable_rethrow(e);
+    console.error(e);
+    return { ok: false, mensaje: e instanceof Error ? e.message : 'No se pudo pedir el informe.', vez: Date.now() };
+  }
 }
 
-/** Informe de conjunto: cartera de proyectos, contraparte o donante. */
-export async function generarInformeGeneralAccion(_: ResultadoInforme, fd: FormData): Promise<ResultadoInforme> {
-  return conUrl(async () => {
-    const yo = await permitido('edicion');
-    const tipo = texto(fd, 'tipo', 20) as TipoInformeGeneral;
-    if (!['cartera', 'contraparte', 'donante'].includes(tipo)) throw new Error('Tipo de informe no válido.');
-    const informe = await generarInformeGeneral(
-      {
-        tipo,
-        sobre: texto(fd, 'sobre', 100),
-        formato: formato(fd),
-        estados: fd.getAll('estados').map(String).filter((e): e is EstadoProyecto => e in ESTADOS),
-        paises: fd.getAll('paises').map(String).filter((p) => p in PAISES),
-        desde: fecha(texto(fd, 'desde', 10)),
-        hasta: fecha(texto(fd, 'hasta', 10)),
-        idioma: idioma(fd),
-        extension: extension(fd),
-        instrucciones: texto(fd, 'instrucciones', 1500),
-      },
-      persona(yo),
-    );
+export async function reintentarInformeAccion(_: Resultado, fd: FormData): Promise<Resultado> {
+  return intentar(async () => {
+    await permitido('edicion');
+    const ruta = texto(fd, 'ruta', 200);
+    if (!(await rutaValida(ruta))) throw new Error('Informe no válido.');
+    await reintentarInforme(ruta);
+    after(() => avanzarInforme(ruta));
     revalidatePath('/', 'layout');
-    return informe;
+    return 'En marcha otra vez.';
   });
 }

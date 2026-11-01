@@ -8,10 +8,11 @@ import { dinero, fechaCorta } from '@/lib/formato';
 import { FormDonante } from '../FormDonante';
 import { BotonInformeGeneral } from '../../BotonInformeGeneral';
 import { ListaInformes } from '@/componentes/ListaInformes';
+import { plantillasActivas } from '@/lib/dominio/plantillas';
 import { listarInformesGenerales } from '@/lib/dominio/informesGenerales';
 
-// Generar un informe hace una llamada larga a la IA.
-export const maxDuration = 180;
+// Al pedir un informe, su preparación sigue en segundo plano dentro de la misma petición.
+export const maxDuration = 300;
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const d = await leerDonante((await params).id);
@@ -37,9 +38,9 @@ export default async function Donante({ params }: { params: Promise<{ id: string
             {d.correo ? ` · ${d.correo}` : ''}
           </p>
         </div>
-        {tienePermiso(yo, 'edicion') && aportaciones.length ? <BotonInformeGeneral tipo="donante" sobre={d.id} claseBoton="btn btn-p" /> : null}
+        {tienePermiso(yo, 'edicion') && aportaciones.length ? <BotonInformeGeneral tipo="donante" sobre={d.id} plantillas={await plantillasActivas(['donante'])} claseBoton="btn btn-p" /> : null}
       </div>
-      <ListaInformes informes={await listarInformesGenerales('donante', d.id)} titulo="Informes para este donante" />
+      <ListaInformes informes={await listarInformesGenerales('donante', d.id)} coleccion="informes" editable={tienePermiso(yo, 'edicion')} titulo="Informes para este donante" />
       <div className="fila">
         <section className="card col-ancha" style={{ gap: 8 }}>
           <h2 className="h3">Aportaciones</h2>

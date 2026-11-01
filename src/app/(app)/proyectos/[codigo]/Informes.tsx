@@ -3,6 +3,6 @@ import { ListaInformes } from '@/componentes/ListaInformes';
 import type { Proyecto } from '@/lib/tipos';
 
 /** Informes del proyecto (pestaña Archivos). */
-export async function Informes({ p }: { p: Proyecto }) {
-  return <ListaInformes informes={await listarInformes(p.codigo)} />;
+export async function Informes({ p, editor }: { p: Proyecto; editor: boolean }) {
+  return <ListaInformes informes={await listarInformes(p.codigo)} coleccion={`proyectos/${p.codigo}/informes`} editable={editor} />;
 }

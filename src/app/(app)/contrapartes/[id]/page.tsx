@@ -13,11 +13,12 @@ import { Estado } from '@/componentes/Basicos';
 import { Bandera } from '@/componentes/Desplegable';
 import { Dialogo } from '@/componentes/Dialogo';
 import { ListaInformes } from '@/componentes/ListaInformes';
+import { plantillasActivas } from '@/lib/dominio/plantillas';
 import { BotonInformeGeneral } from '../../BotonInformeGeneral';
 import { eurDe } from '@/lib/panel';
 import { FormContraparte } from '../FormContraparte';
 
-export const maxDuration = 180;
+export const maxDuration = 300;
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const c = await leerContraparte((await params).id);
@@ -46,7 +47,7 @@ export default async function ContraparteFicha({ params }: { params: Promise<{ i
           </p>
         </div>
         <div className="botones">
-          {editor && filas.length ? <BotonInformeGeneral tipo="contraparte" sobre={c.id} /> : null}
+          {editor && filas.length ? <BotonInformeGeneral tipo="contraparte" sobre={c.id} plantillas={await plantillasActivas(['contraparte'])} /> : null}
           {tienePermiso(yo, 'admin') ? (
             <Dialogo boton="Editar" claseBoton="btn btn-s" titulo={c.nombre}>
               <FormContraparte c={c} />
@@ -123,7 +124,7 @@ export default async function ContraparteFicha({ params }: { params: Promise<{ i
           )}
         </section>
       </div>
-      <ListaInformes informes={await listarInformesGenerales('contraparte', c.id)} titulo="Informes de esta contraparte" />
+      <ListaInformes informes={await listarInformesGenerales('contraparte', c.id)} coleccion="informes" editable={editor} titulo="Informes de esta contraparte" />
     </main>
   );
 }

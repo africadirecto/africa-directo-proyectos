@@ -111,7 +111,7 @@ Asignación recomendada (en cada unidad, **Gestionar miembros**):
 | `gestion@` (cuenta técnica) | Gestor | Gestor | Gestor |
 | `coordinacion@` (grupo de administradores) | Gestor | Gestor | Gestor |
 | `voluntarios-proyectos@` (grupo) | **Colaborador** | Lector | — |
-| Cuenta de servicio de la app | **Gestor de contenido** | Lector (copia las plantillas de informe) | **Gestor de contenido** |
+| Cuenta de servicio de la app | **Gestor de contenido** | **Gestor de contenido** (crea y copia las plantillas de informe) | **Gestor de contenido** |
 
 **Por qué así:**
 
