@@ -136,6 +136,30 @@ export const driveLocal: Drive = {
     return this.subir(carpetaId, nombre, origen.meta.mime, fs.readFileSync(origen.ruta));
   },
 
+  async copiarConvirtiendo(id, carpetaId, nombre) {
+    // En demo solo hay HTML, que ya es lo que hacen las plantillas: se copia tal cual.
+    const origen = rutaLocal(id);
+    if (origen?.meta.mime !== 'text/html') throw new Error('En el modo demo no se pueden convertir archivos de Word, PowerPoint ni PDF.');
+    return this.copiar(id, carpetaId, nombre);
+  },
+
+  async exportar(id) {
+    const a = rutaLocal(id);
+    if (!a) throw new Error('Archivo no encontrado');
+    return fs.readFileSync(a.ruta);
+  },
+
+  async descargar(id) {
+    const a = rutaLocal(id);
+    if (!a) throw new Error('Archivo no encontrado');
+    return { bytes: fs.readFileSync(a.ruta), mime: a.meta.mime };
+  },
+
+  // Sin reducir: en demo las fotos se ven desde /api/drive-local.
+  async imagen(id) {
+    return this.descargar(id);
+  },
+
   async carpetaHija(nombre, padreId) {
     const existente = hijosLocales(padreId).find((a) => a.mime === ES_CARPETA && a.nombre === nombre);
     return existente?.id ?? this.crearCarpeta(nombre, padreId);

@@ -395,3 +395,7 @@ button.barra { cursor: pointer; }
 /* Decisión del revisor (solicitudes/FormDecision.tsx): una opción por fila. */
 .decisiones { grid-template-columns: 1fr; gap: 8px; }
 .decisiones .formato { padding: 10px 14px; }
+/* Plantillas (plantillas/): marcadores como {{ia:avance}} y campos sueltos fuera de .field. */
+.marcador { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; background: var(--fondo); color: var(--texto); border: 1px solid var(--borde-suave); border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+.campo-suelto { flex: 1 1 220px; font: inherit; font-size: 15px; min-height: 44px; padding: 0 12px; border: 1px solid var(--borde-campo); border-radius: 8px; background: #fff; color: var(--texto); min-width: 0; }
+summary.enlace { color: var(--enlace); font-size: 14px; font-weight: 500; }

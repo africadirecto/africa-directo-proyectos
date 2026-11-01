@@ -54,6 +54,8 @@ export const config = {
     // Modelos de OpenRouter (https://openrouter.ai/models): baratos, con salida JSON y sin retención de datos.
     modeloRapido: texto('IA_MODELO_RAPIDO') || 'anthropic/claude-haiku-5.5',
     modeloRedaccion: texto('IA_MODELO_REDACCION') || 'google/gemini-3.7-flash',
+    /** Para describir fotos (tiene que admitir imágenes). Por defecto, el rápido. */
+    modeloVision: texto('IA_MODELO_VISION') || texto('IA_MODELO_RAPIDO') || 'anthropic/claude-haiku-5.5',
   },
   avisos: {
     chatWebhook: texto('GOOGLE_CHAT_WEBHOOK_URL'),

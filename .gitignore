@@ -10,3 +10,6 @@ next-env.d.ts
 .env.*.local
 .datos/
 .vercel/
+
+# Resultados de las pruebas técnicas (scripts/pruebas)
+scripts/pruebas/salida/

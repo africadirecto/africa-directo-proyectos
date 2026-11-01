@@ -166,4 +166,16 @@ describe('enlaces', () => {
     expect(enlaces.comprobarFirmaSubida('e1', 'https://www.googleapis.com/upload/drive/v3/files?upload_id=x', f)).toBe(true);
     expect(enlaces.comprobarFirmaSubida('e2', 'https://www.googleapis.com/upload/drive/v3/files?upload_id=x', f)).toBe(false);
   });
+
+  it('los tokens temporales caducan y no se pueden alterar', () => {
+    const ahora = Date.UTC(2026, 10, 1, 12);
+    const t = enlaces.tokenTemporal('foto:P-2026-014:abc', 30, ahora);
+    expect(enlaces.leerTokenTemporal(t, ahora + 29 * 60_000)).toBe('foto:P-2026-014:abc');
+    expect(enlaces.leerTokenTemporal(t, ahora + 31 * 60_000)).toBeNull();
+    const [, caduca, firma] = t.split('.');
+    const otro = Buffer.from('foto:P-2026-015:abc').toString('base64url');
+    expect(enlaces.leerTokenTemporal(`${otro}.${caduca}.${firma}`, ahora)).toBeNull();
+    expect(enlaces.leerTokenTemporal(`${t.split('.')[0]}.zzzzzzz.${firma}`, ahora)).toBeNull();
+    expect(enlaces.urlFoto('P-2026-014', 'abc', 30, 'https://app.example/')).toMatch(/^https:\/\/app\.example\/api\/foto\/[\w-]+\.[0-9a-z]+\.[\w-]{22}$/);
+  });
 });

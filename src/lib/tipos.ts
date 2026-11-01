@@ -321,6 +321,75 @@ export type ExtensionInforme = 'breve' | 'normal' | 'detallado';
 /** Documento (Google Docs), presentación (Google Slides) u hoja de cálculo (Google Sheets, solo de proyectos). */
 export type FormatoInforme = 'docs' | 'slides' | 'sheets';
 
+export type FormatoPlantilla = 'docs' | 'slides';
+/** procesando: se está creando desde un ejemplo. borrador: aún no se ofrece al generar informes. */
+export type EstadoPlantilla = 'procesando' | 'borrador' | 'activa' | 'archivada' | 'error';
+
+/** Lo que se le pide a la IA en una plantilla: en general y en cada campo ({{ia:…}}, {{foto:…}}). */
+export interface InstruccionesPlantilla {
+  general: string;
+  /** clave del campo → instrucción */
+  campos: Record<string, string>;
+}
+
+/** Un campo que la IA rellena, tal como aparece en el documento. */
+export interface CampoPlantilla {
+  clave: string;
+  tipo: 'ia' | 'foto' | 'fotos';
+  /** Cuántas veces aparece (todas reciben el mismo contenido). */
+  veces: number;
+  /** Está dentro de una frase: se rellena con una sola frase. */
+  enLinea: boolean;
+  /** En Slides, el tamaño del recuadro en puntos, para orientar la extensión. */
+  caja?: { ancho: number; alto: number };
+  /** Ya no está en el documento; se conserva su instrucción por si vuelve. */
+  huerfano?: boolean;
+}
+
+/**
+ * plantillas/{id}: una plantilla de informe. El documento es un Google Doc o Slides de la unidad
+ * Plantillas con marcadores (ver dominio/marcadores.ts); aquí se guardan sus instrucciones y lo
+ * que se ha leído del documento. Las plantillas de la ONG son plantillas como las demás.
+ */
+export interface Plantilla {
+  nombre: string;
+  descripcion: string;
+  tipo: TipoInforme;
+  formato: FormatoPlantilla;
+  estado: EstadoPlantilla;
+  /** La que se propone para su tipo y formato. */
+  porDefecto: boolean;
+  /** Si es la plantilla propia de un donante. */
+  donante: { id: string; nombre: string } | null;
+  /** Idioma del texto fijo; si el informe va en otro, se traduce. */
+  idioma: Idioma;
+  archivoId: string;
+  url: string;
+  origen: 'app' | 'ejemplo' | 'drive';
+  /** Informe de ejemplo del que salió, si lo hay. */
+  ejemplo: { archivoId: string; nombre: string } | null;
+  /** Versión de las instrucciones (ver plantillas/{id}/versiones). */
+  version: number;
+  instrucciones: InstruccionesPlantilla;
+  /** Lo que hay en el documento, leído al sincronizar. */
+  estructura: { campos: CampoPlantilla[]; datos: string[]; tablas: string[] };
+  sincronizado: { modificado: string; fecha: string; avisos: string[] } | null;
+  error?: string;
+  creado: string;
+  creadoPor: Persona;
+  actualizado: string;
+  actualizadoPor: Persona;
+}
+
+/** plantillas/{id}/versiones/{n}: cada versión guardada de las instrucciones, para volver atrás. */
+export interface VersionPlantilla {
+  version: number;
+  instrucciones: InstruccionesPlantilla;
+  nota: string;
+  creado: string;
+  creadoPor: Persona;
+}
+
 /**
  * Borradores hechos con IA, en Google Docs o Slides. Los de un proyecto están en
  * proyectos/{codigo}/informes/{id}; los de conjunto, en informes/{id}. La app no los envía:

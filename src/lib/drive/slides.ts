@@ -21,6 +21,8 @@ export interface Diapositiva {
   cabecera?: boolean;
   /** Texto pequeño bajo el título (por ejemplo, datos del proyecto). */
   subtitulo?: string;
+  /** Un recuadro que ocupa la diapositiva con este texto (en las plantillas, el marcador de una foto). */
+  foto?: string;
 }
 
 type Forma = { objectId: string; shape?: { placeholder?: { type?: string }; text?: { textElements?: { textRun?: { content?: string } }[] } }; table?: { tableRows?: { tableCells?: { text?: { textElements?: { textRun?: { content?: string } }[] } }[] }[] } };
@@ -45,7 +47,7 @@ export async function rellenarPresentacion(id: string, portada: { titulo: string
     const diap = `diap${n}`;
     const tit = `diap${n}tit`;
     const cuerpo = `diap${n}cue`;
-    const conCuerpo = !d.tabla;
+    const conCuerpo = !d.tabla && !d.foto;
     peticiones.push({
       createSlide: {
         objectId: diap,
@@ -73,6 +75,20 @@ export async function rellenarPresentacion(id: string, portada: { titulo: string
           });
         }
       }
+    } else if (d.foto) {
+      const hueco = `diap${n}fot`;
+      peticiones.push({
+        createShape: {
+          objectId: hueco,
+          shapeType: 'RECTANGLE',
+          elementProperties: {
+            pageObjectId: diap,
+            size: { width: { magnitude: 660 * EMU, unit: 'EMU' }, height: { magnitude: 290 * EMU, unit: 'EMU' } },
+            transform: { scaleX: 1, scaleY: 1, translateX: 30 * EMU, translateY: 85 * EMU, unit: 'EMU' },
+          },
+        },
+      });
+      peticiones.push({ insertText: { objectId: hueco, text: d.foto } });
     } else if (d.tabla?.length) {
       const tabla = `diap${n}tab`;
       const filas = d.tabla.length;

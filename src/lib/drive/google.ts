@@ -4,11 +4,11 @@
 
 import { JWT } from 'google-auth-library';
 import { config } from '../config';
-import { ES_CARPETA, ES_DOC, ES_PRESENTACION, type ArchivoDrive, type Drive, type EstadoSubida } from './tipos';
+import { ES_CARPETA, ES_DOC, ES_PRESENTACION, ErrorDrive, type ArchivoDrive, type Drive, type EstadoSubida } from './tipos';
 
 const API = 'https://www.googleapis.com/drive/v3';
 const SUBIDA = 'https://www.googleapis.com/upload/drive/v3';
-const CAMPOS = 'id,name,mimeType,size,parents,createdTime';
+const CAMPOS = 'id,name,mimeType,size,parents,createdTime,modifiedTime,imageMediaMetadata(width,height,rotation)';
 const TODAS = 'supportsAllDrives=true';
 
 let jwt: JWT | null = null;
@@ -30,13 +30,25 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     ...init,
     headers: { Authorization: `Bearer ${await token()}`, ...(init.headers ?? {}) },
   });
-  if (!res.ok) throw new Error(`Drive ${res.status}: ${(await res.text()).slice(0, 300)}`);
+  if (!res.ok) throw new ErrorDrive(`Drive ${res.status}: ${(await res.text()).slice(0, 300)}`, res.status);
   return res;
 }
 
-type Crudo = { id: string; name: string; mimeType: string; size?: string; parents?: string[]; createdTime: string };
+type Crudo = {
+  id: string;
+  name: string;
+  mimeType: string;
+  size?: string;
+  parents?: string[];
+  createdTime: string;
+  modifiedTime?: string;
+  imageMediaMetadata?: { width?: number; height?: number; rotation?: number };
+};
 
 function aArchivo(f: Crudo): ArchivoDrive {
+  const im = f.imageMediaMetadata;
+  // `rotation`: cuartos de vuelta aplicados a la foto; con 1 o 3, ancho y alto se intercambian.
+  const girada = (im?.rotation ?? 0) % 2 === 1;
   return {
     id: f.id,
     nombre: f.name,
@@ -44,8 +56,20 @@ function aArchivo(f: Crudo): ArchivoDrive {
     tamano: Number(f.size ?? 0),
     carpetaId: f.parents?.[0] ?? '',
     creado: f.createdTime,
+    ...(f.modifiedTime ? { modificado: f.modifiedTime } : {}),
+    ...(im?.width && im.height ? { medidas: girada ? { ancho: im.height, alto: im.width } : { ancho: im.width, alto: im.height } } : {}),
   };
 }
+
+/** Lee la respuesta entera sin pasar de `maxBytes`. */
+async function bytesDe(res: Response, maxBytes: number): Promise<Buffer> {
+  if (Number(res.headers.get('Content-Length') ?? 0) > maxBytes) throw new ErrorDrive(`El archivo pasa de ${Math.round(maxBytes / 1048576)} MB`, 413);
+  const bytes = Buffer.from(await res.arrayBuffer());
+  if (bytes.byteLength > maxBytes) throw new ErrorDrive(`El archivo pasa de ${Math.round(maxBytes / 1048576)} MB`, 413);
+  return bytes;
+}
+
+const IMAGEN_DIRECTA = ['image/jpeg', 'image/png', 'image/gif'];
 
 /** Interpreta la respuesta de una sesión reanudable: 308 = a medias, 200/201 = terminada. */
 async function leerEstado(res: Response): Promise<EstadoSubida> {
@@ -204,12 +228,44 @@ export const driveGoogle: Drive = {
     return aArchivo((await res.json()) as Crudo);
   },
 
+  async copiarConvirtiendo(id, carpetaId, nombre, mime) {
+    // Al copiar con un tipo de Google, Drive convierte (con OCR en los PDF y las imágenes).
+    const res = await api(`${API}/files/${id}/copy?${TODAS}&fields=${CAMPOS}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: nombre, parents: [carpetaId], mimeType: mime }),
+    });
+    return aArchivo((await res.json()) as Crudo);
+  },
+
+  async exportar(id, mime) {
+    // Drive exporta hasta 10 MB.
+    return bytesDe(await api(`${API}/files/${id}/export?mimeType=${encodeURIComponent(mime)}`), 10 * 1048576);
+  },
+
+  async descargar(id, maxBytes = 20 * 1048576) {
+    const res = await api(`${API}/files/${id}?${TODAS}&alt=media`);
+    return { bytes: await bytesDe(res, maxBytes), mime: res.headers.get('Content-Type')?.split(';')[0] ?? 'application/octet-stream' };
+  },
+
+  async imagen(id, lado) {
+    const f = (await (await api(`${API}/files/${id}?${TODAS}&fields=mimeType,size,thumbnailLink`)).json()) as { mimeType: string; size?: string; thumbnailLink?: string };
+    if (f.thumbnailLink) {
+      // La miniatura acaba en «=s220»: se pide al tamaño deseado.
+      const res = await fetch(f.thumbnailLink.replace(/=s\d+$/, `=s${lado}`), { headers: { Authorization: `Bearer ${await token()}` } });
+      if (res.ok) return { bytes: await bytesDe(res, 8 * 1048576), mime: res.headers.get('Content-Type')?.split(';')[0] ?? 'image/jpeg' };
+    }
+    // Recién subida, Drive puede no tener aún la miniatura: vale el original si es pequeño y de un tipo que Google admite.
+    if (IMAGEN_DIRECTA.includes(f.mimeType) && Number(f.size ?? 0) <= 4 * 1048576) return this.descargar(id, 4 * 1048576);
+    throw new ErrorDrive('La foto aún no tiene miniatura en Drive', 503);
+  },
+
   async carpetaHija(nombre, padreId) {
     const existente = (await this.listar([padreId])).find((a) => a.mime === ES_CARPETA && a.nombre === nombre);
     return existente?.id ?? this.crearCarpeta(nombre, padreId);
   },
 
-  async documentosDeUnidad(unidadId) {
+  async documentosDeUnidad(unidadId, mimes = [ES_DOC, ES_PRESENTACION]) {
     // Una sola consulta por tipo a toda la unidad; la ruta se reconstruye con las carpetas.
     const buscar = async (q: string) => {
       const lista: Crudo[] = [];
@@ -231,7 +287,7 @@ export const driveGoogle: Drive = {
       } while (pagina);
       return lista;
     };
-    const [docs, carpetas] = await Promise.all([buscar(`(mimeType = '${ES_DOC}' or mimeType = '${ES_PRESENTACION}')`), buscar(`mimeType = '${ES_CARPETA}'`)]);
+    const [docs, carpetas] = await Promise.all([buscar(`(${mimes.map((m) => `mimeType = '${m}'`).join(' or ')})`), buscar(`mimeType = '${ES_CARPETA}'`)]);
     const porId = new Map(carpetas.map((c) => [c.id, c]));
     const ruta = (id?: string): string[] => {
       const c = id ? porId.get(id) : undefined;

@@ -5,6 +5,7 @@ import { almacen } from '../almacen';
 import { modoDemo } from '../config';
 import { drive } from '../drive';
 import { reconstruirIndice } from '../dominio/indice';
+import { crearPlantillasDeLaApp } from '../dominio/plantillasApp';
 import { asegurarCarpetas } from '../dominio/proyectos';
 import { totales } from '../dominio/aportaciones';
 import { nuevoIdEnlace } from '../enlaces';
@@ -265,6 +266,9 @@ async function sembrar() {
       if (i < 2) await db.guardar(`proyectos/P-2026-014/archivos/${f.id}`, { nombre: f.nombre, mime: f.mime, tamano: f.tamano, carpeta: 'seguimiento', esFoto: true, publicable: true, origen: 'correo', fecha: f.creado });
     }
   }
+
+  // Las plantillas de la ONG (en demo, solo las de documento, como HTML).
+  await crearPlantillasDeLaApp(ana);
 
   await reconstruirIndice();
 }

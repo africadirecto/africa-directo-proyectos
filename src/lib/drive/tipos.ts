@@ -7,6 +7,26 @@ export interface ArchivoDrive {
   tamano: number;
   carpetaId: string;
   creado: string;
+  /** Última modificación (para saber si hay que volver a leer una plantilla). */
+  modificado?: string;
+  /** En las fotos, sus medidas ya giradas (para respetar la proporción al insertarlas). */
+  medidas?: { ancho: number; alto: number };
+}
+
+/** Error de Google con su código HTTP, para distinguir lo que merece reintentar (429, 5xx). */
+export class ErrorDrive extends Error {
+  constructor(
+    mensaje: string,
+    readonly status: number,
+  ) {
+    super(mensaje);
+  }
+}
+
+/** Bytes de un archivo y su tipo. */
+export interface Contenido {
+  bytes: Buffer;
+  mime: string;
 }
 
 /** Bytes que Drive ya tiene de una subida reanudable y, si terminó, el archivo creado. */
@@ -34,10 +54,22 @@ export interface Drive {
   htmlADoc(html: string, carpetaId: string, nombre: string): Promise<ArchivoDrive>;
   /** Copia un archivo (por ejemplo, una plantilla) en otra carpeta. */
   copiar(id: string, carpetaId: string, nombre: string): Promise<ArchivoDrive>;
+  /** Copia convirtiendo a un formato de Google (.docx o PDF → Doc, .pptx → Slides, .xlsx → Sheets). */
+  copiarConvirtiendo(id: string, carpetaId: string, nombre: string, mime: string): Promise<ArchivoDrive>;
+  /** Exporta un archivo de Google (p. ej. un Doc como text/plain o una hoja como text/csv). */
+  exportar(id: string, mime: string): Promise<Buffer>;
+  /** Contenido de un archivo que no es de Google. Falla si pasa de `maxBytes`. */
+  descargar(id: string, maxBytes?: number): Promise<Contenido>;
+  /**
+   * Una foto reducida a `lado` píxeles por el lado mayor (la miniatura de Drive), para insertarla
+   * en un informe o enviarla a la IA. La URL de la miniatura nunca sale de aquí: es pública
+   * mientras dura.
+   */
+  imagen(id: string, lado: number): Promise<Contenido>;
   /** Busca una subcarpeta por nombre y, si no existe, la crea. */
   carpetaHija(nombre: string, padreId: string): Promise<string>;
-  /** Todos los Google Docs y Slides de una unidad compartida, con la ruta de carpetas de cada uno. */
-  documentosDeUnidad(unidadId: string): Promise<(ArchivoDrive & { ruta: string })[]>;
+  /** Archivos de una unidad compartida (por defecto, Docs y Slides), con la ruta de carpetas de cada uno. */
+  documentosDeUnidad(unidadId: string, mimes?: string[]): Promise<(ArchivoDrive & { ruta: string })[]>;
   /** Crea un archivo vacío de Google (por ejemplo, una presentación) en la carpeta. */
   crearVacio(nombre: string, mime: string, carpetaId: string): Promise<ArchivoDrive>;
   urlCarpeta(id: string): string;

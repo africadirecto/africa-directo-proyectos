@@ -47,3 +47,29 @@ export function comprobarFirmaSubida(idEnlace: string, url: string, firma: strin
   const b = Buffer.from(firma);
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
+
+/**
+ * Token que caduca solo, sin guardar nada en la base de datos: «<datos>.<caducidad>.<firma>».
+ * Sirve para direcciones de un solo uso, como las fotos que Google descarga al hacer un informe.
+ */
+export function tokenTemporal(datos: string, minutos: number, ahora = Date.now()): string {
+  const d = Buffer.from(datos).toString('base64url');
+  const caduca = Math.floor(ahora / 1000 + minutos * 60).toString(36);
+  return `${d}.${caduca}.${firmar(`temporal:${d}.${caduca}`).slice(0, LARGO_FIRMA)}`;
+}
+
+/** Los datos de un token temporal si es auténtico y no ha caducado, o null. */
+export function leerTokenTemporal(token: string, ahora = Date.now()): string | null {
+  const [d, caduca, firma] = token.split('.');
+  if (!d || !caduca || !firma || d.length > 200) return null;
+  const esperada = Buffer.from(firmar(`temporal:${d}.${caduca}`).slice(0, LARGO_FIRMA));
+  const recibida = Buffer.from(firma);
+  if (recibida.length !== esperada.length || !crypto.timingSafeEqual(recibida, esperada)) return null;
+  if (parseInt(caduca, 36) * 1000 < ahora) return null;
+  return Buffer.from(d, 'base64url').toString();
+}
+
+/** Dirección pública y temporal de una foto publicable de un proyecto (ver /api/foto). */
+export function urlFoto(codigo: string, archivoId: string, minutos = 30, base = config.appUrl): string {
+  return `${base.replace(/\/$/, '')}/api/foto/${tokenTemporal(`foto:${codigo}:${archivoId}`, minutos)}`;
+}
