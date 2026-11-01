@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { after } from 'next/server';
 import { persona, requiere, tienePermiso } from '@/lib/sesion';
 import { listarDonantes } from '@/lib/dominio/donantes';
 import {
@@ -10,6 +11,7 @@ import {
   TIPOS_PLANTILLA,
   camposSinInstruccion,
   leerPlantilla,
+  listarPruebas,
   listarVersiones,
   sincronizarPlantilla,
 } from '@/lib/dominio/plantillas';
@@ -20,6 +22,7 @@ import {
   duplicarPlantillaAccion,
   estadoPlantillaAccion,
   porDefectoAccion,
+  reintentarPlantillaAccion,
   restaurarVersionAccion,
   sincronizarAccion,
 } from '@/lib/acciones/plantillas';
@@ -30,9 +33,15 @@ import { FormAccion, Enviar } from '@/componentes/FormAccion';
 import { Etiqueta } from '@/componentes/Basicos';
 import { FormPlantilla } from '../FormPlantilla';
 import { Instrucciones } from './Instrucciones';
+import { ProbarPlantilla } from './ProbarPlantilla';
+import { ListaInformes } from '@/componentes/ListaInformes';
+import { Refrescar } from '@/componentes/Refrescar';
+import { leerIndice } from '@/lib/dominio/indice';
+import { avanzarPlantilla } from '@/lib/trabajos/plantilla';
+import type { Plantilla as TipoPlantilla } from '@/lib/tipos';
 
-// «Cambiar con IA» espera la respuesta de la IA.
-export const maxDuration = 120;
+// «Cambiar con IA» espera la respuesta de la IA, y una plantilla desde un ejemplo avanza al abrirla.
+export const maxDuration = 300;
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const p = await leerPlantilla((await params).id);
@@ -45,14 +54,30 @@ export default async function Plantilla({ params }: { params: Promise<{ id: stri
   const guardada = await leerPlantilla(id);
   if (!guardada) notFound();
   // Si alguien ha editado el documento en Google, se vuelve a leer (si no, no cuesta nada).
+  // Mientras se prepara desde un ejemplo, no: aún no está escrita.
   let errorLectura = '';
-  const p = await sincronizarPlantilla(id, persona(yo)).catch((e) => {
-    errorLectura = e instanceof Error ? e.message : 'No se pudo leer el documento.';
-    return guardada;
-  });
+  const preparando = guardada.estado === 'procesando';
+  const p = preparando || !guardada.archivoId
+    ? guardada
+    : await sincronizarPlantilla(id, persona(yo)).catch((e) => {
+        errorLectura = e instanceof Error ? e.message : 'No se pudo leer el documento.';
+        return guardada;
+      });
+  // Al abrirla mientras se prepara, se hace avanzar (así sigue aunque se pierda un aviso).
+  const proceso = (guardada as TipoPlantilla & { proceso?: { paso: string; bloqueo?: string; lote?: { comprobado: string } | null } | null }).proceso;
+  if (preparando && proceso && !(proceso.bloqueo && proceso.bloqueo > new Date().toISOString()) && !(proceso.paso === 'esperando' && proceso.lote && Date.now() - Date.parse(proceso.lote.comprobado) < 60_000)) {
+    after(() => avanzarPlantilla(id));
+  }
+  const PASOS: Record<string, string> = { convertir: 'convirtiendo el ejemplo en un documento de Google', analizar: 'la IA está leyendo el ejemplo', esperando: 'la IA está leyendo el ejemplo (puede tardar unos minutos)', escribir: 'escribiendo los marcadores y las instrucciones' };
+  const deProyecto = ['seguimiento', 'final', 'financiacion'].includes(p.tipo);
   const edicion = tienePermiso(yo, 'edicion');
   const admin = tienePermiso(yo, 'admin');
-  const [versiones, donantes] = await Promise.all([listarVersiones(id), edicion ? listarDonantes() : Promise.resolve([])]);
+  const [versiones, donantes, pruebas, proyectos] = await Promise.all([
+    listarVersiones(id),
+    edicion ? listarDonantes() : Promise.resolve([]),
+    listarPruebas(id),
+    edicion && deProyecto ? leerIndice() : Promise.resolve([]),
+  ]);
   const avisos = [...(errorLectura ? [`No se pudo leer el documento: ${errorLectura}`] : []), ...(p.sincronizado?.avisos ?? [])];
   const sin = camposSinInstruccion(p);
 
@@ -74,10 +99,12 @@ export default async function Plantilla({ params }: { params: Promise<{ id: stri
           </div>
         </div>
         <div className="botones">
-          <a className="btn btn-p" href={p.url} target="_blank" rel="noopener noreferrer">
-            Abrir en Google {p.formato === 'slides' ? 'Slides' : 'Docs'}
-          </a>
-          {edicion ? (
+          {p.url ? (
+            <a className="btn btn-p" href={p.url} target="_blank" rel="noopener noreferrer">
+              Abrir en Google {p.formato === 'slides' ? 'Slides' : 'Docs'}
+            </a>
+          ) : null}
+          {edicion && p.archivoId && !preparando ? (
             <FormAccion accion={sincronizarAccion}>
               <input type="hidden" name="id" value={p.id} />
               <Enviar clase="btn btn-s" pendiente="Leyendo…">
@@ -88,6 +115,25 @@ export default async function Plantilla({ params }: { params: Promise<{ id: stri
         </div>
       </div>
       {p.descripcion ? <p style={{ margin: 0 }}>{p.descripcion}</p> : null}
+      {preparando ? (
+        <div className="nota" role="status">
+          <Refrescar segundos={5} />
+          Preparando la plantilla a partir de «{p.ejemplo?.nombre}»: {PASOS[proceso?.paso ?? ''] ?? 'en cola'}… Puedes cerrar esta página: seguirá haciéndose.
+        </div>
+      ) : null}
+      {p.estado === 'error' && p.error ? (
+        <div className="aviso-error" role="status" style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', justifyContent: 'space-between' }}>
+          <span>No se pudo preparar la plantilla: {p.error}</span>
+          {edicion && p.origen === 'ejemplo' ? (
+            <FormAccion accion={reintentarPlantillaAccion} ocultarOk>
+              <input type="hidden" name="id" value={p.id} />
+              <Enviar clase="btn btn-s btn-peq" pendiente="…">
+                Reintentar
+              </Enviar>
+            </FormAccion>
+          ) : null}
+        </div>
+      ) : null}
 
       {avisos.length || sin.length ? (
         <div className="aviso">
@@ -107,7 +153,9 @@ export default async function Plantilla({ params }: { params: Promise<{ id: stri
             <h2 className="h3">Instrucciones para la IA</h2>
             <span className="sub">Versión {p.version}</span>
           </div>
-          {p.estructura.campos.length ? (
+          {preparando ? (
+            <p className="vacio">La IA está escribiendo las instrucciones a partir del ejemplo.</p>
+          ) : p.estructura.campos.length ? (
             <Instrucciones
               key={`${p.id}-${p.version}`}
               id={p.id}
@@ -127,7 +175,12 @@ export default async function Plantilla({ params }: { params: Promise<{ id: stri
             <section className="card pila">
               <h2 className="h3">Acciones</h2>
               <div className="botones">
-                {p.estado !== 'activa' ? (
+                {deProyecto && (p.estado === 'borrador' || p.estado === 'activa') ? (
+                  <Dialogo boton="Probar con un proyecto" claseBoton="btn btn-p btn-peq" titulo="Probar la plantilla">
+                    <ProbarPlantilla id={p.id} idioma={p.idioma} proyectos={proyectos.map((f) => ({ codigo: f.codigo, titulo: f.titulo }))} conPeriodo={p.tipo !== 'financiacion'} />
+                  </Dialogo>
+                ) : null}
+                {p.estado !== 'activa' && !preparando ? (
                   <FormAccion accion={estadoPlantillaAccion}>
                     <input type="hidden" name="id" value={p.id} />
                     <Enviar clase="btn btn-p btn-peq" name="estado" value="activa">
@@ -268,6 +321,7 @@ export default async function Plantilla({ params }: { params: Promise<{ id: stri
           </section>
         </aside>
       </div>
+      <ListaInformes informes={pruebas} coleccion="informes" editable={edicion} titulo="Pruebas de esta plantilla" />
     </main>
   );
 }

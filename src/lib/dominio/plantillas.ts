@@ -18,6 +18,7 @@ import type {
   EstadoPlantilla,
   FormatoPlantilla,
   Idioma,
+  Informe,
   InstruccionesPlantilla,
   Persona,
   Plantilla,
@@ -386,3 +387,23 @@ export async function plantillasActivas(tipos: TipoInforme[]): Promise<OpcionPla
 /** Campos que la IA rellena y aún no tienen instrucción (para avisar en la lista). */
 export const camposSinInstruccion = (p: Pick<Plantilla, 'estructura' | 'instrucciones'>) =>
   p.estructura.campos.filter((c) => !c.huerfano && c.tipo === 'ia' && !p.instrucciones.campos[c.clave]?.trim()).map((c) => c.clave);
+
+/** Informes de prueba de una plantilla (en «informes», con el proyecto en «prueba»). */
+export async function listarPruebas(id: string): Promise<(Informe & { id: string })[]> {
+  const lista = await (await almacen()).consultar<Informe>('informes', { donde: [['plantilla.id', '==', id]] });
+  return lista.filter((i) => i.prueba).sort((a, b) => b.creado.localeCompare(a.creado));
+}
+
+/**
+ * Archivos de la unidad Plantillas que pueden servir de ejemplo (Word, PowerPoint, PDF o de Google)
+ * y aún no son una plantilla. Los de «_Ejemplos» (los que se suben desde la app) también.
+ */
+export async function ejemplosDisponibles(mimes: string[]): Promise<{ id: string; nombre: string; ruta: string }[]> {
+  if (!config.drive.unidadPlantillas) return [];
+  const [docs, plantillas] = await Promise.all([(await drive()).documentosDeUnidad(config.drive.unidadPlantillas, mimes), listarPlantillas()]);
+  const usados = new Set(plantillas.flatMap((p) => [p.archivoId, p.ejemplo?.archivoId ?? '']));
+  return docs
+    .filter((x) => !usados.has(x.id) && !x.ruta.split(' / ').some((c) => c.startsWith('_') && c !== '_Ejemplos'))
+    .map((x) => ({ id: x.id, nombre: x.nombre, ruta: x.ruta }))
+    .sort((a, b) => `${a.ruta}/${a.nombre}`.localeCompare(`${b.ruta}/${b.nombre}`, 'es'));
+}

@@ -7,7 +7,7 @@ import { NextResponse, after } from 'next/server';
 import { config } from '@/lib/config';
 import { firmaValida } from '@/lib/ia/lotes';
 import { dentroDelLimite, ipDe } from '@/lib/limites';
-import { avanzarInforme, informesDelLote } from '@/lib/trabajos/informe';
+import { avanzarTrabajo, trabajosDelLote } from '@/lib/trabajos';
 
 export const maxDuration = 300;
 
@@ -24,9 +24,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Cuerpo no válido' }, { status: 400 });
   }
   if (!/^[\w-]{1,120}$/.test(lote)) return NextResponse.json({ error: 'Lote no válido' }, { status: 400 });
-  const rutas = await informesDelLote(lote);
+  const rutas = await trabajosDelLote(lote);
   after(async () => {
-    for (const r of rutas) await avanzarInforme(r);
+    for (const r of rutas) await avanzarTrabajo(r);
   });
   return NextResponse.json({ ok: true, informes: rutas.length });
 }

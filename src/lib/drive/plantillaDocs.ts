@@ -360,6 +360,170 @@ export function planFotos(doc: DocumentoDocs, r: Relleno): { fotos: FotoPlaneada
   return { fotos, desconocidos };
 }
 
+// ── Convertir un informe de ejemplo en plantilla ────────────────────────────
+
+/** Un trozo del documento de ejemplo, numerado para que la IA diga qué hacer con él. */
+export interface Bloque {
+  id: string;
+  tipo: 'titulo' | 'parrafo' | 'celda' | 'imagen' | 'tabla';
+  texto: string;
+  seg: string;
+  inicio: number;
+  fin: number;
+  /** Celdas: su tabla (T1…) y posición. */
+  tabla?: { id: string; fila: number; columna: number };
+  /** Imágenes: el objeto y si es flotante. */
+  imagen?: { objeto: string; flotante: boolean };
+  /** Último párrafo de su celda o segmento (no se puede borrar su salto). */
+  ultimo?: boolean;
+}
+
+/** Los bloques del documento en orden: títulos, párrafos, celdas, imágenes y tablas (con su texto). */
+export function bloquesDoc(doc: DocumentoDocs & { body?: { content?: (ElementoDoc & { paragraph?: { positionedObjectIds?: string[] } })[] } }): Bloque[] {
+  const bloques: Bloque[] = [];
+  let n = 0;
+  let t = 0;
+  const recorrer = (elementos: ElementoDoc[] | undefined, seg: string, tabla?: Bloque['tabla']) => {
+    (elementos ?? []).forEach((e, k, todos) => {
+      if (e.paragraph) {
+        const els = e.paragraph.elements ?? [];
+        if (!els.length) return;
+        const inicio = els[0].startIndex ?? 0;
+        let texto = '';
+        for (const x of els) {
+          const obj = (x as { inlineObjectElement?: { inlineObjectId?: string } }).inlineObjectElement?.inlineObjectId;
+          if (obj) bloques.push({ id: `B${++n}`, tipo: 'imagen', texto: describir(doc, obj), seg, inicio: x.startIndex ?? 0, fin: (x.startIndex ?? 0) + 1, imagen: { objeto: obj, flotante: false } });
+          texto += x.textRun ? (x.textRun.content ?? '') : '￼'.repeat((x.endIndex ?? 0) - (x.startIndex ?? 0));
+        }
+        for (const obj of (e.paragraph as { positionedObjectIds?: string[] }).positionedObjectIds ?? []) {
+          bloques.push({ id: `B${++n}`, tipo: 'imagen', texto: describir(doc, obj), seg, inicio, fin: inicio, imagen: { objeto: obj, flotante: true } });
+        }
+        const limpio = texto.replace(/\n$/, '');
+        if (!limpio.replace(/￼/g, '').trim()) return;
+        const estilo = e.paragraph.paragraphStyle?.namedStyleType ?? '';
+        bloques.push({
+          id: `B${++n}`,
+          tipo: tabla ? 'celda' : /^(HEADING_|TITLE|SUBTITLE)/.test(estilo) ? 'titulo' : 'parrafo',
+          texto: limpio.replace(/￼/g, ''),
+          seg,
+          inicio,
+          fin: inicio + limpio.length,
+          ...(tabla ? { tabla } : {}),
+          ...(k === todos.length - 1 ? { ultimo: true } : {}),
+        });
+      } else if (e.table) {
+        const id = `T${++t}`;
+        const filas = e.table.tableRows ?? [];
+        const resumen = filas.map((f) => (f.tableCells ?? []).map((c) => texto1(c.content)).join(' | ')).join('\n');
+        bloques.push({ id, tipo: 'tabla', texto: resumen.slice(0, 1500), seg, inicio: e.startIndex ?? 0, fin: e.endIndex ?? 0 });
+        filas.forEach((f, fila) => (f.tableCells ?? []).forEach((c, columna) => recorrer(c.content, seg, { id, fila, columna })));
+      }
+    });
+  };
+  recorrer(doc.body?.content, '');
+  for (const [hid, h] of Object.entries(doc.headers ?? {})) recorrer(h.content, hid);
+  for (const [fid, f] of Object.entries(doc.footers ?? {})) recorrer(f.content, fid);
+  return bloques;
+}
+
+const texto1 = (els: ElementoDoc[] | undefined): string =>
+  (els ?? []).map((e) => (e.paragraph?.elements ?? []).map((x) => x.textRun?.content ?? '').join('')).join(' ').replace(/\s+/g, ' ').trim();
+
+function describir(doc: DocumentoDocs, objeto: string): string {
+  const e = doc.inlineObjects?.[objeto]?.inlineObjectProperties?.embeddedObject ?? doc.positionedObjects?.[objeto]?.positionedObjectProperties?.embeddedObject;
+  return `[imagen${e?.description || e?.title ? `: ${e.description || e.title}` : ''}]`;
+}
+
+/** Lo que decidió la IA sobre el ejemplo (ver ia/plantillas.ts › analizarEjemplo). */
+export interface Analisis {
+  campos: { clave: string; tipo: 'ia' | 'foto' | 'fotos'; bloques: string[] }[];
+  datos: { bloque: string; buscar: string; marcador: string }[];
+  tablas: { tabla: string; marcador: string }[];
+}
+
+/**
+ * Peticiones para convertir el ejemplo en plantilla: cada campo de la IA ocupa el sitio de su
+ * primer bloque (los demás se borran), cada dato sustituye el texto exacto que lo contenía, cada
+ * imagen deja su marcador y cada tabla de cifras, el suyo. Todo del final al principio.
+ * Devuelve aparte las tablas, que se quitan en una segunda tanda (si falla, se avisa).
+ */
+export function planMarcadores(bloques: Bloque[], a: Analisis): { requests: object[]; tablas: object[][]; avisos: string[] } {
+  const porId = new Map(bloques.map((b) => [b.id, b]));
+  const avisos: string[] = [];
+  type Cambio = { seg: string; inicio: number; requests: object[] };
+  const cambios: Cambio[] = [];
+  const usados = new Set<string>();
+  const texto = (marcador: string) => [{ tipo: 'p' as const, trozos: [{ texto: marcador }] }];
+
+  for (const c of a.campos) {
+    const bs = c.bloques.map((id) => porId.get(id)).filter((b): b is Bloque => !!b && !usados.has(b.id));
+    if (!bs.length) continue;
+    bs.forEach((b) => usados.add(b.id));
+    const marcador = `{{${c.tipo}:${c.clave}}}`;
+    const [primero, ...resto] = bs;
+    if (primero.tipo === 'imagen') {
+      const r = primero.imagen!.flotante
+        ? [{ deletePositionedObject: { objectId: primero.imagen!.objeto } }, { insertText: { location: lugar(primero.seg, primero.inicio), text: marcador } }]
+        : [{ deleteContentRange: { range: rango(primero.seg, primero.inicio, primero.fin) } }, { insertText: { location: lugar(primero.seg, primero.inicio), text: marcador } }];
+      cambios.push({ seg: primero.seg, inicio: primero.inicio, requests: r });
+    } else {
+      cambios.push({ seg: primero.seg, inicio: primero.inicio, requests: reemplazarRango(primero.seg, primero.inicio, primero.fin, texto(marcador), true) });
+    }
+    for (const b of resto) {
+      if (b.tipo === 'imagen') {
+        cambios.push({ seg: b.seg, inicio: b.inicio, requests: [b.imagen!.flotante ? { deletePositionedObject: { objectId: b.imagen!.objeto } } : { deleteContentRange: { range: rango(b.seg, b.inicio, b.fin) } }] });
+      } else {
+        // El párrafo entero con su salto, salvo el último de su celda o segmento.
+        cambios.push({ seg: b.seg, inicio: b.inicio, requests: [{ deleteContentRange: { range: rango(b.seg, b.inicio, b.ultimo ? b.fin : b.fin + 1) } }] });
+      }
+    }
+  }
+
+  for (const d of a.datos) {
+    const b = porId.get(d.bloque);
+    if (!b || usados.has(b.id) || b.tipo === 'imagen' || b.tipo === 'tabla') continue;
+    const i = b.texto.indexOf(d.buscar);
+    if (!d.buscar || i < 0) {
+      avisos.push(`No se encontró «${d.buscar}» para poner ${d.marcador}.`);
+      continue;
+    }
+    cambios.push({ seg: b.seg, inicio: b.inicio + i, requests: reemplazarRango(b.seg, b.inicio + i, b.inicio + i + d.buscar.length, texto(d.marcador), true) });
+  }
+
+  // Del final al principio, segmento a segmento.
+  const requests = cambios.sort((x, y) => (x.seg === y.seg ? y.inicio - x.inicio : x.seg.localeCompare(y.seg))).flatMap((c) => c.requests);
+
+  // Las tablas se quitan después (cambian mucho las posiciones): se recalculan al releer.
+  const tablas = a.tablas
+    .map((t) => porId.get(t.tabla) && { b: porId.get(t.tabla)!, marcador: t.marcador })
+    .filter((x): x is { b: Bloque; marcador: string } => !!x && !x.b.seg)
+    .sort((x, y) => y.b.inicio - x.b.inicio)
+    .map(({ b, marcador }) => [{ deleteContentRange: { range: { startIndex: b.inicio, endIndex: b.fin } } }, { insertText: { location: { index: b.inicio }, text: marcador } }]);
+  return { requests, tablas, avisos };
+}
+
+/** Escribe los marcadores en el documento convertido. Las tablas que no se puedan quitar quedan como aviso. */
+export async function aplicarAnalisisDoc(id: string, bloques: Bloque[], a: Analisis): Promise<string[]> {
+  const doc = await leerDoc(id);
+  // Las posiciones de las tablas se toman antes de los cambios de texto y se ajustan releyendo.
+  const { requests, avisos } = planMarcadores(bloques, { ...a, tablas: [] });
+  if (requests.length) await enviar(id, requests, doc.revisionId);
+  if (a.tablas.length) {
+    const despues = bloquesDoc(await leerDoc(id));
+    // Tras los cambios, las tablas conservan su orden: T1, T2… siguen siendo las mismas.
+    const plan = planMarcadores(despues, { campos: [], datos: [], tablas: a.tablas });
+    for (const [k, r] of plan.tablas.entries()) {
+      try {
+        await enviar(id, r);
+      } catch (e) {
+        console.error('Plantilla: no se pudo quitar una tabla', e);
+        avisos.push(`No se pudo quitar una tabla para poner ${a.tablas[k]?.marcador}: bórrala a mano y escribe el marcador en su lugar.`);
+      }
+    }
+  }
+  return avisos;
+}
+
 // ── Relleno ─────────────────────────────────────────────────────────────────
 
 /** El documento entero, como lo devuelve la API de Docs. */

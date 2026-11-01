@@ -256,6 +256,82 @@ export function planFotosSlides(p: PresentacionSlides, r: Relleno): { fotos: Fot
   return { fotos, desconocidos };
 }
 
+// ── Convertir una presentación de ejemplo en plantilla ──────────────────────
+
+export interface BloqueSlides {
+  id: string;
+  tipo: 'titulo' | 'parrafo' | 'celda' | 'imagen';
+  texto: string;
+  destino: Destino;
+  inicio: number;
+  fin: number;
+  ultimo: boolean;
+  diapositiva: number;
+}
+
+/** Párrafos de cada recuadro y celda, e imágenes, en orden de diapositiva. */
+export function bloquesSlides(p: PresentacionSlides & { slides?: { pageElements?: (ElementoPagina & { shape?: { placeholder?: { type?: string } } })[] }[] }): BloqueSlides[] {
+  const bloques: BloqueSlides[] = [];
+  let n = 0;
+  const parrafos = (texto: string, destino: Destino, tipo: BloqueSlides['tipo'], diapositiva: number) => {
+    const lineas = texto.replace(/\n$/, '').split('\n');
+    let inicio = 0;
+    lineas.forEach((l, k) => {
+      if (l.trim()) bloques.push({ id: `B${++n}`, tipo, texto: l, destino, inicio, fin: inicio + l.length, ultimo: k === lineas.length - 1, diapositiva });
+      inicio += l.length + 1;
+    });
+  };
+  (p.slides ?? []).forEach((s, i) => {
+    const recorrer = (els: (ElementoPagina & { shape?: { placeholder?: { type?: string } } })[] = []) => {
+      for (const e of els) {
+        if (e.image) bloques.push({ id: `B${++n}`, tipo: 'imagen', texto: `[imagen${e.description ? `: ${e.description}` : ''}]`, destino: { objectId: e.objectId }, inicio: 0, fin: 0, ultimo: true, diapositiva: i + 1 });
+        if (e.shape?.text) parrafos(texto(e.shape.text).texto, { objectId: e.objectId }, /TITLE/.test(e.shape.placeholder?.type ?? '') ? 'titulo' : 'parrafo', i + 1);
+        for (const f of e.table?.tableRows ?? []) for (const c of f.tableCells ?? []) if (c.text) parrafos(texto(c.text).texto, { objectId: e.objectId, celda: { rowIndex: c.location?.rowIndex ?? 0, columnIndex: c.location?.columnIndex ?? 0 } }, 'celda', i + 1);
+        recorrer(e.elementGroup?.children);
+      }
+    };
+    recorrer(s.pageElements);
+  });
+  return bloques;
+}
+
+/** Escribe los marcadores en la presentación convertida (sin tablas: en Slides no hay {{tabla:…}}). */
+export async function aplicarAnalisisSlides(id: string, bloques: BloqueSlides[], a: { campos: { clave: string; tipo: string; bloques: string[] }[]; datos: { bloque: string; buscar: string; marcador: string }[] }): Promise<string[]> {
+  const porId = new Map(bloques.map((b) => [b.id, b]));
+  const avisos: string[] = [];
+  const usados = new Set<string>();
+  const textos: (Destino & { inicio: number; requests: object[] })[] = [];
+  const altText: object[] = [];
+  const plano = (t: string) => [{ tipo: 'p' as const, trozos: [{ texto: t }] }];
+
+  for (const c of a.campos) {
+    const bs = c.bloques.map((x) => porId.get(x)).filter((b): b is BloqueSlides => !!b && !usados.has(b.id));
+    if (!bs.length) continue;
+    bs.forEach((b) => usados.add(b.id));
+    const marcador = `{{${c.tipo}:${c.clave}}}`;
+    const [primero, ...resto] = bs;
+    // Una imagen conserva su marco: el marcador va en su texto alternativo.
+    if (primero.tipo === 'imagen') altText.push({ updatePageElementAltText: { objectId: primero.destino.objectId, description: marcador } });
+    else textos.push({ ...primero.destino, inicio: primero.inicio, requests: reemplazarEnSlides(primero.destino, primero.inicio, primero.fin, plano(marcador)) });
+    for (const b of resto) {
+      if (b.tipo !== 'imagen') textos.push({ ...b.destino, inicio: b.inicio, requests: [{ deleteText: { ...donde(b.destino), textRange: tramo(b.inicio, b.ultimo ? b.fin : b.fin + 1) } }] });
+    }
+  }
+  for (const d of a.datos) {
+    const b = porId.get(d.bloque);
+    if (!b || usados.has(b.id) || b.tipo === 'imagen') continue;
+    const i = b.texto.indexOf(d.buscar);
+    if (!d.buscar || i < 0) {
+      avisos.push(`No se encontró «${d.buscar}» para poner ${d.marcador}.`);
+      continue;
+    }
+    textos.push({ ...b.destino, inicio: b.inicio + i, requests: reemplazarEnSlides(b.destino, b.inicio + i, b.inicio + i + d.buscar.length, plano(d.marcador)) });
+  }
+  const requests = [...ordenar(textos).flatMap((x) => x.requests), ...altText];
+  if (requests.length) await enviar(id, requests, (await leerSlides(id)).revisionId);
+  return avisos;
+}
+
 // ── Relleno ─────────────────────────────────────────────────────────────────
 
 /** La presentación entera, como la devuelve la API de Slides. */

@@ -69,8 +69,12 @@ AD · Plantillas/
 │   └── Fundación Horizonte/
 │       ├── Original – Informe intermedio.docx   ← lo que envió el donante, sin tocar
 │       └── Informe intermedio                    ← convertida a Google Docs, con marcadores
-└── Imágenes/                           logo, firma, mapa de la ONG
+├── Imágenes/                           logo, firma, mapa de la ONG
+├── _Ejemplos/                          informes de ejemplo subidos desde la app (originales)
+└── _Pruebas/                           informes de prueba de las plantillas (se pueden borrar)
 ```
+
+Las plantillas creadas desde un ejemplo van a `ONG/` o a `Donantes/<donante>/`. En `AD · Sistema`, la app usa `_Temporal/` para las copias de los archivos adjuntos que convierte para leer su texto; van a la papelera al momento.
 
 ### `AD · Sistema`
 

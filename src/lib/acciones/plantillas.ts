@@ -4,6 +4,7 @@
 // que se propone por defecto y crear las de la ONG es cosa de administración.
 
 import { revalidatePath } from 'next/cache';
+import { after } from 'next/server';
 import { redirect } from 'next/navigation';
 import { permitido, persona } from '../sesion';
 import { intentar, texto, type Resultado } from './resultado';
@@ -23,6 +24,7 @@ import {
   type DatosPlantilla,
 } from '../dominio/plantillas';
 import { crearPlantillasDeLaApp } from '../dominio/plantillasApp';
+import { avanzarPlantilla, crearDesdeEjemplo, reintentarPlantilla } from '../trabajos/plantilla';
 import { editarInstrucciones, type PropuestaInstrucciones } from '../ia/plantillas';
 import type { Idioma, TipoInforme } from '../tipos';
 
@@ -173,5 +175,29 @@ export async function borrarPlantillaAccion(_: Resultado, fd: FormData): Promise
     await borrarPlantilla(texto(fd, 'id', 100));
     revalidar();
     redirect('/plantillas');
+  });
+}
+
+/** Plantilla nueva a partir de un informe de ejemplo (ya subido o elegido de la unidad): se prepara en segundo plano. */
+export async function crearDesdeEjemploAccion(_: Resultado, fd: FormData): Promise<Resultado> {
+  return intentar(async () => {
+    const yo = await permitido('edicion');
+    const ejemplo = texto(fd, 'ejemplo', 100);
+    if (!ejemplo) throw new Error('Sube o elige el informe de ejemplo.');
+    const id = await crearDesdeEjemplo(ejemplo, await datosDe(fd), persona(yo));
+    after(() => avanzarPlantilla(id));
+    revalidar();
+    redirect(`/plantillas/${id}`);
+  });
+}
+
+export async function reintentarPlantillaAccion(_: Resultado, fd: FormData): Promise<Resultado> {
+  return intentar(async () => {
+    await permitido('edicion');
+    const id = texto(fd, 'id', 100);
+    await reintentarPlantilla(id);
+    after(() => avanzarPlantilla(id));
+    revalidar();
+    return 'En marcha otra vez.';
   });
 }

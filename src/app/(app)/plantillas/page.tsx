@@ -9,6 +9,7 @@ import {
   TIPOS_PLANTILLA,
   camposSinInstruccion,
   documentosSinRegistrar,
+  ejemplosDisponibles,
   listarPlantillas,
 } from '@/lib/dominio/plantillas';
 import { crearPlantillasAppAccion } from '@/lib/acciones/plantillas';
@@ -17,6 +18,9 @@ import { Dialogo } from '@/componentes/Dialogo';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
 import { Etiqueta } from '@/componentes/Basicos';
 import { FormPlantilla } from './FormPlantilla';
+import { NuevaDesdeEjemplo } from './NuevaDesdeEjemplo';
+import { MIMES_EJEMPLO } from '@/lib/trabajos/plantilla';
+import { modoDemo } from '@/lib/config';
 import type { TipoInforme } from '@/lib/tipos';
 
 export const metadata: Metadata = { title: 'Plantillas' };
@@ -24,10 +28,11 @@ export const metadata: Metadata = { title: 'Plantillas' };
 export default async function Plantillas() {
   const yo = await requiere('lectura');
   const edicion = tienePermiso(yo, 'edicion');
-  const [plantillas, documentos, donantes] = await Promise.all([
+  const [plantillas, documentos, donantes, ejemplos] = await Promise.all([
     listarPlantillas(),
     edicion ? documentosSinRegistrar().catch(() => []) : Promise.resolve([]),
     edicion ? listarDonantes() : Promise.resolve([]),
+    edicion ? ejemplosDisponibles(Object.keys(MIMES_EJEMPLO)).catch(() => []) : Promise.resolve([]),
   ]);
   const hayDeLaOng = plantillas.some((p) => p.origen === 'app');
 
@@ -45,6 +50,11 @@ export default async function Plantillas() {
                 Crear las plantillas de la ONG
               </Enviar>
             </FormAccion>
+          ) : null}
+          {edicion ? (
+            <Dialogo boton="Crear desde un ejemplo" claseBoton="btn btn-s" titulo="Plantilla a partir de un informe de ejemplo">
+              <NuevaDesdeEjemplo ejemplos={ejemplos} donantes={donantes.map((d) => ({ id: d.id, nombre: d.nombre }))} tipos={TIPOS_PLANTILLA} demo={modoDemo} />
+            </Dialogo>
           ) : null}
           {edicion ? (
             <Dialogo boton="Añadir desde Drive" claseBoton="btn btn-p" titulo="Añadir una plantilla de Drive">

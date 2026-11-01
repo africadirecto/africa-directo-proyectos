@@ -170,6 +170,11 @@ Uso y lista de marcadores: [INFORMES.md](INFORMES.md). Por dentro hay tres pieza
   - el idioma del texto fijo;
   - las **instrucciones para la IA**: una general y una por campo. Se guardan por versiones en `plantillas/{id}/versiones`.
 - Las de la ONG (`plantillasApp.ts`) las crea la app una vez y luego son plantillas como las demás.
+- **Desde un informe de ejemplo** (`lib/trabajos/plantilla.ts`), en segundo plano como los informes: `convertir → analizar → escribir → borrador`.
+  - **Convertir:** copia el ejemplo como Google Doc o Slides.
+  - **Analizar:** lee el ejemplo en bloques numerados y una sola petición a la IA (un lote con salida JSON, o directa) decide qué es fijo, qué datos y qué campos hay, y escribe las instrucciones. La respuesta se valida antes de usarla.
+  - **Escribir:** pone los marcadores, guarda las instrucciones como versión 1 y deja la plantilla en borrador con las dudas de la IA.
+- **«Probar»** hace un informe con una plantilla en borrador y los datos de un proyecto. Se guarda en `informes` con `prueba: {codigo}` y en `AD · Plantillas / _Pruebas`, no en la ficha del proyecto.
 - «Sincronizar» lee el documento: qué campos, datos y tablas tiene, y avisa de lo que no va a salir bien.
 - «Cambiar con IA» propone instrucciones nuevas a partir de una petición; se revisan antes de guardarlas.
 
@@ -220,7 +225,7 @@ Con `anthropic/claude-haiku-5.5` en lotes, un informe de unas 6 secciones cuesta
 | Fase | Qué incluye |
 | --- | --- |
 | **2. Seguimiento** | "Añadir correo" en la ficha (`.eml`, `.msg` o texto con adjuntos), lectura automática del buzón de la app según [CORREO.md](CORREO.md), bandeja de correos sin asignar y página de subida de fotos para la contraparte |
-| **3. Documentos con IA** | Hecho: plantillas unificadas con sus instrucciones, generación en segundo plano por lotes y presentaciones. También fotos dentro del informe y archivos del proyecto como contexto. Falta: crear una plantilla a partir de un informe de ejemplo (Word o PowerPoint) |
+| **3. Documentos con IA** | Hecho: plantillas unificadas con sus instrucciones, generación en segundo plano por lotes y presentaciones. También fotos dentro del informe, archivos del proyecto como contexto y plantillas creadas a partir de un informe de ejemplo |
 | **4. Mejoras** | Ficha de solo lectura para donantes, estadísticas, formulario instalable sin conexión y WhatsApp si compensa |
 
 ## Fuentes

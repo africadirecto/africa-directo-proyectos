@@ -58,12 +58,13 @@ export async function pedirInformeAccion(_: ResultadoPedido, fd: FormData): Prom
         // Si el voluntario abrió la lista de fotos, las que marcó; si no, las elige la app.
         fotos: fd.get('fotosElegidas') ? fd.getAll('fotos').map(String).slice(0, MAX_FOTOS) : null,
         adjuntos: fd.getAll('adjuntos').map(String).slice(0, MAX_ADJUNTOS),
+        prueba: fd.get('prueba') === '1',
       },
       persona(yo),
     );
     // Se prepara al terminar la respuesta, sin hacer esperar al voluntario.
     after(() => avanzarInforme(ruta));
-    revalidatePath(codigo ? `/proyectos/${codigo}` : '/', codigo ? 'page' : 'layout');
+    revalidatePath(codigo && !fd.get('prueba') ? `/proyectos/${codigo}` : '/', codigo && !fd.get('prueba') ? 'page' : 'layout');
     return { ok: true, ruta, vez: Date.now() };
   } catch (e) {
     unstable_rethrow(e);

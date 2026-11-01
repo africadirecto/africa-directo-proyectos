@@ -83,7 +83,27 @@ En la ficha de cada plantilla:
 - **Cambiar con IA**: escribe lo que quieres («más formal», «que el resumen hable siempre del número de alumnos») y la IA propone las instrucciones nuevas. Ves qué cambia, la pasas al formulario y la guardas tú.
 - **Activar, archivar y duplicar**. Solo las **activas** se ofrecen al generar informes. Administración elige la que se propone **por defecto** para cada tipo y formato, y puede borrar plantillas.
 
-Para empezar, administración pulsa **Crear las plantillas de la ONG**: crea en `AD · Plantillas / ONG` un documento y una presentación para cada tipo de informe. Para usar otro documento, déjalo en la unidad (si es un Word, ábrelo antes con Google Docs), escribe en él los marcadores y pulsa **Añadir desde Drive**.
+Para empezar, administración pulsa **Crear las plantillas de la ONG**: crea en `AD · Plantillas / ONG` un documento y una presentación para cada tipo de informe.
+
+Para tener otra plantilla hay dos caminos.
+
+**Crear desde un ejemplo** (lo normal con la plantilla de un donante):
+
+1. Sube un informe de ejemplo (Word, PowerPoint o PDF; mejor el original que un PDF) o elige uno que ya esté en la unidad.
+2. Indica para qué informe es y, si es la de un donante, de cuál.
+3. La app hace el resto en segundo plano, en unos minutos:
+   - Convierte el ejemplo en un documento de Google y lo deja en `ONG` o en `Donantes / <donante>`. El original queda en `_Ejemplos`.
+   - La IA decide qué es texto fijo, qué datos de la app hay (título, presupuesto…) y qué apartados redactará en cada informe, y los marca.
+   - Escribe las instrucciones imitando el estilo del ejemplo, sin copiar sus datos.
+4. La plantilla queda en **borrador**, con los avisos y las dudas de la IA para revisar. Ábrela en Google, ajusta lo que haga falta y pruébala.
+
+**Añadir desde Drive:** para un documento que ya tiene los marcadores escritos a mano. Déjalo en la unidad (si es un Word, ábrelo antes con Google Docs) y pulsa **Añadir desde Drive**.
+
+**Probar con un proyecto** (en la ficha de la plantilla, también en borrador):
+- hace un informe con los datos del proyecto que elijas, para ver cómo queda;
+- va a `AD · Plantillas / _Pruebas` y aparece en la ficha de la plantilla, no en la del proyecto.
+
+Cuando la plantilla esté bien, **Activar**.
 
 Hace falta:
 
@@ -113,4 +133,5 @@ El formato antiguo `{{ia:clave|150 palabras|instrucción}}` sigue funcionando: l
 ## Todavía no está hecho
 
 - **Fotos en los informes de conjunto:** solo los de un proyecto llevan fotos.
-- **Crear una plantilla a partir de un informe de ejemplo** en Word o PowerPoint: la app lo convertirá, propondrá los marcadores y escribirá las instrucciones.
+- **Cuadros de texto de Word:** la app no puede leerlos ni rellenarlos (es un límite de Google). Si una plantilla los tiene, pasa su contenido a texto normal.
+- **Tablas en Slides:** salen como líneas de texto, y las presentaciones no repiten diapositivas (por ejemplo, una por proyecto).

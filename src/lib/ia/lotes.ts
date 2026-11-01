@@ -9,7 +9,8 @@
 // Comprobado en scripts/pruebas (S1):
 // - Una sola petición mal formada hace que se rechace el lote entero: se validan antes.
 // - Con Google, todas las peticiones deben compartir la misma configuración de salida: aquí
-//   todas van sin response_format (texto) y con los mismos parámetros.
+//   las de un informe van todas sin response_format (texto); el análisis de un informe de
+//   ejemplo (plantillas) va en su propio lote, con salida JSON.
 
 import crypto from 'node:crypto';
 import { config } from '../config';
@@ -39,8 +40,11 @@ async function llamar<T>(url: string, init: RequestInit = {}): Promise<{ status:
   return { status: res.status, datos };
 }
 
-/** Envía las peticiones como un lote y devuelve su id. `aviso`: dirección a la que OpenRouter avisa al terminar. */
-export async function enviarLote(peticiones: PeticionLote[], aviso?: string): Promise<string> {
+/**
+ * Envía las peticiones como un lote y devuelve su id. `aviso`: dirección a la que OpenRouter avisa
+ * al terminar. `formato`: salida JSON con ese esquema (igual para todas: así lo exigen algunos proveedores).
+ */
+export async function enviarLote(peticiones: PeticionLote[], aviso?: string, formato?: { nombre: string; esquema: object }): Promise<string> {
   if (!peticiones.length) throw new Error('El lote está vacío.');
   const ids = new Set<string>();
   for (const p of peticiones) {
@@ -64,6 +68,7 @@ export async function enviarLote(peticiones: PeticionLote[], aviso?: string): Pr
             { role: 'user', content: p.entrada },
           ],
           max_tokens: MAX_TOKENS,
+          ...(formato ? { response_format: { type: 'json_schema', json_schema: { name: formato.nombre, strict: true, schema: formato.esquema } } } : {}),
         },
       })),
     }),

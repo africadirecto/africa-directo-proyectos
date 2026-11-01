@@ -153,6 +153,35 @@ describe.skipIf(!activa)('compositores contra Google', () => {
     expect(descripcion.length).toBeGreaterThan(10);
   }, 180_000);
 
+  it('plantilla desde un ejemplo: convertir el .docx, analizarlo con IA y escribir los marcadores', async () => {
+    const { driveGoogle } = await import('./google');
+    const { ES_DOC } = await import('./tipos');
+    const { bloquesDoc, leerDoc, aplicarAnalisisDoc } = await import('./plantillaDocs');
+    const { peticionEjemplo, analizarEjemploDirecto } = await import('../ia/plantillas');
+    const { analizarEstructura, leerMarcadores } = await import('../dominio/plantillas');
+    const carpeta = await driveGoogle.carpetaHija('_Pruebas técnicas', driveGoogle.raizSistema);
+    const docx = (await driveGoogle.listar([carpeta])).find((a) => a.nombre === 'plantilla-donante-prueba.docx');
+    expect(docx, 'falta el .docx de la prueba S3').toBeDefined();
+    const { id } = await driveGoogle.copiarConvirtiendo(docx!.id, carpeta, `Plantilla desde ejemplo ${new Date().toISOString().slice(0, 16)}`, ES_DOC);
+    console.log('Plantilla:', driveGoogle.urlDocumento(id));
+
+    const bloques = bloquesDoc(await leerDoc(id));
+    const analisis = await analizarEjemploDirecto(peticionEjemplo({ bloques, tipo: 'seguimiento', formato: 'docs', donante: 'Fundación de Ejemplo' }), bloques, 'seguimiento');
+    console.log(JSON.stringify({ idioma: analisis.idioma, campos: analisis.campos, datos: analisis.datos, tablas: analisis.tablas, dudas: analisis.dudas, general: analisis.instrucciones.general }, null, 1));
+    expect(analisis.campos.filter((c) => c.tipo === 'ia').length).toBeGreaterThanOrEqual(2);
+
+    const avisos = await aplicarAnalisisDoc(id, bloques, analisis);
+    console.log('Avisos:', avisos);
+    const leidos = await leerMarcadores(id, ES_DOC);
+    const { estructura } = analizarEstructura(leidos, 'seguimiento', 'docs', analisis.instrucciones);
+    console.log('Estructura:', JSON.stringify(estructura));
+    const texto = JSON.stringify(await leerDoc(id));
+    // Lo propio del ejemplo ya no está; lo fijo, sí.
+    expect(texto).not.toContain('Durante el primer semestre se han completado los cimientos');
+    expect(texto).toContain('Actividades realizadas en el periodo');
+    expect(estructura.campos.filter((c) => c.tipo === 'ia' && !c.huerfano).map((c) => c.clave).sort()).toEqual(analisis.campos.filter((c) => c.tipo === 'ia').map((c) => c.clave).sort());
+  }, 300_000);
+
   it('Slides: textos con formato, fotos en recuadros y en imágenes con texto alternativo', async () => {
     const { driveGoogle, apiGoogle } = await import('./google');
     const { ES_PRESENTACION } = await import('./tipos');

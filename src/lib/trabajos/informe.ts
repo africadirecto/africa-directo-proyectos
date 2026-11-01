@@ -27,6 +27,7 @@ import { avisarChat } from '../avisos';
 import { iaDisponible } from '../ia';
 import { ErrorIA } from '../ia/openrouter';
 import { borrarLote, enviarLote, leerLote } from '../ia/lotes';
+import { apuntarLote, apuntarTrabajo, loteReciente, lotePorBorrar, quitarTrabajo, urlAviso, usarLotes } from './comun';
 import { asignarFotos, leerCampo, peticionCampo, redactarDirecto, resumirInforme, traducirTextos, type CampoPedido, type HuecoFoto } from '../ia/informes';
 import { DATOS, type Relleno } from '../dominio/marcadores';
 import { anotarEvento } from '../dominio/eventos';
@@ -37,7 +38,7 @@ import { nombreSector } from '../formulario/textos';
 import { leerAdjuntos, prepararFotos, type FotoTrabajo } from './materiales';
 import { contextoProyecto } from '../dominio/informes';
 import { contextoConjunto, type TipoInformeGeneral } from '../dominio/informesGenerales';
-import { leerPlantilla, sincronizarPlantilla, TIPOS_PLANTILLA, type PlantillaConId } from '../dominio/plantillas';
+import { carpetaPlantillas, leerPlantilla, sincronizarPlantilla, TIPOS_PLANTILLA, type PlantillaConId } from '../dominio/plantillas';
 import type { EventoContexto } from '../dominio/informesComun';
 import type { EstadoProyecto, Idioma, Informe, Persona, TipoInforme } from '../tipos';
 
@@ -91,14 +92,15 @@ export interface PedidoInforme {
   fotos?: string[] | null;
   /** Archivos del proyecto cuyo texto se da a la IA como contexto. */
   adjuntos?: string[];
+  /** Prueba de una plantilla (aunque esté en borrador): va aparte, no a la ficha del proyecto. */
+  prueba?: boolean;
 }
-
-const claveTrabajo = (ruta: string) => ruta.replace(/\//g, '~');
 
 /** Crea el informe en cola y devuelve su ruta. Después hay que llamar a avanzarInforme. */
 export async function pedirInforme(o: PedidoInforme, autor: Persona): Promise<string> {
   const p = await leerPlantilla(o.plantillaId);
-  if (!p || p.estado !== 'activa') throw new Error('Elige una plantilla activa.');
+  if (!p || (p.estado !== 'activa' && !(o.prueba && p.estado === 'borrador'))) throw new Error(o.prueba ? 'Solo se pueden probar las plantillas en borrador o activas.' : 'Elige una plantilla activa.');
+  if (o.prueba && !o.codigo) throw new Error('Elige el proyecto con el que probarla.');
   const deProyecto = DE_PROYECTO.includes(p.tipo);
   if (o.codigo && !deProyecto) throw new Error('Esa plantilla es para informes de conjunto.');
   if (o.conjunto && p.tipo !== o.conjunto.tipo) throw new Error(`Esa plantilla es para «${TIPOS_PLANTILLA[p.tipo]}».`);
@@ -133,11 +135,12 @@ export async function pedirInforme(o: PedidoInforme, autor: Persona): Promise<st
     actualizado: ahora,
   };
   const db = await almacen();
-  const coleccion = o.codigo ? `proyectos/${o.codigo}/informes` : 'informes';
+  // Las pruebas van en «informes» (no en la ficha del proyecto), con el proyecto en «prueba».
+  const coleccion = o.codigo && !o.prueba ? `proyectos/${o.codigo}/informes` : 'informes';
   // En los de conjunto, «sobre» guarda el id hasta que se lea su nombre al preparar.
-  const id = await db.crear(coleccion, { ...informe, ...(o.conjunto ? { sobre: o.conjunto.sobre ? { id: o.conjunto.sobre, nombre: '' } : null } : {}) });
+  const id = await db.crear(coleccion, { ...informe, ...(o.prueba ? { prueba: { codigo: o.codigo } } : {}), ...(o.conjunto ? { sobre: o.conjunto.sobre ? { id: o.conjunto.sobre, nombre: '' } : null } : {}) });
   const ruta = `${coleccion}/${id}`;
-  await db.guardar(`trabajos/${claveTrabajo(ruta)}`, { ruta, tipo: 'informe', lote: '', creado: ahora });
+  await apuntarTrabajo(ruta, 'informe');
   return ruta;
 }
 
@@ -147,7 +150,7 @@ export async function reintentarInforme(ruta: string): Promise<void> {
   const i = await db.leer<Informe>(ruta);
   if (!i || i.estado !== 'error') throw new Error('Ese informe no tiene nada que reintentar.');
   await db.guardar(ruta, { estado: i.docId ? 'componiendo' : 'en_cola', error: '', intentos: 0, bloqueo: '', lote: null, actualizado: new Date().toISOString() }, { fusionar: true });
-  await db.guardar(`trabajos/${claveTrabajo(ruta)}`, { ruta, tipo: 'informe', lote: '', creado: new Date().toISOString() });
+  await apuntarTrabajo(ruta, 'informe');
 }
 
 // ── Avanzar ─────────────────────────────────────────────────────────────────
@@ -202,71 +205,16 @@ async function fallo(ruta: string, e: unknown) {
   }
   const mensaje = (e instanceof Error ? e.message : String(e)).replace(/https?:\/\/\S+/g, '').slice(0, 300);
   await db.guardar(ruta, { estado: 'error', error: mensaje || 'Algo ha fallado.', intentos, lote: null, actualizado: new Date().toISOString() }, { fusionar: true });
-  await db.borrar(`trabajos/${claveTrabajo(ruta)}`).catch(() => undefined);
+  await quitarTrabajo(ruta);
   if (i?.lote) await lotePorBorrar(i.lote.id);
-}
-
-/** Un lote que ya no se va a leer: se borra en OpenRouter ahora o, si aún está en curso, en el cron. */
-async function lotePorBorrar(id: string) {
-  try {
-    await borrarLote(id);
-  } catch {
-    await (await almacen()).guardar(`lotesPorBorrar/${id}`, { creado: new Date().toISOString() });
-  }
-}
-
-/** Lo llama el cron: borra en OpenRouter los lotes abandonados (cuando ya han terminado). */
-export async function borrarLotesAbandonados(): Promise<number> {
-  const db = await almacen();
-  let borrados = 0;
-  for (const l of await db.consultar('lotesPorBorrar')) {
-    try {
-      await borrarLote(l.id);
-      await db.borrar(`lotesPorBorrar/${l.id}`);
-      borrados += 1;
-    } catch (e) {
-      // 404: ya no existe. Otro error (p. ej. aún en curso): se intenta la noche siguiente.
-      if (e instanceof ErrorIA && e.status === 404) await db.borrar(`lotesPorBorrar/${l.id}`);
-    }
-  }
-  return borrados;
-}
-
-/** Lo llama el cron: avanza los informes a medias y da por fallidos los que llevan días sin terminar. */
-export async function avanzarPendientes(): Promise<{ avanzados: number; caducados: number }> {
-  const db = await almacen();
-  let avanzados = 0;
-  let caducados = 0;
-  const inicio = Date.now();
-  const limite = new Date(Date.now() - 4 * 86_400_000).toISOString();
-  for (const t of await db.consultar<{ ruta: string; creado: string }>('trabajos')) {
-    // La función del cron tiene 300 s; lo que no dé tiempo, la noche siguiente.
-    if (Date.now() - inicio > 200_000) break;
-    if (t.creado < limite) {
-      await db.guardar(t.ruta, { estado: 'error', error: 'Lleva varios días sin terminar. Pulsa «Reintentar».' }, { fusionar: true }).catch(() => undefined);
-      await db.borrar(`trabajos/${t.id}`);
-      caducados += 1;
-    } else {
-      await avanzarInforme(t.ruta);
-      avanzados += 1;
-    }
-  }
-  return { avanzados, caducados };
-}
-
-/** Rutas de los informes que esperan a un lote (para el webhook de OpenRouter). */
-export async function informesDelLote(lote: string): Promise<string[]> {
-  return (await (await almacen()).consultar<{ ruta: string }>('trabajos', { donde: [['lote', '==', lote]] })).map((t) => t.ruta);
 }
 
 // ── Pasos ───────────────────────────────────────────────────────────────────
 
-/** Lotes solo si la app tiene una dirección pública a la que OpenRouter pueda avisar (en local y en demo, no). */
-function usarLotes(): boolean {
-  return config.ia.lotes && /^https:\/\//.test(config.appUrl) && !/localhost|127\.0\.0\.1/.test(config.appUrl);
-}
-
+/** El proyecto de un informe guardado en su ficha (las pruebas no lo están: codigoDeInforme). */
 const codigoDe = (ruta: string) => ruta.match(/^proyectos\/([^/]+)\/informes\//)?.[1] ?? '';
+/** El proyecto cuyos datos usa el informe, también en las pruebas de una plantilla. */
+const codigoDeInforme = (ruta: string, i: Informe) => i.prueba?.codigo ?? codigoDe(ruta);
 
 async function preparar(ruta: string, i: Informe) {
   const db = await almacen();
@@ -276,7 +224,7 @@ async function preparar(ruta: string, i: Informe) {
   const meta = await d.metadatos(plantilla.archivoId);
   if (!meta) throw new Error('No se encuentra el documento de la plantilla en Drive.');
 
-  const codigo = codigoDe(ruta);
+  const codigo = codigoDeInforme(ruta, i);
   const ctx = codigo
     ? await contextoProyecto(codigo, { tipo: i.tipo, desde: i.desde, hasta: i.hasta, donanteId: i.donante?.id ?? '', idioma: i.idioma })
     : await contextoConjunto({ tipo: i.tipo as TipoInformeGeneral, sobre: i.sobre?.id ?? '', estados: i.filtros?.estados ?? [], paises: i.filtros?.paises ?? [], desde: i.desde, hasta: i.hasta, idioma: i.idioma });
@@ -316,7 +264,8 @@ async function preparar(ruta: string, i: Informe) {
     datosUsados: plantilla.estructura.datos,
     fotos,
     huecosFoto,
-    carpetaId: ctx.carpetaId,
+    // Las pruebas de una plantilla, en su unidad, no en la carpeta del proyecto.
+    carpetaId: i.prueba ? await carpetaPlantillas('_Pruebas') : ctx.carpetaId,
     nombre: ctx.nombre,
   };
   await db.guardar(`${ruta}/trabajo/contexto`, { ...trabajo });
@@ -339,10 +288,10 @@ async function preparar(ruta: string, i: Informe) {
     for (const c of faltan) await guardarCampo(ruta, c, `[PENDIENTE: ${c.instruccion || c.clave}]`, true);
     Object.assign(cambios, { estado: 'componiendo', hechoPorIA: false, progreso: { campos: campos.length, hechos: campos.length } });
   } else if (usarLotes()) {
-    const lote = await enviarLote(faltan.map((c) => peticion(trabajo, i, c)), `${config.appUrl.replace(/\/$/, '')}/api/ia/lotes`);
+    const lote = await enviarLote(faltan.map((c) => peticion(trabajo, i, c)), urlAviso());
     const ahora = new Date().toISOString();
     Object.assign(cambios, { estado: 'redactando', modo: 'lote', lote: { id: lote, enviado: ahora, comprobado: ahora, reenviado: false } });
-    await db.guardar(`trabajos/${claveTrabajo(ruta)}`, { lote }, { fusionar: true });
+    await apuntarLote(ruta, lote);
   } else Object.assign(cambios, { estado: 'redactando', modo: 'directo', lote: null });
   await db.guardar(ruta, cambios, { fusionar: true });
 }
@@ -394,9 +343,8 @@ async function redactar(ruta: string, i: Informe) {
   }
 
   // Recién creado, OpenRouter tarda un poco en poder consultarlo (responde 404): sigue en curso.
-  const reciente = Date.now() - Date.parse(i.lote.enviado) < 10 * 60_000;
   const l = await leerLote(i.lote.id).catch((e) => {
-    if (e instanceof ErrorIA && e.status === 404 && reciente) return { estado: 'en_curso' as const, resultados: {} };
+    if (loteReciente(i.lote!.enviado, e)) return { estado: 'en_curso' as const, resultados: {} };
     throw e;
   });
   if (l.estado === 'en_curso') {
@@ -416,14 +364,14 @@ async function redactar(ruta: string, i: Informe) {
   await borrarLote(i.lote.id).catch((e) => console.error('Lotes: no se pudo borrar', i.lote?.id, e));
 
   if (fallidos.length && !i.lote.reenviado) {
-    const lote = await enviarLote(fallidos.map((c) => peticion(t, i, c)), `${config.appUrl.replace(/\/$/, '')}/api/ia/lotes`);
+    const lote = await enviarLote(fallidos.map((c) => peticion(t, i, c)), urlAviso());
     await db.guardar(ruta, { lote: { id: lote, enviado: ahora, comprobado: ahora, reenviado: true }, actualizado: ahora }, { fusionar: true });
-    await db.guardar(`trabajos/${claveTrabajo(ruta)}`, { lote }, { fusionar: true });
+    await apuntarLote(ruta, lote);
     return;
   }
   for (const c of fallidos) await guardarCampo(ruta, c, `[PENDIENTE: redactar «${c.clave}»]`, true);
   await db.guardar(ruta, { estado: 'componiendo', lote: null, progreso: { campos: t.campos.length, hechos: t.campos.length }, actualizado: ahora }, { fusionar: true });
-  await db.guardar(`trabajos/${claveTrabajo(ruta)}`, { lote: '' }, { fusionar: true });
+  await apuntarLote(ruta, '');
 }
 
 async function componer(ruta: string, i: Informe) {
@@ -437,7 +385,7 @@ async function componer(ruta: string, i: Informe) {
     // Un dato que no consta queda como hueco resaltado con lo que es.
     datos: Object.fromEntries(Object.entries(t.datos).map(([k, v]) => [k, v || `[PENDIENTE: ${(DATOS[k]?.descripcion ?? k).toLowerCase()}]`])),
     textos: Object.fromEntries(campos.map((c) => [c.id, c.texto])),
-    fotos: await fotosDelRelleno(t, i, codigoDe(ruta)),
+    fotos: await fotosDelRelleno(t, i, codigoDeInforme(ruta, i)),
     tablas: t.tablas,
     tablasSinCabecera: t.tablasSinCabecera,
     traducciones: t.traducciones,
@@ -482,11 +430,11 @@ async function componer(ruta: string, i: Informe) {
     });
   }
   // Con lote puede tardar horas: se avisa en el espacio de los voluntarios.
-  if (i.modo === 'lote') await avisarChat(`📝 Borrador listo: ${que}${codigo ? ` (${codigo})` : ''}. Revísalo antes de enviarlo: ${url}`).catch(() => undefined);
+  if (i.modo === 'lote' && !i.prueba) await avisarChat(`📝 Borrador listo: ${que}${codigo ? ` (${codigo})` : ''}. Revísalo antes de enviarlo: ${url}`).catch(() => undefined);
 
   for (const c of campos) await db.borrar(`${ruta}/campos/${c.id}`);
   await db.borrar(`${ruta}/trabajo/contexto`);
-  await db.borrar(`trabajos/${claveTrabajo(ruta)}`).catch(() => undefined);
+  await quitarTrabajo(ruta);
 }
 
 /**

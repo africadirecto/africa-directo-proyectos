@@ -5,7 +5,7 @@ import { config } from '../config';
 import { drive, conFecha } from '../drive';
 import { avisarChat } from '../avisos';
 import { leerIndice, reconstruirIndice } from './indice';
-import { avanzarPendientes, borrarLotesAbandonados } from '../trabajos/informe';
+import { avanzarPendientes, borrarLotesAbandonados } from '../trabajos';
 import { requiereAtencion, DIAS_SIN_NOTICIAS, DIAS_SIN_RESPONDER } from './atencion';
 
 /** Carpeta "Copias de la base de datos" dentro de la unidad Sistema (se crea la primera vez). */
@@ -53,7 +53,7 @@ export async function tareasNocturnas() {
   }
   resultado.indice = await reconstruirIndice();
   resultado.recordatorios = await recordatorios();
-  // Informes a medias (si se perdió algún aviso de OpenRouter) y los que llevan días sin terminar.
+  // Informes y plantillas a medias (si se perdió algún aviso de OpenRouter) y lo que lleva días sin terminar.
   resultado.informes = await avanzarPendientes().catch((e) => `error: ${(e as Error).message}`);
   resultado.lotesBorrados = await borrarLotesAbandonados().catch((e) => `error: ${(e as Error).message}`);
   return resultado;

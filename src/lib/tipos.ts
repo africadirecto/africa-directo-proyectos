@@ -416,6 +416,8 @@ export interface Informe {
   fotos?: string[] | null;
   /** Archivos del proyecto cuyo texto se dio a la IA como contexto (ids de Drive). */
   adjuntos?: string[];
+  /** Prueba de una plantilla con los datos de ese proyecto (está en «informes», no en su ficha). */
+  prueba?: { codigo: string } | null;
   /** Vacíos hasta que el documento está hecho. */
   docId: string;
   url: string;
