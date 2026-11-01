@@ -1,6 +1,6 @@
 'use client';
 
-// Menú del usuario en la cabecera: se abre al pulsar el perfil. Por ahora solo «Cerrar sesión».
+// Menú del usuario al pie de la barra lateral: se abre hacia arriba al pulsar el perfil. Por ahora solo «Cerrar sesión».
 
 import { useEffect, useRef, useState } from 'react';
 

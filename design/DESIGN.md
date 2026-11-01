@@ -11,7 +11,7 @@ Esta carpeta es una **referencia visual**, no una especificación cerrada. Las m
 | `mockups/solicitudes.html` | Bandeja de solicitudes y correos sin asignar, con el detalle de una solicitud |
 | `mockups/proyecto.html` | Ficha de proyecto con seis pestañas (funcionan en la maqueta) |
 | `mockups/admin.html` | Usuarios, permisos y accesos pendientes |
-| `assets/logo-cara.svg` | Logo vectorial (la cara), para la cabecera y el favicon |
+| `assets/logo-cara.svg` | Logo vectorial (la cara), para la barra lateral plegada y el favicon |
 | `assets/logo-africadirecto.png` | Logotipo completo con el texto; viene de una imagen de baja resolución, úsalo solo pequeño |
 
 Las maquetas son HTML estático con datos de ejemplo. Se abren en el navegador sin servidor y muestran la vista de un usuario con permiso de administración. Los textos entre corchetes ([nombre], [dominio]) son datos que aún no conocemos.
@@ -34,7 +34,8 @@ Las maquetas son HTML estático con datos de ejemplo. Se abren en el navegador s
   - Para enlaces sobre fondo claro: `#B8360B` (hover `#8F2A08`).
   - Fondo suave para el elemento activo de la navegación: `#FCE9E1`, con texto `#9A2E09`.
 - **Neutros:** fondo de página `#F6F6F3`, superficies `#FFFFFF`, bordes `#E3E2DC`, texto `#1B1B18`, texto secundario `#5E5D57`.
-- **Logo:** la cara (`logo-cara.svg`) arriba a la izquierda. El logotipo completo y la etiqueta "el 100 % llega" (fondo `#E54611`, texto blanco en negrita y grande) aparecen en la pantalla de acceso.
+- **Navegación:** barra lateral izquierda, plegable a solo iconos (se recuerda por usuario en una cookie); en móvil, panel que se abre con el botón de menú.
+- **Logo:** el logotipo completo arriba de la barra lateral, y la cara (`logo-cara.svg`) cuando está plegada. El logotipo completo y la etiqueta "el 100 % llega" (fondo `#E54611`, texto blanco en negrita y grande) aparecen en la pantalla de acceso.
 
 ## Estados del proyecto
 
