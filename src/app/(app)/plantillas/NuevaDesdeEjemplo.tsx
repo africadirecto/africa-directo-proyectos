@@ -6,6 +6,7 @@
 
 import { startTransition, useActionState, useState } from 'react';
 import { Desplegable } from '@/componentes/Desplegable';
+import { ElegirArchivo } from '@/componentes/ElegirArchivo';
 import { ElegirTipo } from './ElegirTipo';
 import { subirArchivo } from '@/componentes/subida';
 import { crearDesdeEjemploAccion } from '@/lib/acciones/plantillas';
@@ -54,20 +55,21 @@ export function NuevaDesdeEjemplo({ ejemplos, donantes, demo }: { ejemplos: { id
       </p>
       {demo ? <p className="aviso" style={{ margin: 0 }}>En el modo demo no se pueden convertir archivos de Word, PowerPoint ni PDF: esto solo funciona con Google Drive.</p> : null}
       <div className="campos">
-        <label className="field ancho">
+        {/* Un div y no un label: dentro hay botones (un label pasaría sus clics al campo). */}
+        <div className="field ancho">
           <span>
             Informe de ejemplo <span className="ayuda">Word, PowerPoint o PDF; mejor el original que un PDF</span>
           </span>
-          <input
-            type="file"
-            accept=".docx,.doc,.odt,.rtf,.pdf,.pptx,.ppt"
-            onChange={(e) => {
-              const f = e.target.files?.[0] ?? null;
+          <ElegirArchivo
+            acepta=".docx,.doc,.odt,.rtf,.pdf,.pptx,.ppt"
+            etiqueta="Informe de ejemplo"
+            archivo={archivo}
+            onChange={(f) => {
               setArchivo(f);
               if (f && !nombre) setNombre(f.name.replace(/\.[^.]+$/, ''));
             }}
           />
-        </label>
+        </div>
         {ejemplos.length ? (
           <label className="field ancho">
             <span>
