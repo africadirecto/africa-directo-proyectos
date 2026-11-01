@@ -1,8 +1,8 @@
 'use client';
 
-// Diálogo para pedir un borrador con IA de un proyecto. La plantilla decide el tipo (seguimiento,
-// final o para buscar financiación) y el formato (Docs o Slides). Se hace en segundo plano y queda
-// en 03_Informes para revisarlo en Google y descargarlo.
+// Diálogo para pedir un borrador con IA de un proyecto, con una de las plantillas de informe de
+// proyecto (su nombre dice para qué es: seguimiento, final, presentación…). Se hace en segundo
+// plano y queda en 03_Informes para revisarlo en Google y descargarlo.
 
 import { useActionState, useState } from 'react';
 import { Dialogo } from '@/componentes/Dialogo';
@@ -12,13 +12,11 @@ import { ElegirPlantilla, Idioma, Indicaciones, ResultadoInforme } from '@/compo
 import { FotosYAdjuntos } from '@/componentes/FotosYAdjuntos';
 import { pedirInformeAccion } from '@/lib/acciones/informes';
 import type { OpcionPlantilla } from '@/lib/dominio/plantillas';
-import type { TipoInforme } from '@/lib/tipos';
 
 export function GenerarInforme({
   codigo,
   plantillas,
   donantes,
-  tipo,
   desde,
   hoy,
   ia,
@@ -26,17 +24,14 @@ export function GenerarInforme({
   codigo: string;
   plantillas: OpcionPlantilla[];
   donantes: { id: string; nombre: string }[];
-  /** El tipo que conviene según el estado del proyecto (para proponer su plantilla). */
-  tipo: TipoInforme;
   desde: string;
   hoy: string;
   ia: boolean;
 }) {
   const [estado, pedir] = useActionState(pedirInformeAccion, { ok: false });
-  const propuesta = plantillas.find((p) => p.tipo === tipo && p.porDefecto && p.formato === 'docs') ?? plantillas.find((p) => p.tipo === tipo) ?? plantillas[0];
+  const propuesta = plantillas.find((p) => p.porDefecto && p.formato === 'docs') ?? plantillas[0];
   const [id, setId] = useState(propuesta?.id ?? '');
   const elegida = plantillas.find((p) => p.id === id);
-  const financiacion = elegida?.tipo === 'financiacion';
 
   return (
     <Dialogo boton="Generar informe" titulo="Generar informe">
@@ -53,7 +48,7 @@ export function GenerarInforme({
         <div className="campos">
           <ElegirPlantilla plantillas={plantillas} valor={id} onChange={setId} />
           <label className="field">
-            {financiacion ? 'Para presentar a' : 'Para el donante'}
+            Para el donante
             <Desplegable
               name="donante"
               buscar
@@ -65,20 +60,16 @@ export function GenerarInforme({
             />
           </label>
           <Idioma valor={elegida?.idioma ?? 'es'} />
-          {!financiacion ? (
-            <>
-              <label className="field">
-                Desde
-                <input type="date" name="desde" defaultValue={desde} required max={hoy} />
-              </label>
-              <label className="field">
-                Hasta
-                <input type="date" name="hasta" defaultValue={hoy} required max={hoy} />
-              </label>
-            </>
-          ) : null}
-          <FotosYAdjuntos codigo={codigo} conFotos={!!elegida?.conFotos} desde={financiacion ? '0000' : desde} hasta={hoy} />
-          <Indicaciones ejemplo={financiacion ? 'insiste en que la escuela es la única del barrio y en la aportación de las familias.' : 'destaca la participación de las madres en la obra.'} />
+          <label className="field">
+            Desde
+            <input type="date" name="desde" defaultValue={desde} required max={hoy} />
+          </label>
+          <label className="field">
+            Hasta
+            <input type="date" name="hasta" defaultValue={hoy} required max={hoy} />
+          </label>
+          <FotosYAdjuntos codigo={codigo} conFotos={!!elegida?.conFotos} desde={desde} hasta={hoy} />
+          <Indicaciones ejemplo="destaca la participación de las madres en la obra." />
         </div>
         <div className="botones">
           <Enviar pendiente="Poniéndolo en marcha…" disabled={!elegida}>

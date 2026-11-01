@@ -8,7 +8,7 @@ describe('estructura de una plantilla', () => {
   it('cuenta campos, datos y tablas', () => {
     const { estructura, avisos } = analizarEstructura(
       [m('{{ia:avance}}'), m('{{ia:avance}}', { solo: false }), m('{{proyecto.titulo}}', { solo: false }), m('{{tabla:presupuesto}}'), m('{{fotos:obra}}'), m('{{pie:obra}}')],
-      'seguimiento',
+      'proyecto',
       'docs',
       vacias,
     );
@@ -33,7 +33,7 @@ describe('estructura de una plantilla', () => {
         m('{{foto:avance}}'),
         m('{{ia:avance}}'),
       ],
-      'seguimiento',
+      'proyecto',
       'docs',
       vacias,
     );
@@ -41,7 +41,7 @@ describe('estructura de una plantilla', () => {
     expect(avisos).toHaveLength(8);
     expect(avisos.join('\n')).toMatch(/\{\{raro\}\} no es un marcador/);
     expect(avisos.join('\n')).toMatch(/proyecto\.inventado.*no conoce/);
-    expect(avisos.join('\n')).toMatch(/conjunto\.proyectos.*de conjunto/);
+    expect(avisos.join('\n')).toMatch(/conjunto\.proyectos.*resúmenes de proyectos/);
     expect(avisos.join('\n')).toMatch(/tabla:presupuesto.*fuera de otras tablas/);
     expect(avisos.join('\n')).toMatch(/fotos:obra.*primera foto/);
     expect(avisos.join('\n')).toMatch(/pie:portada.*no tiene su foto/);
@@ -51,7 +51,7 @@ describe('estructura de una plantilla', () => {
   it('en Slides: fotos en su recuadro, tablas como texto', () => {
     const { avisos, estructura } = analizarEstructura(
       [m('{{foto:portada}}', { soloEnRecuadro: false }), m('{{foto:otra}}', { soloEnRecuadro: true, caja: { ancho: 300.4, alto: 200 } }), m('{{tabla:presupuesto}}'), m('{{ia:a}}')],
-      'financiacion',
+      'proyecto',
       'slides',
       vacias,
     );
@@ -63,12 +63,12 @@ describe('estructura de una plantilla', () => {
   });
 
   it('sin campos de IA, y fotos en un informe de conjunto', () => {
-    expect(analizarEstructura([m('{{proyecto.titulo}}')], 'seguimiento', 'docs', vacias).avisos).toEqual(['La plantilla no tiene ningún campo {{ia:…}}: la IA no redactará nada.']);
-    expect(analizarEstructura([m('{{ia:a}}'), m('{{foto:b}}')], 'cartera', 'docs', vacias).avisos.join()).toMatch(/de conjunto no llevan fotos/);
+    expect(analizarEstructura([m('{{proyecto.titulo}}')], 'proyecto', 'docs', vacias).avisos).toEqual(['La plantilla no tiene ningún campo {{ia:…}}: la IA no redactará nada.']);
+    expect(analizarEstructura([m('{{ia:a}}'), m('{{foto:b}}')], 'resumen', 'docs', vacias).avisos.join()).toMatch(/resúmenes de proyectos no llevan fotos/);
   });
 
   it('importa las instrucciones del formato antiguo y conserva los campos que desaparecen', () => {
-    const { estructura, extras } = analizarEstructura([m('{{ia:avance|150 palabras|Describe la obra}}')], 'seguimiento', 'docs', { general: '', campos: { viejo: 'Algo', vacio: '' } });
+    const { estructura, extras } = analizarEstructura([m('{{ia:avance|150 palabras|Describe la obra}}')], 'proyecto', 'docs', { general: '', campos: { viejo: 'Algo', vacio: '' } });
     expect(extras).toEqual({ avance: 'Describe la obra' });
     expect(estructura.campos.map((c) => [c.clave, !!c.huerfano])).toEqual([
       ['avance', false],

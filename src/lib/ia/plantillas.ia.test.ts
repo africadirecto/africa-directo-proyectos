@@ -16,7 +16,7 @@ describe.skipIf(!activa)('cambiar instrucciones con IA', () => {
     };
     const r = await editarInstrucciones({
       nombre: 'Informe de seguimiento',
-      tipo: 'seguimiento',
+      tipo: 'proyecto',
       formato: 'docs',
       actuales,
       campos: [

@@ -8,7 +8,7 @@ import { revalidatePath } from 'next/cache';
 import { after } from 'next/server';
 import { unstable_rethrow } from 'next/navigation';
 import { permitido, persona } from '../sesion';
-import { generarHojaDeProyectos, type TipoInformeGeneral } from '../dominio/informesGenerales';
+import { generarHojaDeProyectos } from '../dominio/informesGenerales';
 import { avanzarInforme, pedirInforme, reintentarInforme } from '../trabajos/informe';
 import { MAX_ADJUNTOS, MAX_FOTOS } from '../trabajos/materiales';
 import { materialesDelProyecto, type MaterialInforme } from '../dominio/archivos';
@@ -34,7 +34,6 @@ export async function pedirInformeAccion(_: ResultadoPedido, fd: FormData): Prom
   try {
     const yo = await permitido('edicion');
     const codigo = texto(fd, 'codigo', 30);
-    const tipo = texto(fd, 'conjunto', 20) as TipoInformeGeneral;
     const plantilla = texto(fd, 'plantilla', 100);
     const estados = fd.getAll('estados').map(String).filter((e): e is EstadoProyecto => e in ESTADOS);
     const paises = fd.getAll('paises').map(String).filter((p) => p in PAISES);
@@ -44,12 +43,12 @@ export async function pedirInformeAccion(_: ResultadoPedido, fd: FormData): Prom
       revalidatePath('/', 'layout');
       return { ok: true, mensaje: 'Hoja de cálculo creada.', url: i.url, vez: Date.now() };
     }
-    if (!codigo && !['cartera', 'contraparte', 'donante'].includes(tipo)) throw new Error('Tipo de informe no válido.');
     const idioma = texto(fd, 'idioma', 2);
     const ruta = await pedirInforme(
       {
         plantillaId: plantilla,
-        ...(codigo ? { codigo } : { conjunto: { tipo, sobre: texto(fd, 'sobre', 100), estados, paises } }),
+        // Sin proyecto, es un resumen de los proyectos que cumplen los filtros.
+        ...(codigo ? { codigo } : { resumen: { estados, paises } }),
         desde: fecha(texto(fd, 'desde', 10)),
         hasta: fecha(texto(fd, 'hasta', 10)),
         donanteId: texto(fd, 'donante', 100),

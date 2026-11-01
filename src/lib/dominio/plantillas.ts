@@ -2,6 +2,9 @@
 // marcadores.ts) más su registro en plantillas/{id} con las instrucciones para la IA. Las de
 // la ONG (plantillasApp.ts) son plantillas como cualquier otra.
 //
+// Solo hay dos tipos, por ámbito: informe de un proyecto (se genera desde su ficha) y resumen de
+// varios proyectos (desde Proyectos). Para qué se usa cada una lo dicen su nombre y sus instrucciones.
+//
 // «Sincronizar» lee el documento y guarda lo que tiene (campos, datos, tablas) y los avisos:
 // así quien edite la plantilla en Google ve aquí si algo no va a funcionar.
 
@@ -29,13 +32,13 @@ import type {
 export type PlantillaConId = Plantilla & { id: string };
 
 export const TIPOS_PLANTILLA: Record<TipoInforme, string> = {
-  seguimiento: 'Informe de seguimiento',
-  final: 'Informe final',
-  financiacion: 'Para buscar financiación',
-  cartera: 'Varios proyectos',
-  contraparte: 'Sobre una contraparte',
-  donante: 'Para un donante',
+  proyecto: 'Informe de proyecto',
+  resumen: 'Resumen de proyectos',
 };
+
+/** Las plantillas guardadas con los tipos de antes (seguimiento, final, cartera…) pasan a su ámbito. */
+const RESUMEN_ANTES = ['cartera', 'contraparte', 'donante'];
+const conTipo = <T extends { tipo: string }>(p: T): T => (p.tipo in TIPOS_PLANTILLA ? p : { ...p, tipo: RESUMEN_ANTES.includes(p.tipo) ? 'resumen' : 'proyecto' });
 
 export const ESTADOS_PLANTILLA: Record<EstadoPlantilla, string> = {
   procesando: 'Preparándose',
@@ -53,13 +56,19 @@ export const FORMATOS_PLANTILLA: Record<FormatoPlantilla, string> = { docs: 'Doc
 const ORDEN_TIPOS = Object.keys(TIPOS_PLANTILLA);
 
 export async function listarPlantillas(): Promise<PlantillaConId[]> {
-  const lista = await (await almacen()).consultar<Plantilla>('plantillas');
+  const lista = (await (await almacen()).consultar<PlantillaConId>('plantillas')).map(conTipo);
+  // Con los tipos de antes podía haber varias por defecto del mismo tipo: queda la primera.
+  const vistos = new Set<string>();
+  for (const p of lista.filter((x) => x.porDefecto).sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))) {
+    if (vistos.has(`${p.tipo}/${p.formato}`)) p.porDefecto = false;
+    vistos.add(`${p.tipo}/${p.formato}`);
+  }
   return lista.sort((a, b) => ORDEN_TIPOS.indexOf(a.tipo) - ORDEN_TIPOS.indexOf(b.tipo) || a.nombre.localeCompare(b.nombre, 'es'));
 }
 
 export async function leerPlantilla(id: string): Promise<PlantillaConId | null> {
   const p = await (await almacen()).leer<Plantilla>(`plantillas/${id}`);
-  return p ? { ...p, id } : null;
+  return p ? conTipo({ ...p, id }) : null;
 }
 
 export async function listarVersiones(id: string): Promise<(VersionPlantilla & { id: string })[]> {
@@ -127,7 +136,6 @@ export function analizarEstructura(
   const pies = new Set<string>();
   const avisos = new Set<string>();
   const extras: Record<string, string> = {};
-  const deConjunto = !['seguimiento', 'final', 'financiacion'].includes(tipo);
 
   for (const l of leidos) {
     const m = leerMarcador(l.original.slice(2, -2));
@@ -138,14 +146,14 @@ export function analizarEstructura(
     if (m.tipo === 'dato') {
       const d = DATOS[m.clave];
       if (!d) avisos.add(`${l.original}: la app no conoce ese dato; se quedará resaltado.`);
-      else if (!valeParaTipo(d.ambito, tipo)) avisos.add(`${l.original} es para informes ${d.ambito === 'proyecto' ? 'de un proyecto' : 'de conjunto'}: aquí saldrá vacío.`);
+      else if (!valeParaTipo(d.ambito, tipo)) avisos.add(`${l.original} es para ${d.ambito === 'proyecto' ? 'informes de un proyecto' : 'resúmenes de proyectos'}: aquí saldrá vacío.`);
       datos.add(m.clave);
       continue;
     }
     if (m.tipo === 'tabla') {
       const t = TABLAS[m.clave];
       if (!t) avisos.add(`${l.original}: la app no conoce esa tabla.`);
-      else if (!valeParaTipo(t.ambito, tipo)) avisos.add(`${l.original} es para informes ${t.ambito === 'proyecto' ? 'de un proyecto' : 'de conjunto'}: aquí saldrá vacía.`);
+      else if (!valeParaTipo(t.ambito, tipo)) avisos.add(`${l.original} es para ${t.ambito === 'proyecto' ? 'informes de un proyecto' : 'resúmenes de proyectos'}: aquí saldrá vacía.`);
       // En Slides las tablas salen siempre como líneas de texto (se explica en la ayuda).
       if (formato === 'docs' && (!l.solo || l.enTabla || l.enEncabezado)) avisos.add(`${l.original} tiene que ir solo en su párrafo, en el cuerpo y fuera de otras tablas; si no, sale como líneas de texto.`);
       tablas.add(m.clave);
@@ -174,7 +182,7 @@ export function analizarEstructura(
 
   for (const p of pies) if (!campos.has(p)) avisos.add(`{{pie:${p}}} no tiene su foto: falta {{foto:${p}}} o {{fotos:${p}}}.`);
   if (![...campos.values()].some((c) => c.tipo === 'ia')) avisos.add('La plantilla no tiene ningún campo {{ia:…}}: la IA no redactará nada.');
-  if (deConjunto && [...campos.values()].some((c) => c.tipo !== 'ia')) avisos.add('Los informes de conjunto no llevan fotos: sus huecos de foto quedarán vacíos.');
+  if (tipo === 'resumen' && [...campos.values()].some((c) => c.tipo !== 'ia')) avisos.add('Los resúmenes de proyectos no llevan fotos: sus huecos de foto quedarán vacíos.');
 
   // Los campos que ya no están conservan su instrucción por si vuelven.
   for (const clave of Object.keys(instrucciones.campos)) {
@@ -328,7 +336,7 @@ export async function marcarPorDefecto(id: string, autor: Persona): Promise<void
   const p = await leerPlantilla(id);
   if (!p) throw new Error('Plantilla no encontrada.');
   const ahora = new Date().toISOString();
-  const otras = await db.consultar<Plantilla>('plantillas', { donde: [['tipo', '==', p.tipo]] });
+  const otras = (await listarPlantillas()).filter((o) => o.tipo === p.tipo);
   for (const o of otras) if (o.id !== id && o.porDefecto && o.formato === p.formato) await db.guardar(`plantillas/${o.id}`, { porDefecto: false }, { fusionar: true });
   await db.guardar(`plantillas/${id}`, { porDefecto: true, estado: 'activa', actualizado: ahora, actualizadoPor: autor }, { fusionar: true });
 }
@@ -376,10 +384,10 @@ export interface OpcionPlantilla {
   conFotos: boolean;
 }
 
-/** Las plantillas activas de esos tipos, primero las propuestas por defecto. */
-export async function plantillasActivas(tipos: TipoInforme[]): Promise<OpcionPlantilla[]> {
+/** Las plantillas activas de ese tipo, primero las propuestas por defecto. */
+export async function plantillasActivas(tipo: TipoInforme): Promise<OpcionPlantilla[]> {
   return (await listarPlantillas())
-    .filter((p) => p.estado === 'activa' && tipos.includes(p.tipo))
+    .filter((p) => p.estado === 'activa' && p.tipo === tipo)
     .sort((a, b) => Number(b.porDefecto) - Number(a.porDefecto))
     .map((p) => ({ id: p.id, nombre: p.nombre, tipo: p.tipo, formato: p.formato, porDefecto: p.porDefecto, idioma: p.idioma, donante: p.donante, conFotos: p.estructura.campos.some((c) => c.tipo !== 'ia' && !c.huerfano) }));
 }

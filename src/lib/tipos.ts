@@ -313,10 +313,10 @@ export interface Enlace {
 }
 
 /**
- * De un proyecto: seguimiento, final o de financiación (para presentarlo a donantes).
- * De conjunto: cartera (varios proyectos), contraparte o donante.
+ * proyecto: informe de un proyecto (se genera desde su ficha). resumen: de varios proyectos (desde
+ * Proyectos). Para qué es cada plantilla (seguimiento, final, presentación…) lo dice su nombre.
  */
-export type TipoInforme = 'seguimiento' | 'final' | 'financiacion' | 'cartera' | 'contraparte' | 'donante';
+export type TipoInforme = 'proyecto' | 'resumen';
 export type ExtensionInforme = 'breve' | 'normal' | 'detallado';
 /** Documento (Google Docs), presentación (Google Slides) u hoja de cálculo (Google Sheets, solo de proyectos). */
 export type FormatoInforme = 'docs' | 'slides' | 'sheets';
@@ -392,16 +392,16 @@ export interface VersionPlantilla {
 
 /**
  * Borradores hechos con IA, en Google Docs o Slides. Los de un proyecto están en
- * proyectos/{codigo}/informes/{id}; los de conjunto, en informes/{id}. La app no los envía:
+ * proyectos/{codigo}/informes/{id}; los resúmenes de varios proyectos, en informes/{id}. La app no los envía:
  * un voluntario los revisa en Google y los descarga para enviarlos.
  */
 export interface Informe {
   titulo: string;
   tipo: TipoInforme;
   formato: FormatoInforme;
-  /** En los de conjunto: la contraparte o el donante del informe (null = todos). */
+  /** Solo en los informes anteriores: la contraparte o el donante del informe. */
   sobre?: { id: string; nombre: string } | null;
-  /** En los de conjunto: los filtros con que se eligieron los proyectos. */
+  /** En los resúmenes: los filtros con que se eligieron los proyectos. */
   filtros?: { estados: EstadoProyecto[]; paises: string[] };
   plantilla: { id: string; nombre: string; version?: number };
   desde: string;

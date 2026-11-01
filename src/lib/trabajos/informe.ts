@@ -37,12 +37,11 @@ import { nombrePais } from '../paises';
 import { nombreSector } from '../formulario/textos';
 import { leerAdjuntos, prepararFotos, type FotoTrabajo } from './materiales';
 import { contextoProyecto } from '../dominio/informes';
-import { contextoConjunto, type TipoInformeGeneral } from '../dominio/informesGenerales';
+import { contextoResumen } from '../dominio/informesGenerales';
 import { carpetaPlantillas, leerPlantilla, sincronizarPlantilla, TIPOS_PLANTILLA, type PlantillaConId } from '../dominio/plantillas';
 import type { EventoContexto } from '../dominio/informesComun';
-import type { EstadoProyecto, Idioma, Informe, Persona, TipoInforme } from '../tipos';
+import type { EstadoProyecto, Idioma, Informe, Persona } from '../tipos';
 
-const DE_PROYECTO: TipoInforme[] = ['seguimiento', 'final', 'financiacion'];
 const BLOQUEO_MS = 290_000;
 const MAX_INTENTOS = 3;
 
@@ -81,8 +80,8 @@ export interface PedidoInforme {
   plantillaId: string;
   /** Informe de un proyecto. */
   codigo?: string;
-  /** Informe de conjunto. */
-  conjunto?: { tipo: TipoInformeGeneral; sobre: string; estados: EstadoProyecto[]; paises: string[] };
+  /** Resumen de varios proyectos: los filtros con que se eligen. */
+  resumen?: { estados: EstadoProyecto[]; paises: string[] };
   desde: string;
   hasta: string;
   donanteId: string;
@@ -101,22 +100,19 @@ export async function pedirInforme(o: PedidoInforme, autor: Persona): Promise<st
   const p = await leerPlantilla(o.plantillaId);
   if (!p || (p.estado !== 'activa' && !(o.prueba && p.estado === 'borrador'))) throw new Error(o.prueba ? 'Solo se pueden probar las plantillas en borrador o activas.' : 'Elige una plantilla activa.');
   if (o.prueba && !o.codigo) throw new Error('Elige el proyecto con el que probarla.');
-  const deProyecto = DE_PROYECTO.includes(p.tipo);
-  if (o.codigo && !deProyecto) throw new Error('Esa plantilla es para informes de conjunto.');
-  if (o.conjunto && p.tipo !== o.conjunto.tipo) throw new Error(`Esa plantilla es para «${TIPOS_PLANTILLA[p.tipo]}».`);
-  if (!o.codigo && !o.conjunto) throw new Error('Falta el proyecto.');
-  if (p.tipo !== 'financiacion' && (!o.desde || !o.hasta || o.desde > o.hasta)) throw new Error('Revisa las fechas del periodo.');
+  if (!o.codigo && !o.resumen) throw new Error('Falta el proyecto.');
+  if (p.tipo !== (o.codigo ? 'proyecto' : 'resumen')) throw new Error(`Esa plantilla es para «${TIPOS_PLANTILLA[p.tipo]}».`);
+  if (!o.desde || !o.hasta || o.desde > o.hasta) throw new Error('Revisa las fechas del periodo.');
 
   const ahora = new Date().toISOString();
   const informe: Informe = {
     titulo: `${p.nombre}${o.codigo ? ` ${o.codigo}` : ''}`,
     tipo: p.tipo,
     formato: p.formato,
-    sobre: null,
-    ...(o.conjunto ? { filtros: { estados: o.conjunto.estados, paises: o.conjunto.paises } } : {}),
+    ...(o.resumen ? { filtros: { estados: o.resumen.estados, paises: o.resumen.paises } } : {}),
     plantilla: { id: p.id, nombre: p.nombre, version: p.version },
-    desde: p.tipo === 'financiacion' ? ahora.slice(0, 10) : o.desde,
-    hasta: p.tipo === 'financiacion' ? ahora.slice(0, 10) : o.hasta,
+    desde: o.desde,
+    hasta: o.hasta,
     donante: o.donanteId ? { id: o.donanteId, nombre: '' } : null,
     idioma: o.idioma,
     indicaciones: o.indicaciones,
@@ -137,8 +133,7 @@ export async function pedirInforme(o: PedidoInforme, autor: Persona): Promise<st
   const db = await almacen();
   // Las pruebas van en «informes» (no en la ficha del proyecto), con el proyecto en «prueba».
   const coleccion = o.codigo && !o.prueba ? `proyectos/${o.codigo}/informes` : 'informes';
-  // En los de conjunto, «sobre» guarda el id hasta que se lea su nombre al preparar.
-  const id = await db.crear(coleccion, { ...informe, ...(o.prueba ? { prueba: { codigo: o.codigo } } : {}), ...(o.conjunto ? { sobre: o.conjunto.sobre ? { id: o.conjunto.sobre, nombre: '' } : null } : {}) });
+  const id = await db.crear(coleccion, { ...informe, ...(o.prueba ? { prueba: { codigo: o.codigo } } : {}) });
   const ruta = `${coleccion}/${id}`;
   await apuntarTrabajo(ruta, 'informe');
   return ruta;
@@ -226,8 +221,8 @@ async function preparar(ruta: string, i: Informe) {
 
   const codigo = codigoDeInforme(ruta, i);
   const ctx = codigo
-    ? await contextoProyecto(codigo, { tipo: i.tipo, desde: i.desde, hasta: i.hasta, donanteId: i.donante?.id ?? '', idioma: i.idioma })
-    : await contextoConjunto({ tipo: i.tipo as TipoInformeGeneral, sobre: i.sobre?.id ?? '', estados: i.filtros?.estados ?? [], paises: i.filtros?.paises ?? [], desde: i.desde, hasta: i.hasta, idioma: i.idioma });
+    ? await contextoProyecto(codigo, { plantilla: plantilla.nombre, desde: i.desde, hasta: i.hasta, donanteId: i.donante?.id ?? '', idioma: i.idioma })
+    : { ...(await contextoResumen({ plantilla: plantilla.nombre, estados: i.filtros?.estados ?? [], paises: i.filtros?.paises ?? [], desde: i.desde, hasta: i.hasta, idioma: i.idioma })), donante: null };
 
   const campos: CampoPedido[] = plantilla.estructura.campos
     .filter((c) => c.tipo === 'ia' && !c.huerfano)
@@ -243,7 +238,7 @@ async function preparar(ruta: string, i: Informe) {
     const p = await leerProyecto(codigo);
     const materiales = p ? await materialesDelProyecto(p) : { fotos: [], archivos: [] };
     if (p && huecosFoto.length) {
-      fotos = await prepararFotos(codigo, materiales.fotos, i.fotos, { desde: i.tipo === 'financiacion' ? '0000' : i.desde, hasta: i.hasta, pista: `Proyecto de ${nombreSector(p.sector).toLowerCase()} en ${nombrePais(p.pais)}: ${p.titulo}` });
+      fotos = await prepararFotos(codigo, materiales.fotos, i.fotos, { desde: i.desde, hasta: i.hasta, pista: `Proyecto de ${nombreSector(p.sector).toLowerCase()} en ${nombrePais(p.pais)}: ${p.titulo}` });
     }
     if (i.adjuntos?.length) adjuntos = await leerAdjuntos(materiales.archivos, i.adjuntos);
   }
@@ -258,7 +253,8 @@ async function preparar(ruta: string, i: Informe) {
     traducciones: i.idioma !== plantilla.idioma ? await traduccionesDe(plantilla, meta.mime, i.idioma) : {},
     campos,
     general: plantilla.instrucciones.general,
-    tipoTexto: TIPOS_PLANTILLA[plantilla.tipo],
+    // El tipo de informe lo dice el nombre de la plantilla (y su descripción, si la tiene).
+    tipoTexto: [plantilla.nombre, plantilla.descripcion].filter(Boolean).join(': '),
     plantillaArchivo: plantilla.archivoId,
     mime: meta.mime,
     datosUsados: plantilla.estructura.datos,
@@ -277,9 +273,7 @@ async function preparar(ruta: string, i: Informe) {
     titulo: ctx.nombre,
     progreso: { campos: campos.length, hechos: campos.length - faltan.length },
     actualizado: new Date().toISOString(),
-    ...('donante' in ctx ? { donante: ctx.donante } : {}),
-    // En el informe para un donante, el donante es el propio «sobre».
-    ...('sobre' in ctx ? { sobre: ctx.sobre, donante: i.tipo === 'donante' ? ctx.sobre : null } : {}),
+    donante: ctx.donante,
   };
 
   if (!faltan.length) cambios.estado = 'componiendo';

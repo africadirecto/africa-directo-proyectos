@@ -166,7 +166,7 @@ Uso y lista de marcadores: [INFORMES.md](INFORMES.md). Por dentro hay tres pieza
 
 - Cada plantilla es un **Google Doc o Slides** de `AD · Plantillas` más su registro en `plantillas/{id}`.
 - En el registro van:
-  - el tipo de informe (seguimiento, final, financiación, cartera, contraparte o donante);
+  - el tipo: `proyecto` (se ofrece en la ficha de un proyecto) o `resumen` (en Proyectos, de varios). Para qué es cada una lo dicen su nombre y sus instrucciones;
   - el idioma del texto fijo;
   - las **instrucciones para la IA**: una general y una por campo. Se guardan por versiones en `plantillas/{id}/versiones`.
 - Las de la ONG (`plantillasApp.ts`) las crea la app una vez y luego son plantillas como las demás.
@@ -194,7 +194,7 @@ en_cola ──preparar──▶ redactando ──▶ componiendo ──▶ listo
 
 1. **Preparar.** Reúne los datos:
    - de un proyecto: ficha, financiación y eventos del periodo, sin correos ni teléfonos;
-   - de conjunto: los proyectos elegidos.
+   - de un resumen: los proyectos elegidos por estado y país.
    
    Además, en los informes de un proyecto (`lib/trabajos/materiales.ts`):
    - prepara las **fotos** publicables: las elegidas o las del periodo. Cada una se describe una vez con IA, sin retención, y la descripción se guarda;
@@ -204,7 +204,7 @@ en_cola ──preparar──▶ redactando ──▶ componiendo ──▶ listo
 2. **Redactar.** En producción, las peticiones van en un **lote** de la Batch API de OpenRouter (`lib/ia/lotes.ts`): sin límite de tiempo y a mitad de precio.
    - Al terminar, OpenRouter avisa a `/api/ia/lotes`. La app lee el lote, guarda los textos, reenvía una vez los que fallaron y **borra el lote**.
    - En local, en demo o con `IA_LOTES=0`, se redacta por la vía directa.
-3. **Componer.** Reparte las fotos por los huecos con sus pies (`asignarFotos`), copia la plantilla en `03_Informes` (o en `_Informes generales`), la rellena y anota el borrador en la cronología. Con lote, avisa también en Google Chat.
+3. **Componer.** Reparte las fotos por los huecos con sus pies (`asignarFotos`), copia la plantilla en `03_Informes` (o en `_Resúmenes`), la rellena y anota el borrador en la cronología. Con lote, avisa también en Google Chat.
 
 `avanzarInforme` hace el paso que toque y lo llaman varias piezas:
 - la acción que pide el informe (con `after()`);

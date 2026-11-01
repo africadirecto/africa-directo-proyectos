@@ -1,4 +1,4 @@
-// Piezas comunes de los informes (de proyecto y de conjunto).
+// Piezas comunes de los informes (de un proyecto y resúmenes de varios).
 
 import type { Idioma, Informe } from '../tipos';
 

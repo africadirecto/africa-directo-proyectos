@@ -69,7 +69,7 @@ export default async function Plantilla({ params }: { params: Promise<{ id: stri
     after(() => avanzarPlantilla(id));
   }
   const PASOS: Record<string, string> = { convertir: 'convirtiendo el ejemplo en un documento de Google', analizar: 'la IA está leyendo el ejemplo', esperando: 'la IA está leyendo el ejemplo (puede tardar unos minutos)', escribir: 'escribiendo los marcadores y las instrucciones' };
-  const deProyecto = ['seguimiento', 'final', 'financiacion'].includes(p.tipo);
+  const deProyecto = p.tipo === 'proyecto';
   const edicion = tienePermiso(yo, 'edicion');
   const admin = tienePermiso(yo, 'admin');
   const [versiones, donantes, pruebas, proyectos] = await Promise.all([
@@ -177,7 +177,7 @@ export default async function Plantilla({ params }: { params: Promise<{ id: stri
               <div className="botones">
                 {deProyecto && (p.estado === 'borrador' || p.estado === 'activa') ? (
                   <Dialogo boton="Probar con un proyecto" claseBoton="btn btn-p btn-peq" titulo="Probar la plantilla">
-                    <ProbarPlantilla id={p.id} idioma={p.idioma} proyectos={proyectos.map((f) => ({ codigo: f.codigo, titulo: f.titulo }))} conPeriodo={p.tipo !== 'financiacion'} />
+                    <ProbarPlantilla id={p.id} idioma={p.idioma} proyectos={proyectos.map((f) => ({ codigo: f.codigo, titulo: f.titulo }))} />
                   </Dialogo>
                 ) : null}
                 {p.estado !== 'activa' && !preparando ? (

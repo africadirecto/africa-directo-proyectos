@@ -8,12 +8,12 @@ import { nombrePais } from '../paises';
 import { nombreSector } from '../formulario/textos';
 import { totalPresupuesto } from '../formulario/respuestas';
 import { aportacionesDeProyecto, presupuestoEnEuros, totales } from './aportaciones';
-import { eventosEntre, listarEventos } from './eventos';
+import { eventosEntre } from './eventos';
 import { leerIndice } from './indice';
 import { leerProyecto } from './proyectos';
 import { listarVersiones } from './solicitudes';
 import { LOCALE, sinContactos, type EventoContexto, type InformeConId } from './informesComun';
-import type { Idioma, Informe, Proyecto, TipoInforme } from '../tipos';
+import type { Idioma, Informe, Proyecto } from '../tipos';
 
 export type { InformeConId };
 
@@ -26,7 +26,7 @@ export function desdePropuesto(p: Proyecto, informes: Informe[]): string {
   return (informes.find((i) => (i.estado ?? 'listo') === 'listo')?.hasta ?? p.fechas.inicio ?? p.fechas.aprobado ?? p.fechas.creado).slice(0, 10);
 }
 
-/** Lo que necesita la generación de cualquier informe, de un proyecto o de conjunto. */
+/** Lo que necesita la generación de cualquier informe, de un proyecto o un resumen. */
 export interface ContextoInforme {
   /** Tablas que no llevan fila de cabecera (p. ej. «datos», que es etiqueta → valor). */
   tablasSinCabecera: string[];
@@ -77,7 +77,8 @@ export function datosDelInforme(o: { idioma: Idioma; desde: string; hasta: strin
 // ── Contexto de un proyecto ─────────────────────────────────────────────────
 
 export interface OpcionesProyecto {
-  tipo: TipoInforme;
+  /** Nombre de la plantilla, para el del documento. */
+  plantilla: string;
   desde: string;
   hasta: string;
   donanteId: string;
@@ -88,14 +89,12 @@ export async function contextoProyecto(codigo: string, o: OpcionesProyecto): Pro
   const p = await leerProyecto(codigo);
   if (!p) throw new Error('Proyecto no encontrado.');
   if (!p.drive) throw new Error('El proyecto no tiene carpeta en Drive.');
-  const financiacion = o.tipo === 'financiacion';
   const [aportaciones, eventos, informes, versiones, indice] = await Promise.all([
     aportacionesDeProyecto(codigo),
-    // Para buscar financiación cuenta toda la historia; en el resto, el periodo.
-    financiacion ? listarEventos(codigo, 120) : eventosEntre(codigo, o.desde, o.hasta),
+    eventosEntre(codigo, o.desde, o.hasta),
     listarInformes(codigo),
     listarVersiones(codigo),
-    financiacion ? leerIndice() : Promise.resolve([]),
+    leerIndice(),
   ]);
   const validas = aportaciones.filter((a) => a.importe > 0);
   const delDonante = validas.filter((a) => a.donanteId === o.donanteId);
@@ -108,15 +107,14 @@ export async function contextoProyecto(codigo: string, o: OpcionesProyecto): Pro
     .reverse()
     .slice(-80)
     .map((e, i) => ({ id: `E${i + 1}`, fecha: e.fecha.slice(0, 10), tipo: e.tipo, categoria: e.categoria ?? '', texto: sinContactos(e.texto).slice(0, 1500) }));
-  const anterior = informes.find((i) => (i.estado ?? 'listo') === 'listo' && i.tipo === o.tipo) ?? informes.find((i) => (i.estado ?? 'listo') === 'listo');
+  const anterior = informes.find((i) => (i.estado ?? 'listo') === 'listo');
   const v = versiones[0];
   const conceptos = v?.analisis?.traduccion?.conceptos ?? [];
   const lineas = (v?.respuestas.lineas ?? []).map((l, i) => ({ concepto: conceptos[i] || l.concepto, importe: l.importe })).filter((l) => l.concepto || l.importe);
   const otros = indice.filter((f) => f.contraparteId === p.contraparte.id && f.codigo !== p.codigo);
 
   const contexto = {
-    tipoInforme: { seguimiento: 'informe de seguimiento', final: 'informe final', financiacion: 'presentación del proyecto para conseguir financiación' }[o.tipo as 'seguimiento'] ?? o.tipo,
-    periodo: financiacion ? null : { desde: o.desde, hasta: o.hasta },
+    periodo: { desde: o.desde, hasta: o.hasta },
     donante: donante ? { nombre: donante.nombre, aportacionEur: donante.importe } : null,
     proyecto: {
       titulo: p.titulo,
@@ -171,7 +169,7 @@ export async function contextoProyecto(codigo: string, o: OpcionesProyecto): Pro
     'proyecto.falta': objetivo != null ? f.dinero(Math.max(0, objetivo - comprometido)) : '',
     'proyecto.inicio': f.fecha(p.fechas.inicio),
     'proyecto.fin_previsto': f.fecha(p.fechas.finPrevisto),
-    ...datosDelInforme({ idioma: o.idioma, desde: financiacion ? '' : o.desde, hasta: financiacion ? '' : o.hasta, donante }),
+    ...datosDelInforme({ idioma: o.idioma, desde: o.desde, hasta: o.hasta, donante }),
   };
   const tablas: Record<string, string[][]> = {
     datos: [
@@ -189,7 +187,6 @@ export async function contextoProyecto(codigo: string, o: OpcionesProyecto): Pro
     ...(validas.length ? { aportaciones: [[t.donante, t.comprometido, t.cobrado], ...validas.map((a) => [a.donanteNombre, f.dinero(a.importe), f.dinero(a.recibido)])] } : {}),
     ...(p.envios?.length ? { envios: [[t.fecha, t.importe, t.nota], ...p.envios.map((e) => [f.fecha(e.fecha), f.dinero(e.importe), e.nota ?? ''])] } : {}),
   };
-  const etiqueta = { seguimiento: 'de seguimiento', final: 'final', financiacion: 'de financiación' }[o.tipo as 'seguimiento'] ?? '';
   return {
     contexto,
     eventos: delPeriodo.map((e) => ({ id: e.id, fecha: e.fecha, texto: e.texto })),
@@ -197,7 +194,7 @@ export async function contextoProyecto(codigo: string, o: OpcionesProyecto): Pro
     tablas,
     tablasSinCabecera: ['datos'],
     carpetaId: p.drive.subcarpetas.informes,
-    nombre: `Informe ${etiqueta} ${p.codigo}${donante ? ` - ${donante.nombre}` : ''}`.replace(/\s+/g, ' '),
+    nombre: `${o.plantilla} ${p.codigo}${donante ? ` - ${donante.nombre}` : ''}`.replace(/\s+/g, ' '),
     donante: donante ? { id: donante.id, nombre: donante.nombre } : null,
   };
 }

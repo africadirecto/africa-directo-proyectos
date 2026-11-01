@@ -4,7 +4,6 @@ import { notFound } from 'next/navigation';
 import { requiere, tienePermiso } from '@/lib/sesion';
 import { leerContraparte } from '@/lib/dominio/contrapartes';
 import { leerIndice } from '@/lib/dominio/indice';
-import { listarInformesGenerales } from '@/lib/dominio/informesGenerales';
 import { ACTIVOS } from '@/lib/estados';
 import { nombrePais } from '@/lib/paises';
 import { IDIOMAS_ES } from '@/lib/formulario/textos';
@@ -12,13 +11,8 @@ import { dinero, fechaLarga } from '@/lib/formato';
 import { Estado } from '@/componentes/Basicos';
 import { Bandera } from '@/componentes/Desplegable';
 import { Dialogo } from '@/componentes/Dialogo';
-import { ListaInformes } from '@/componentes/ListaInformes';
-import { plantillasActivas } from '@/lib/dominio/plantillas';
-import { BotonInformeGeneral } from '../../BotonInformeGeneral';
 import { eurDe } from '@/lib/panel';
 import { FormContraparte } from '../FormContraparte';
-
-export const maxDuration = 300;
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const c = await leerContraparte((await params).id);
@@ -30,7 +24,6 @@ export default async function ContraparteFicha({ params }: { params: Promise<{ i
   const c = await leerContraparte((await params).id);
   if (!c) notFound();
   const filas = (await leerIndice()).filter((f) => f.contraparteId === c.id);
-  const editor = tienePermiso(yo, 'edicion');
   const presupuesto = filas.reduce((s, f) => s + eurDe(f), 0);
 
   return (
@@ -46,14 +39,11 @@ export default async function ContraparteFicha({ params }: { params: Promise<{ i
             {c.tipo ? ` · ${c.tipo}` : ''} · escribe en {IDIOMAS_ES[c.idioma].toLowerCase()}
           </p>
         </div>
-        <div className="botones">
-          {editor && filas.length ? <BotonInformeGeneral tipo="contraparte" sobre={c.id} plantillas={await plantillasActivas(['contraparte'])} /> : null}
-          {tienePermiso(yo, 'admin') ? (
-            <Dialogo boton="Editar" claseBoton="btn btn-s" titulo={c.nombre}>
-              <FormContraparte c={c} />
-            </Dialogo>
-          ) : null}
-        </div>
+        {tienePermiso(yo, 'admin') ? (
+          <Dialogo boton="Editar" claseBoton="btn btn-s" titulo={c.nombre}>
+            <FormContraparte c={c} />
+          </Dialogo>
+        ) : null}
       </div>
 
       <div className="fila">
@@ -124,7 +114,6 @@ export default async function ContraparteFicha({ params }: { params: Promise<{ i
           )}
         </section>
       </div>
-      <ListaInformes informes={await listarInformesGenerales('contraparte', c.id)} coleccion="informes" editable={editor} titulo="Informes de esta contraparte" />
     </main>
   );
 }

@@ -11,6 +11,8 @@
 // Compatibilidad: en {{ia:clave|150 palabras|instrucción}} lo que va tras «|» se conserva en
 // `extra` para importarlo una vez como instrucción del campo.
 
+import type { TipoInforme } from '../tipos';
+
 export type TipoMarcador = 'dato' | 'ia' | 'foto' | 'pie' | 'fotos' | 'tabla';
 
 export interface Marcador {
@@ -50,8 +52,8 @@ export function leerMarcador(interior: string): Marcador | null {
 
 // ── Catálogo ────────────────────────────────────────────────────────────────
 
-/** Para qué informes vale un dato o una tabla: de un proyecto, de conjunto, o los dos. */
-export type Ambito = 'proyecto' | 'conjunto' | 'todos';
+/** Para qué informes vale un dato o una tabla: de un proyecto, resúmenes, o los dos. */
+export type Ambito = TipoInforme | 'todos';
 
 /** Datos que la app sabe poner. Las cifras van en euros, que es como se financia. */
 export const DATOS: Record<string, { descripcion: string; ambito: Ambito }> = {
@@ -72,18 +74,17 @@ export const DATOS: Record<string, { descripcion: string; ambito: Ambito }> = {
   'proyecto.falta': { descripcion: 'Lo que falta por financiar', ambito: 'proyecto' },
   'proyecto.inicio': { descripcion: 'Fecha de inicio de la obra', ambito: 'proyecto' },
   'proyecto.fin_previsto': { descripcion: 'Fecha prevista de fin', ambito: 'proyecto' },
-  'conjunto.proyectos': { descripcion: 'Número de proyectos del informe', ambito: 'conjunto' },
-  'conjunto.presupuesto': { descripcion: 'Presupuesto total de esos proyectos', ambito: 'conjunto' },
-  'conjunto.comprometido': { descripcion: 'Financiación comprometida en total', ambito: 'conjunto' },
-  'conjunto.paises': { descripcion: 'Países, separados por comas', ambito: 'conjunto' },
-  'conjunto.contrapartes': { descripcion: 'Número de contrapartes', ambito: 'conjunto' },
-  'sobre.nombre': { descripcion: 'La contraparte o el donante del informe de conjunto', ambito: 'conjunto' },
+  'conjunto.proyectos': { descripcion: 'Número de proyectos del resumen', ambito: 'resumen' },
+  'conjunto.presupuesto': { descripcion: 'Presupuesto total de esos proyectos', ambito: 'resumen' },
+  'conjunto.comprometido': { descripcion: 'Financiación comprometida en total', ambito: 'resumen' },
+  'conjunto.paises': { descripcion: 'Países, separados por comas', ambito: 'resumen' },
+  'conjunto.contrapartes': { descripcion: 'Número de contrapartes', ambito: 'resumen' },
   'informe.fecha': { descripcion: 'Fecha del informe', ambito: 'todos' },
   'informe.desde': { descripcion: 'Inicio del periodo', ambito: 'todos' },
   'informe.hasta': { descripcion: 'Fin del periodo', ambito: 'todos' },
   'informe.periodo': { descripcion: 'Periodo («1 de marzo – 30 de junio de 2026»)', ambito: 'todos' },
-  'donante.nombre': { descripcion: 'El donante elegido al generar el informe', ambito: 'todos' },
-  'donante.importe': { descripcion: 'Lo que ha comprometido ese donante', ambito: 'todos' },
+  'donante.nombre': { descripcion: 'El donante elegido al generar el informe', ambito: 'proyecto' },
+  'donante.importe': { descripcion: 'Lo que ha comprometido ese donante', ambito: 'proyecto' },
 };
 
 /** Tablas que la app sabe hacer, con cifras exactas (no las escribe la IA). */
@@ -92,13 +93,12 @@ export const TABLAS: Record<string, { descripcion: string; ambito: Ambito }> = {
   presupuesto: { descripcion: 'Presupuesto detallado de la solicitud', ambito: 'proyecto' },
   aportaciones: { descripcion: 'Aportaciones por donante: comprometido y cobrado', ambito: 'proyecto' },
   envios: { descripcion: 'Envíos a la contraparte, con fecha', ambito: 'proyecto' },
-  proyectos: { descripcion: 'Proyectos del informe, con país, estado y financiación', ambito: 'conjunto' },
-  cifras: { descripcion: 'Cifras del conjunto: proyectos, presupuesto, comprometido', ambito: 'conjunto' },
+  proyectos: { descripcion: 'Proyectos del resumen, con país, estado y financiación', ambito: 'resumen' },
+  cifras: { descripcion: 'Cifras del resumen: proyectos, presupuesto, comprometido', ambito: 'resumen' },
 };
 
-const DE_PROYECTO = ['seguimiento', 'final', 'financiacion'];
 /** Si el dato o la tabla vale para ese tipo de informe. */
-export const valeParaTipo = (ambito: Ambito, tipo: string) => ambito === 'todos' || (ambito === 'proyecto') === DE_PROYECTO.includes(tipo);
+export const valeParaTipo = (ambito: Ambito, tipo: TipoInforme) => ambito === 'todos' || ambito === tipo;
 
 // ── Texto con formato ───────────────────────────────────────────────────────
 

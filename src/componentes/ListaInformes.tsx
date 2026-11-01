@@ -5,7 +5,7 @@ import { LogoDocs, LogoSheets, LogoSlides } from './Iconos';
 import { ProgresoInforme } from './ProgresoInforme';
 
 /**
- * Informes hechos por la app (de un proyecto o de conjunto). La app no los envía: un voluntario
+ * Informes hechos por la app (de un proyecto o resúmenes). La app no los envía: un voluntario
  * los revisa en Google y los descarga para enviarlos. Los que están haciéndose muestran cómo van.
  * `coleccion`: dónde están (proyectos/{codigo}/informes o informes), para seguir su progreso.
  */
@@ -36,7 +36,7 @@ export function ListaInformes({ informes, coleccion, titulo = 'Informes', editab
                 )}
               </p>
               <p className="meta" style={{ margin: '2px 0 0' }}>
-                {i.tipo === 'financiacion' ? 'Para buscar financiación' : i.formato === 'sheets' ? 'Hoja de cálculo' : `${fechaCorta(i.desde)} – ${fechaCorta(i.hasta)}`} · {i.plantilla.nombre}
+                {i.formato === 'sheets' ? 'Hoja de cálculo' : `${fechaCorta(i.desde)} – ${fechaCorta(i.hasta)}`} · {i.plantilla.nombre}
                 {i.donante?.nombre ? ` · para ${i.donante.nombre}` : ''} · pedido el {fechaLarga(i.creado)} por {i.creadoPor.nombre}
               </p>
               {estado !== 'listo' ? (

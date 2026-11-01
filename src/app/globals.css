@@ -432,7 +432,7 @@ button.barra { cursor: pointer; }
 .formato { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--borde-campo); border-radius: 10px; cursor: pointer; background: #fff; }
 .formato > span { display: flex; flex-direction: column; gap: 2px; font-size: 15px; }
 .formato .meta { font-size: 13px; }
-.formato[data-elegido] { border-color: var(--acento); box-shadow: 0 0 0 1px var(--acento); background: var(--activo-fondo); }
+.formato[data-elegido], .formato:has(input:checked) { border-color: var(--acento); box-shadow: 0 0 0 1px var(--acento); background: var(--activo-fondo); }
 .formato:has(input:focus-visible) { outline: 3px solid #f59e7a; outline-offset: 2px; }
 /* Decisión del revisor (solicitudes/FormDecision.tsx): una opción por fila. */
 .decisiones { grid-template-columns: 1fr; gap: 8px; }

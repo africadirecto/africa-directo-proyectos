@@ -1,16 +1,16 @@
 import { requiere, tienePermiso } from '@/lib/sesion';
 import { leerIndice } from '@/lib/dominio/indice';
 import { requiereAtencion } from '@/lib/dominio/atencion';
-import { listarInformesGenerales } from '@/lib/dominio/informesGenerales';
+import { listarResumenes } from '@/lib/dominio/informesGenerales';
 import { ACTIVOS } from '@/lib/estados';
 import { nombrePais } from '@/lib/paises';
 import { Bandera } from '@/componentes/Desplegable';
 import { ListaInformes } from '@/componentes/ListaInformes';
 import { plantillasActivas } from '@/lib/dominio/plantillas';
 import { PanelProyectos } from './PanelProyectos';
-import { BotonInformeGeneral } from './BotonInformeGeneral';
+import { GenerarResumen } from './GenerarResumen';
 
-// Al pedir un informe, su preparación sigue en segundo plano dentro de la misma petición.
+// Al pedir un resumen, su preparación sigue en segundo plano dentro de la misma petición.
 export const maxDuration = 300;
 
 export default async function Proyectos() {
@@ -31,9 +31,8 @@ export default async function Proyectos() {
           </p>
         </div>
         {editor ? (
-          <BotonInformeGeneral
-            tipo="cartera"
-            plantillas={await plantillasActivas(['cartera'])}
+          <GenerarResumen
+            plantillas={await plantillasActivas('resumen')}
             paises={[...new Set(filas.map((f) => f.pais).filter(Boolean))]
               .sort((a, b) => nombrePais(a).localeCompare(nombrePais(b), 'es'))
               .map((p) => ({ valor: p, texto: nombrePais(p), icono: <Bandera codigo={p} /> }))}
@@ -46,7 +45,7 @@ export default async function Proyectos() {
         porRevisar={atencion.porRevisar.length}
         sinResponder={atencion.sinResponder.length}
       />
-      <ListaInformes informes={await listarInformesGenerales('cartera')} coleccion="informes" editable={editor} titulo="Informes de proyectos" />
+      <ListaInformes informes={await listarResumenes()} coleccion="informes" editable={editor} titulo="Resúmenes" />
     </main>
   );
 }

@@ -29,7 +29,7 @@ AD · Proyectos/
 │   │                            contraparte, facturas, justificantes y acta de cierre
 │   └── P-2026-015 Dormitorio del internado/
 ├── 2025/
-├── _Informes generales/       ← informes de varios proyectos: Cartera, Contrapartes, Donantes
+├── _Resúmenes/                ← resúmenes de varios proyectos y hojas de cálculo
 └── _Sin asignar/              ← fase 2: adjuntos de correos aún sin proyecto
 ```
 

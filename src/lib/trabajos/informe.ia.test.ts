@@ -28,7 +28,7 @@ describe.skipIf(!activa)('motor de informes con IA', () => {
       const materiales = await materialesDelProyecto((await leerProyecto('P-2026-014'))!);
       const adjunto = materiales.archivos.find((a) => a.mime.startsWith('text/'));
       const db = await almacen();
-      const plantilla = (await db.consultar<{ tipo: string; formato: string; porDefecto: boolean }>('plantillas')).find((p) => p.tipo === 'seguimiento' && p.formato === 'docs' && p.porDefecto);
+      const plantilla = (await db.consultar<{ tipo: string; formato: string; porDefecto: boolean }>('plantillas')).find((p) => p.tipo === 'proyecto' && p.formato === 'docs' && p.porDefecto);
       expect(plantilla, 'abre antes el demo para que existan sus plantillas').toBeDefined();
 
       const ruta = await pedirInforme(

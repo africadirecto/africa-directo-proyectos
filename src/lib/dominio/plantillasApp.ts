@@ -42,7 +42,7 @@ const COMUN_PROYECTO: [string, string][] = [
 
 export const DEFINICIONES: Definicion[] = [
   {
-    tipo: 'seguimiento',
+    tipo: 'proyecto',
     nombre: 'Informe de seguimiento',
     titulo: 'Informe de seguimiento',
     subtitulo: '{{proyecto.titulo}} · {{informe.periodo}}',
@@ -60,12 +60,12 @@ export const DEFINICIONES: Definicion[] = [
     tablas: [],
   },
   {
-    tipo: 'final',
+    tipo: 'proyecto',
     nombre: 'Informe final',
     titulo: 'Informe final',
     subtitulo: '{{proyecto.titulo}} · {{informe.fecha}}',
     general:
-      'Informe final para los donantes del proyecto: qué se ha conseguido, para quién y cómo se ha hecho. Es el cierre: mira todo el recorrido del proyecto, no solo el último periodo. Tono cercano y agradecido, con los datos que consten.',
+      'Informe final para los donantes del proyecto: qué se ha conseguido, para quién y cómo se ha hecho. Es el cierre: cuenta todo el recorrido del proyecto. Tono cercano y agradecido, con los datos que consten.',
     datos: [...COMUN_PROYECTO, ['Presupuesto', '{{proyecto.presupuesto}}'], ['Inicio', '{{proyecto.inicio}}'], ['Fin previsto', '{{proyecto.fin_previsto}}']],
     campos: [
       { clave: 'resumen', titulo: 'Resumen', instruccion: 'Qué se ha conseguido con el proyecto, en pocas frases.' },
@@ -80,7 +80,7 @@ export const DEFINICIONES: Definicion[] = [
     tablas: [{ titulo: 'Aportaciones', marcador: '{{tabla:aportaciones}}', tras: 'economia' }],
   },
   {
-    tipo: 'financiacion',
+    tipo: 'proyecto',
     nombre: 'Presentación para buscar financiación',
     titulo: '{{proyecto.titulo}}',
     subtitulo: 'Presentación del proyecto · Africa Directo',
@@ -105,15 +105,15 @@ export const DEFINICIONES: Definicion[] = [
     tablas: [{ titulo: 'Presupuesto detallado', marcador: '{{tabla:presupuesto}}', tras: 'propuesta' }],
   },
   {
-    tipo: 'cartera',
-    nombre: 'Informe de varios proyectos',
-    titulo: 'Informe de proyectos',
+    tipo: 'resumen',
+    nombre: 'Resumen de proyectos',
+    titulo: 'Resumen de proyectos',
     subtitulo: '{{informe.periodo}}',
     general:
-      'Informe de un conjunto de proyectos para la junta o los socios de Africa Directo: visión de conjunto con las cifras, lo más destacado del periodo y los retos. Tono informativo y claro.',
+      'Resumen de varios proyectos para la junta o los socios de Africa Directo: visión de conjunto con las cifras, lo más destacado del periodo y los retos. Tono informativo y claro.',
     datos: [],
     campos: [
-      { clave: 'resumen', titulo: 'Resumen', instruccion: 'Visión general de los proyectos del informe y lo más importante del periodo.' },
+      { clave: 'resumen', titulo: 'Resumen', instruccion: 'Visión general de los proyectos y lo más importante del periodo.' },
       { clave: 'panorama', titulo: 'Panorama', instruccion: 'Cómo está el conjunto: estados, países, sectores, presupuesto y financiación, con las cifras que constan.' },
       { clave: 'destacados', titulo: 'Avances destacados', instruccion: 'Los avances más relevantes del periodo según la cronología de los proyectos.' },
       { clave: 'retos', titulo: 'Retos', instruccion: 'Incidencias, retrasos y proyectos con financiación pendiente.' },
@@ -121,41 +121,8 @@ export const DEFINICIONES: Definicion[] = [
     ],
     tablas: [
       { titulo: 'En cifras', marcador: '{{tabla:cifras}}', tras: 'resumen' },
-      { titulo: 'Proyectos del informe', marcador: '{{tabla:proyectos}}' },
+      { titulo: 'Proyectos', marcador: '{{tabla:proyectos}}' },
     ],
-  },
-  {
-    tipo: 'contraparte',
-    nombre: 'Informe sobre una contraparte',
-    titulo: 'Informe de contraparte: {{sobre.nombre}}',
-    subtitulo: '{{informe.periodo}}',
-    general: 'Informe sobre una contraparte local y sus proyectos con Africa Directo: trayectoria, situación de cada proyecto y lo más relevante del periodo. Tono informativo y cercano.',
-    datos: [],
-    campos: [
-      { clave: 'resumen', titulo: 'Resumen', instruccion: 'Quién es la contraparte (o las contrapartes) y su relación con Africa Directo.' },
-      { clave: 'proyectos', titulo: 'Proyectos', instruccion: 'Un apartado por proyecto, con su título como subtítulo (###): en qué punto está y lo más relevante, en pocas frases.' },
-      { clave: 'destacados', titulo: 'Avances del periodo', instruccion: 'Lo más relevante de la cronología del periodo.' },
-      { clave: 'retos', titulo: 'Retos', instruccion: 'Incidencias, retrasos o necesidades pendientes.' },
-      { clave: 'proximos', titulo: 'Próximos pasos', instruccion: 'Lo que viene en los próximos meses. Breve.' },
-    ],
-    tablas: [{ titulo: 'Proyectos del informe', marcador: '{{tabla:proyectos}}' }],
-  },
-  {
-    tipo: 'donante',
-    nombre: 'Informe para un donante',
-    titulo: 'Informe para {{sobre.nombre}}',
-    subtitulo: '{{informe.periodo}}',
-    general:
-      'Informe para un donante sobre todo lo que financia con Africa Directo: qué ha hecho posible, en qué punto está cada proyecto y lo que ha aportado. Tono cercano y agradecido. En Africa Directo el 100 % de lo donado llega a los proyectos.',
-    datos: [],
-    campos: [
-      { clave: 'resumen', titulo: 'Resumen', instruccion: 'Qué ha hecho posible el donante con Africa Directo.' },
-      { clave: 'proyectos', titulo: 'Proyectos e impacto', instruccion: 'Un apartado por proyecto, con su título como subtítulo (###): a quién beneficia y en qué punto está.' },
-      { clave: 'destacados', titulo: 'Novedades del periodo', instruccion: 'Lo más relevante de la cronología del periodo en esos proyectos.' },
-      { clave: 'economia', titulo: 'Aportaciones', instruccion: 'Lo que ha aportado el donante (en euros), a qué proyectos, y cuánto ha pagado ya.' },
-      { clave: 'agradecimiento', titulo: 'Agradecimiento', instruccion: 'Agradecimiento en nombre de las contrapartes y de Africa Directo. Breve.' },
-    ],
-    tablas: [{ titulo: 'Proyectos que apoya', marcador: '{{tabla:proyectos}}' }],
   },
 ];
 
@@ -203,8 +170,9 @@ export function diapositivasDePlantilla(d: Definicion): Diapositiva[] {
 }
 
 /**
- * Crea las plantillas de la ONG que falten (una por tipo y formato), activas y como las
- * propuestas por defecto si no hay otra. Devuelve cuántas ha creado.
+ * Crea las plantillas de la ONG que falten (cada una en documento y presentación), activas. La
+ * primera de cada tipo y formato queda como la propuesta por defecto si no hay otra. Devuelve
+ * cuántas ha creado.
  */
 export async function crearPlantillasDeLaApp(autor: Persona): Promise<number> {
   const d = await drive();
@@ -214,8 +182,8 @@ export async function crearPlantillasDeLaApp(autor: Persona): Promise<number> {
   let creadas = 0;
   for (const def of DEFINICIONES) {
     for (const formato of formatos) {
-      if (existentes.some((p) => p.origen === 'app' && p.tipo === def.tipo && p.formato === formato)) continue;
       const nombre = formato === 'slides' ? `${def.nombre} (presentación)` : def.nombre;
+      if (existentes.some((p) => p.origen === 'app' && p.nombre === nombre)) continue;
       let archivoId: string;
       if (formato === 'docs') archivoId = (await d.htmlADoc(htmlDePlantilla(def), carpeta, nombre)).id;
       else {
@@ -227,7 +195,10 @@ export async function crearPlantillasDeLaApp(autor: Persona): Promise<number> {
         { nombre, descripcion: 'Plantilla de Africa Directo.', tipo: def.tipo, idioma: 'es', donante: null, origen: 'app', estado: 'activa', instrucciones: instrucciones(def, formato) },
         autor,
       );
-      if (!existentes.some((x) => x.porDefecto && x.tipo === def.tipo && x.formato === formato)) await marcarPorDefecto(p.id, autor);
+      if (!existentes.some((x) => x.porDefecto && x.tipo === def.tipo && x.formato === formato)) {
+        await marcarPorDefecto(p.id, autor);
+        existentes.push({ ...p, porDefecto: true });
+      }
       creadas += 1;
     }
   }

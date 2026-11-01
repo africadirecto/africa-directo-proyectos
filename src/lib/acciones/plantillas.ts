@@ -154,7 +154,7 @@ export async function porDefectoAccion(_: Resultado, fd: FormData): Promise<Resu
     const yo = await permitido('admin');
     await marcarPorDefecto(texto(fd, 'id', 100), persona(yo));
     revalidar();
-    return 'Ahora es la que se propone para su tipo.';
+    return 'Ahora es la que se propone primero.';
   });
 }
 

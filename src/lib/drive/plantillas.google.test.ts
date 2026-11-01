@@ -111,19 +111,19 @@ describe.skipIf(!activa)('compositores contra Google', () => {
     const carpeta = await driveGoogle.carpetaHija('_Pruebas técnicas', driveGoogle.raizSistema);
     const vacias = { general: '', campos: {} };
     for (const def of DEFINICIONES) {
-      const { id } = await driveGoogle.htmlADoc(htmlDePlantilla(def), carpeta, `Plantilla ONG ${def.tipo} ${new Date().toISOString().slice(0, 16)}`);
+      const { id } = await driveGoogle.htmlADoc(htmlDePlantilla(def), carpeta, `Plantilla ONG ${def.nombre} ${new Date().toISOString().slice(0, 16)}`);
       const r = analizarEstructura(await leerMarcadores(id, ES_DOC), def.tipo, 'docs', vacias);
-      expect(r.avisos, def.tipo).toEqual([]);
-      expect(r.estructura.campos.filter((c) => c.tipo === 'ia').map((c) => c.clave), def.tipo).toEqual(def.campos.map((c) => c.clave));
+      expect(r.avisos, def.nombre).toEqual([]);
+      expect(r.estructura.campos.filter((c) => c.tipo === 'ia').map((c) => c.clave), def.nombre).toEqual(def.campos.map((c) => c.clave));
     }
-    for (const def of DEFINICIONES.filter((d) => d.tipo === 'financiacion' || d.tipo === 'donante')) {
-      const { id } = await driveGoogle.crearVacio(`Plantilla ONG ${def.tipo} (presentación)`, ES_PRESENTACION, carpeta);
+    for (const def of DEFINICIONES.filter((d) => d.portada || d.tipo === 'resumen')) {
+      const { id } = await driveGoogle.crearVacio(`Plantilla ONG ${def.nombre} (presentación)`, ES_PRESENTACION, carpeta);
       await rellenarPresentacion(id, { titulo: def.titulo, subtitulo: def.subtitulo }, diapositivasDePlantilla(def));
       const leidos = await leerMarcadores(id, ES_PRESENTACION);
       const r = analizarEstructura(leidos, def.tipo, 'slides', vacias);
-      expect(r.avisos, `${def.tipo} (Slides)`).toEqual([]);
+      expect(r.avisos, `${def.nombre} (Slides)`).toEqual([]);
       if (def.portada) expect(leidos.find((l) => l.original === '{{foto:portada}}')?.soloEnRecuadro).toBe(true);
-      console.log(`${def.tipo} (Slides):`, driveGoogle.urlPresentacion(id));
+      console.log(`${def.nombre} (Slides):`, driveGoogle.urlPresentacion(id));
     }
   }, 300_000);
 
@@ -166,14 +166,14 @@ describe.skipIf(!activa)('compositores contra Google', () => {
     console.log('Plantilla:', driveGoogle.urlDocumento(id));
 
     const bloques = bloquesDoc(await leerDoc(id));
-    const analisis = await analizarEjemploDirecto(peticionEjemplo({ bloques, tipo: 'seguimiento', formato: 'docs', donante: 'Fundación de Ejemplo' }), bloques, 'seguimiento');
+    const analisis = await analizarEjemploDirecto(peticionEjemplo({ bloques, tipo: 'proyecto', formato: 'docs', donante: 'Fundación de Ejemplo' }), bloques, 'proyecto');
     console.log(JSON.stringify({ idioma: analisis.idioma, campos: analisis.campos, datos: analisis.datos, tablas: analisis.tablas, dudas: analisis.dudas, general: analisis.instrucciones.general }, null, 1));
     expect(analisis.campos.filter((c) => c.tipo === 'ia').length).toBeGreaterThanOrEqual(2);
 
     const avisos = await aplicarAnalisisDoc(id, bloques, analisis);
     console.log('Avisos:', avisos);
     const leidos = await leerMarcadores(id, ES_DOC);
-    const { estructura } = analizarEstructura(leidos, 'seguimiento', 'docs', analisis.instrucciones);
+    const { estructura } = analizarEstructura(leidos, 'proyecto', 'docs', analisis.instrucciones);
     console.log('Estructura:', JSON.stringify(estructura));
     const texto = JSON.stringify(await leerDoc(id));
     // Lo propio del ejemplo ya no está; lo fijo, sí.

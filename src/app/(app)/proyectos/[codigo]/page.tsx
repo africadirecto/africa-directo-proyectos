@@ -102,9 +102,8 @@ export default async function FichaProyecto({
             {editor && p.drive ? (
               <GenerarInforme
                 codigo={p.codigo}
-                plantillas={await plantillasActivas(['seguimiento', 'final', 'financiacion'])}
+                plantillas={await plantillasActivas('proyecto')}
                 donantes={(await listarDonantes()).map((d) => ({ id: d.id, nombre: d.nombre }))}
-                tipo={['completado', 'cerrado'].includes(p.estado) ? 'final' : ['revision', 'validada', 'financiacion'].includes(p.estado) ? 'financiacion' : 'seguimiento'}
                 desde={desdePropuesto(p, await listarInformes(p.codigo))}
                 hoy={new Date().toISOString().slice(0, 10)}
                 ia={iaDisponible()}

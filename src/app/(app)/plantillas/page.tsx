@@ -18,6 +18,7 @@ import { Dialogo } from '@/componentes/Dialogo';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
 import { Etiqueta } from '@/componentes/Basicos';
 import { FormPlantilla } from './FormPlantilla';
+import { TIPOS } from './ElegirTipo';
 import { NuevaDesdeEjemplo } from './NuevaDesdeEjemplo';
 import { MIMES_EJEMPLO } from '@/lib/trabajos/plantilla';
 import { modoDemo } from '@/lib/config';
@@ -53,7 +54,7 @@ export default async function Plantillas() {
           ) : null}
           {edicion ? (
             <Dialogo boton="Crear desde un ejemplo" claseBoton="btn btn-s" titulo="Plantilla a partir de un informe de ejemplo">
-              <NuevaDesdeEjemplo ejemplos={ejemplos} donantes={donantes.map((d) => ({ id: d.id, nombre: d.nombre }))} tipos={TIPOS_PLANTILLA} demo={modoDemo} />
+              <NuevaDesdeEjemplo ejemplos={ejemplos} donantes={donantes.map((d) => ({ id: d.id, nombre: d.nombre }))} demo={modoDemo} />
             </Dialogo>
           ) : null}
           {edicion ? (
@@ -72,6 +73,9 @@ export default async function Plantillas() {
               <h2 className="h3" style={{ padding: '16px 16px 0' }}>
                 {TIPOS_PLANTILLA[tipo]}
               </h2>
+              <p className="meta" style={{ margin: '2px 16px 0' }}>
+                {TIPOS[tipo].ayuda}
+              </p>
               <div className="desliza">
                 <table className="tbl" style={{ tableLayout: 'fixed', minWidth: 640 }}>
                   {/* Mismos anchos en todas las secciones, para que las columnas se alineen. */}

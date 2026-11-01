@@ -1,7 +1,8 @@
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
 import { Desplegable } from '@/componentes/Desplegable';
 import { anadirDesdeDriveAccion, editarPlantillaAccion } from '@/lib/acciones/plantillas';
-import { TIPOS_PLANTILLA, FORMATOS_PLANTILLA, type PlantillaConId } from '@/lib/dominio/plantillas';
+import { FORMATOS_PLANTILLA, type PlantillaConId } from '@/lib/dominio/plantillas';
+import { ElegirTipo } from './ElegirTipo';
 import { IDIOMAS_ES } from '@/lib/formulario/textos';
 import type { FormatoPlantilla } from '@/lib/tipos';
 
@@ -39,10 +40,7 @@ export function FormPlantilla({
           Nombre
           <input name="nombre" required defaultValue={p?.nombre} placeholder="Por ejemplo: Informe intermedio Fundación Horizonte" />
         </label>
-        <label className="field">
-          Para qué informe
-          <Desplegable name="tipo" defaultValue={p?.tipo ?? 'seguimiento'} opciones={Object.entries(TIPOS_PLANTILLA).map(([valor, texto]) => ({ valor, texto }))} />
-        </label>
+        <ElegirTipo valor={p?.tipo} />
         <label className="field">
           <span>
             Idioma <span className="ayuda">del texto fijo</span>

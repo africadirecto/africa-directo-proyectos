@@ -216,7 +216,7 @@ La fase 1 (núcleo) está hecha; ver `README.md` para qué hace, cómo probarla 
 **IA (cambio respecto a lo previsto arriba):** se usa **OpenRouter** en lugar de la API de OpenAI directamente (`lib/ia/openrouter.ts`), con proveedores sin retención de datos.
 
 **Informes y plantillas:**
-- **Plantillas:** todos los informes salen de **plantillas** (Google Docs o Slides con marcadores y sus instrucciones para la IA en `plantillas/{id}`, con versiones). Se gestionan en la sección **Plantillas**, con «Cambiar con IA»; las de la ONG son plantillas como las demás.
+- **Plantillas:** todos los informes salen de **plantillas** (Google Docs o Slides con marcadores y sus instrucciones para la IA en `plantillas/{id}`, con versiones). Se gestionan en la sección **Plantillas**, con «Cambiar con IA»; las de la ONG son plantillas como las demás. Solo hay **dos tipos**, por ámbito: **informe de proyecto** (se genera desde la ficha) y **resumen de proyectos** (desde Proyectos, «Generar resumen»); el usuario no elige el tipo al generar. Para qué es cada plantilla (seguimiento, final…) lo dice su nombre. No hay informes de contraparte ni de donante.
 - **Generación:** es **en segundo plano** (`lib/trabajos/informe.ts`), un texto por campo. En producción va por la **Batch API de OpenRouter**: decisión del equipo, sabiendo que **no tiene retención cero y va por EE. UU.** Por eso solo se envía texto limpio, nunca fotos, y la app borra cada lote al leerlo. En local, o con `IA_LOTES=0`, va por la vía directa.
 - **Revisión:** lo que falta queda resaltado en amarillo, y las fuentes de cada apartado se ven en la app.
 - **Hoja de cálculo:** desde Proyectos sigue el libro de análisis en Google Sheets (sin IA).

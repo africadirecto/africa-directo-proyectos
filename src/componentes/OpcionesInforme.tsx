@@ -8,7 +8,6 @@ import { LogoDocs, LogoSheets, LogoSlides } from './Iconos';
 import { Desplegable } from './Desplegable';
 import { ProgresoInforme } from './ProgresoInforme';
 import type { OpcionPlantilla } from '@/lib/dominio/plantillas';
-import type { TipoInforme } from '@/lib/tipos';
 
 export const IDIOMAS_INFORME = [
   { valor: 'es', texto: 'Español' },
@@ -17,21 +16,12 @@ export const IDIOMAS_INFORME = [
   { valor: 'pt', texto: 'Portugués' },
 ];
 
-const TIPOS: Record<TipoInforme, string> = {
-  seguimiento: 'De seguimiento',
-  final: 'Final',
-  financiacion: 'Para buscar financiación',
-  cartera: 'Varios proyectos',
-  contraparte: 'Sobre una contraparte',
-  donante: 'Para un donante',
-};
-
-/** Elegir plantilla, agrupadas por tipo de informe. `hoja`: añade la hoja de cálculo (sin IA). */
+/** Elegir plantilla (las del tipo que toca en esa página). `hoja`: añade la hoja de cálculo (sin IA). */
 export function ElegirPlantilla({ plantillas, valor, onChange, hoja = false }: { plantillas: OpcionPlantilla[]; valor: string; onChange: (id: string) => void; hoja?: boolean }) {
   if (!plantillas.length && !hoja) {
     return (
       <p className="aviso ancho" style={{ margin: 0 }}>
-        No hay plantillas activas para este informe. Actívalas o créalas en <Link href="/plantillas">Plantillas</Link>.
+        No hay plantillas activas para esto. Actívalas o créalas en <Link href="/plantillas">Plantillas</Link>.
       </p>
     );
   }
@@ -47,7 +37,7 @@ export function ElegirPlantilla({ plantillas, valor, onChange, hoja = false }: {
           ...plantillas.map((p) => ({
             valor: p.id,
             texto: `${p.nombre}${p.donante ? ` · de ${p.donante.nombre}` : ''}${p.porDefecto ? ' (por defecto)' : ''}`,
-            grupo: TIPOS[p.tipo],
+            ...(hoja ? { grupo: 'Con IA' } : {}),
             icono: p.formato === 'slides' ? <LogoSlides tamano={16} /> : <LogoDocs tamano={16} />,
           })),
           ...(hoja ? [{ valor: 'sheets', texto: 'Hoja de cálculo con los datos (sin IA)', grupo: 'Datos', icono: <LogoSheets tamano={16} /> }] : []),

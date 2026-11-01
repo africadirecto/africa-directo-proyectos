@@ -29,7 +29,7 @@ describe.skipIf(!activa)('plantilla desde un ejemplo', () => {
     const docx = (await driveGoogle.listar([carpeta])).find((a) => a.nombre === 'plantilla-donante-prueba.docx');
     expect(docx, 'falta el .docx de la prueba S3').toBeDefined();
 
-    const id = await crearDesdeEjemplo(docx!.id, { nombre: `Prueba motor ${new Date().toISOString().slice(0, 16)}`, descripcion: '', tipo: 'seguimiento', idioma: 'es', donante: null }, { id: 'prueba@demo', nombre: 'Prueba' });
+    const id = await crearDesdeEjemplo(docx!.id, { nombre: `Prueba motor ${new Date().toISOString().slice(0, 16)}`, descripcion: '', tipo: 'proyecto', idioma: 'es', donante: null }, { id: 'prueba@demo', nombre: 'Prueba' });
     const db = await almacen();
     type P = { estado: string; error?: string; version: number; archivoId: string; url: string; instrucciones: { general: string; campos: Record<string, string> }; estructura: { campos: { clave: string; tipo: string }[] }; sincronizado: { avisos: string[] } | null; proceso?: { paso: string } | null };
     let p = await db.leer<P>(`plantillas/${id}`);

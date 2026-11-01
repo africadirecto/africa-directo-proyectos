@@ -6,6 +6,7 @@
 
 import { startTransition, useActionState, useState } from 'react';
 import { Desplegable } from '@/componentes/Desplegable';
+import { ElegirTipo } from './ElegirTipo';
 import { subirArchivo } from '@/componentes/subida';
 import { crearDesdeEjemploAccion } from '@/lib/acciones/plantillas';
 import type { Resultado } from '@/lib/acciones/resultado';
@@ -20,7 +21,7 @@ const TIPO_POR_EXTENSION: Record<string, string> = {
   ppt: 'application/vnd.ms-powerpoint',
 };
 
-export function NuevaDesdeEjemplo({ ejemplos, donantes, tipos, demo }: { ejemplos: { id: string; nombre: string; ruta: string }[]; donantes: { id: string; nombre: string }[]; tipos: Record<string, string>; demo: boolean }) {
+export function NuevaDesdeEjemplo({ ejemplos, donantes, demo }: { ejemplos: { id: string; nombre: string; ruta: string }[]; donantes: { id: string; nombre: string }[]; demo: boolean }) {
   const [estado, crear, creando] = useActionState<Resultado, FormData>(crearDesdeEjemploAccion, { ok: false });
   const [archivo, setArchivo] = useState<File | null>(null);
   const [elegido, setElegido] = useState('');
@@ -88,10 +89,7 @@ export function NuevaDesdeEjemplo({ ejemplos, donantes, tipos, demo }: { ejemplo
           Nombre de la plantilla
           <input name="nombre" required value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Por ejemplo: Informe intermedio Fundación Horizonte" />
         </label>
-        <label className="field">
-          Para qué informe
-          <Desplegable name="tipo" defaultValue="seguimiento" opciones={Object.entries(tipos).map(([valor, texto]) => ({ valor, texto }))} />
-        </label>
+        <ElegirTipo />
         <label className="field">
           <span>
             Donante <span className="ayuda">si es su plantilla</span>
