@@ -275,7 +275,8 @@ La estructura completa, los permisos y su porqué están en [DRIVE.md](DRIVE.md)
 5. Copia los identificadores. Abre cada unidad: la dirección es `https://drive.google.com/drive/folders/0AbCdEf…`, y lo que va tras `folders/` es el ID.
    - `AD · Proyectos` → `DRIVE_UNIDAD_PROYECTOS_ID`
    - `AD · Sistema` → `DRIVE_UNIDAD_SISTEMA_ID`
-   - `AD · Plantillas` → `DRIVE_UNIDAD_PLANTILLAS_ID` (plantillas de informe, ver [INFORMES.md](INFORMES.md)). La cuenta de servicio necesita ahí al menos el rol de **Lector**.
+   - `AD · Plantillas` → `DRIVE_UNIDAD_PLANTILLAS_ID` (plantillas de informe, ver [INFORMES.md](INFORMES.md)). La cuenta de servicio necesita ahí el rol de **Gestor de contenido**: la app crea las plantillas de la ONG en la carpeta `ONG` y copia allí las que se duplican.
+6. Tras el primer arranque, un administrador entra en **Plantillas** y pulsa **Crear las plantillas de la ONG**.
 
 ---
 
@@ -314,7 +315,18 @@ La IA traduce y resume las solicitudes, traduce los comentarios del revisor y re
    - La app no envía datos de contacto: quita correos y teléfonos de los textos, y no manda nombres de personas de contacto.
    - OpenRouter y el proveedor del modelo son **encargados del tratamiento**. El procesamiento solo en Europa existe en los planes de empresa de OpenRouter.
 
-Sin `OPENROUTER_API_KEY`, la app funciona igual: no traduce, el resumen es el principio del texto de la contraparte y los informes se crean con los apartados sin redactar.
+6. **Informes por lotes** (Batch API). La IA redacta cada informe en un lote: en OpenRouter, sin límite de tiempo y a mitad de precio. Suele tardar unos minutos y, como mucho, un día. Al terminar, OpenRouter avisa a la app.
+   - **Settings › Webhook signing secret › Generate signing secret** → `OPENROUTER_WEBHOOK_SECRETO`. La app comprueba con él que los avisos vienen de OpenRouter. Sin el secreto también funciona, porque la app consulta el lote ella misma, pero es más seguro con él.
+   - Modelo: `IA_MODELO_LOTES`, por defecto `anthropic/claude-haiku-5.5`. Tiene que tener variante **batch**: búscala en <https://openrouter.ai/models> filtrando por «batch».
+   - **Privacidad:** los lotes **no admiten retención cero** y van por servidores de **EE. UU.**; OpenRouter guarda peticiones y resultados hasta 30 días o hasta que se borra el lote. Por eso:
+     - la app solo manda texto ya limpio (sin datos de contacto ni fotos);
+     - la app **borra cada lote en cuanto lo lee**;
+     - lo que sí se envía por la vía normal, con retención cero: describir fotos, traducir el texto fijo, resumir y «Cambiar con IA».
+     
+     Hay que contarlo en el registro de tratamientos.
+   - Para no usar lotes: `IA_LOTES=0`. Entonces los informes se redactan por la vía normal (con retención cero), en llamadas de pocos minutos. Es lo que pasa siempre en local, porque OpenRouter no puede avisar a `localhost`.
+
+Sin `OPENROUTER_API_KEY`, la app funciona igual: no traduce, el resumen es el principio del texto de la contraparte y los informes se crean con los apartados sin redactar (como huecos resaltados).
 
 ---
 

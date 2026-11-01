@@ -54,6 +54,20 @@ export const config = {
     // Modelos de OpenRouter (https://openrouter.ai/models): baratos, con salida JSON y sin retención de datos.
     modeloRapido: texto('IA_MODELO_RAPIDO') || 'anthropic/claude-haiku-5.5',
     modeloRedaccion: texto('IA_MODELO_REDACCION') || 'google/gemini-3.7-flash',
+    /** Para describir fotos (tiene que admitir imágenes). Por defecto, el rápido. */
+    modeloVision: texto('IA_MODELO_VISION') || texto('IA_MODELO_RAPIDO') || 'anthropic/claude-haiku-5.5',
+    /**
+     * Informes por lotes (Batch API de OpenRouter): mitad de precio y sin límite de tiempo, pero
+     * sin retención cero y por EE. UU.; la app borra cada lote al leerlo. Con IA_LOTES=0, o sin
+     * una APP_URL pública a la que avisar, se redacta por la vía directa.
+     */
+    lotes: texto('IA_LOTES') !== '0',
+    /** Modelo de los lotes: tiene que tener variante «batch» en OpenRouter. */
+    modeloLotes: texto('IA_MODELO_LOTES') || 'anthropic/claude-haiku-5.5',
+    /** Opcional: proveedores permitidos en los lotes, separados por comas (p. ej. para evitar los lentos). */
+    proveedoresLotes: lista('IA_LOTES_PROVEEDORES'),
+    /** Secreto de firma de los avisos de OpenRouter (Workspace settings › Webhook signing secret). */
+    secretoWebhook: texto('OPENROUTER_WEBHOOK_SECRETO'),
   },
   avisos: {
     chatWebhook: texto('GOOGLE_CHAT_WEBHOOK_URL'),

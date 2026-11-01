@@ -153,9 +153,6 @@ img { max-width: 100%; }
 .aviso-error { background: var(--error-fondo); color: var(--error); border-radius: 10px; padding: 12px 16px; font-size: 15px; font-weight: 600; }
 .aviso-ok { background: var(--ok-fondo); color: var(--ok); border-radius: 10px; padding: 12px 16px; font-size: 15px; font-weight: 600; }
 .nota { background: var(--fondo); border-radius: 10px; padding: 14px 16px; font-size: 14px; line-height: 1.5; color: var(--texto-3); }
-.siguiente { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; background: var(--aviso-fondo); border-radius: 10px; padding: 12px 16px; }
-.siguiente p { margin: 0; font-size: 15px; color: var(--texto-3); }
-.siguiente b { color: var(--aviso-texto); }
 
 /* ── Etiquetas de estado ────────────────────────────────── */
 .st { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 500; line-height: 20px; white-space: nowrap; }
@@ -193,6 +190,43 @@ img { max-width: 100%; }
 .bar { height: 6px; border-radius: 3px; background: #e8e7e1; overflow: hidden; width: 96px; flex: none; }
 .bar span { display: block; height: 100%; background: var(--acento); border-radius: 3px; }
 .bar-grande { height: 8px; width: 100%; }
+/* Financiación: lo comprometido debajo, lo cobrado y lo enviado encima (Financiacion.tsx). */
+.bar-etapas { position: relative; height: 10px; }
+.bar-etapas span { position: absolute; left: 0; top: 0; }
+.bar-etapas .etapa-comprometida, .leyenda-punto.etapa-comprometida { background: #f4b49a; }
+.bar-etapas .etapa-recibida, .leyenda-punto.etapa-recibida { background: var(--acento); }
+.bar-etapas .etapa-enviada, .leyenda-punto.etapa-enviada { background: #8a2a0a; }
+.financiacion { gap: 0; }
+.fin-total { margin: 14px 0 10px; font-size: 15px; color: var(--texto-2); }
+.fin-total b { font-size: 24px; font-weight: 700; color: var(--texto); margin-right: 4px; }
+.leyenda.fin-leyenda { margin: 10px 0 0; }
+.fin-seccion { margin: 22px 0 4px; font-size: 13px; font-weight: 600; color: var(--texto-3); }
+.fin-lista { list-style: none; margin: 0; padding: 0; }
+.fin-lista > li + li { border-top: 1px solid var(--borde-suave); }
+.fin-fila { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 12px; min-height: 44px; padding: 4px 0; font-size: 15px; }
+.fin-fila > span:first-child { flex: 1; min-width: 0; }
+.fin-importe { font-weight: 600; font-variant-numeric: tabular-nums; }
+.fin-importe .meta { font-weight: 400; }
+.fin-quitar { display: contents; }
+.resumen-financiacion { margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--borde-suave); }
+.fin-exportar { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; margin-top: 18px; padding-top: 14px; border-top: 1px solid var(--borde-suave); }
+.fin-exportar .aviso-ok, .fin-exportar .aviso-error { align-self: stretch; }
+.fin-seccion-cifras { display: flex; justify-content: space-between; gap: 12px; }
+.fin-seccion-cifras span + span { font-weight: 400; margin-right: 24px; }
+.fin-pendiente { display: inline-block; margin-left: 8px; padding: 1px 8px; border-radius: 999px; background: var(--aviso-fondo); color: var(--aviso-texto); font-size: 12px; font-weight: 600; vertical-align: 1px; white-space: nowrap; }
+.fin-cobrado { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; margin-left: 8px; border-radius: 50%; background: var(--ok-fondo); color: var(--ok); vertical-align: -3px; }
+.fin-donante > summary { list-style: none; cursor: pointer; border-radius: 6px; }
+.fin-donante > summary::-webkit-details-marker { display: none; }
+.fin-donante > summary:hover { background: #f6f5f1; }
+.fin-flecha { flex: none; color: var(--texto-2); margin-right: 4px; transform: rotate(-90deg); transition: transform 0.15s; }
+.fin-donante[open] .fin-flecha { transform: none; }
+.fin-registros { margin: 0 0 8px 12px; padding-left: 12px; border-left: 2px solid var(--borde-suave); }
+.fin-registros .fin-fila { min-height: 36px; font-size: 14px; }
+.fin-tipo { display: inline-block; min-width: 92px; color: var(--texto-3); }
+.fin-pie { margin: 0 0 10px 24px; }
+.fin-fila .aviso-error { flex-basis: 100%; padding: 6px 10px; font-size: 13px; }
+.btn-icono { border: 0; background: none; color: var(--texto-2); width: 32px; height: 32px; border-radius: 6px; cursor: pointer; font: inherit; }
+.btn-icono:hover { background: #f1efe9; color: var(--error); }
 .con-barra { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
 .kv { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px 24px; margin: 0; }
 .kv dt { font-size: 13px; color: var(--texto-2); }
@@ -267,7 +301,7 @@ a.item:hover { border-color: #b9b8b0; color: var(--texto); }
 details.desplegable > summary { list-style: none; cursor: pointer; }
 details.desplegable > summary::-webkit-details-marker { display: none; }
 details.desplegable[open] > summary { margin-bottom: 14px; }
-dialog.dialogo { border: 0; border-radius: 14px; padding: 0; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25); color: var(--texto); }
+dialog.dialogo { text-align: left; border: 0; border-radius: 14px; padding: 0; width: min(560px, calc(100vw - 32px)); max-height: calc(100vh - 32px); box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25); color: var(--texto); }
 dialog.dialogo::backdrop { background: rgba(27, 27, 24, 0.45); }
 dialog.dialogo .cuerpo { padding: 24px; display: flex; flex-direction: column; gap: 14px; }
 dialog.dialogo h2 { margin: 0; font-size: 20px; font-weight: 700; }
@@ -358,3 +392,10 @@ button.barra { cursor: pointer; }
 .formato .meta { font-size: 13px; }
 .formato[data-elegido] { border-color: var(--acento); box-shadow: 0 0 0 1px var(--acento); background: var(--activo-fondo); }
 .formato:has(input:focus-visible) { outline: 3px solid #f59e7a; outline-offset: 2px; }
+/* Decisión del revisor (solicitudes/FormDecision.tsx): una opción por fila. */
+.decisiones { grid-template-columns: 1fr; gap: 8px; }
+.decisiones .formato { padding: 10px 14px; }
+/* Plantillas (plantillas/): marcadores como {{ia:avance}} y campos sueltos fuera de .field. */
+.marcador { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; background: var(--fondo); color: var(--texto); border: 1px solid var(--borde-suave); border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+.campo-suelto { flex: 1 1 220px; font: inherit; font-size: 15px; min-height: 44px; padding: 0 12px; border: 1px solid var(--borde-campo); border-radius: 8px; background: #fff; color: var(--texto); min-width: 0; }
+summary.enlace { color: var(--enlace); font-size: 14px; font-weight: 500; }

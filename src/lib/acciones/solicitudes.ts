@@ -6,7 +6,7 @@ import { after } from 'next/server';
 import { permitido, persona } from '../sesion';
 import { crearContraparte, leerContraparte } from '../dominio/contrapartes';
 import { crearProyecto } from '../dominio/proyectos';
-import { decidir, procesarSolicitud, renovarEnlace } from '../dominio/solicitudes';
+import { corregirComentario, decidir, deshacerDecision, procesarSolicitud, renovarEnlace } from '../dominio/solicitudes';
 import { PAISES } from '../paises';
 import { esIdioma, SECTORES } from '../formulario/textos';
 import { intentar, texto, type Resultado } from './resultado';
@@ -66,9 +66,28 @@ export async function decidirSolicitud(_: Resultado, fd: FormData): Promise<Resu
     revalidatePath('/', 'layout');
     return {
       validar: 'Propuesta validada.',
-      cambios: 'Cambios pedidos. Copia el correo para la contraparte (abajo) y envíaselo.',
-      rechazar: 'Solicitud rechazada. Copia el correo para la contraparte (abajo) y envíaselo.',
+      cambios: 'Cambios pedidos. Copia el correo para la contraparte y envíaselo.',
+      rechazar: 'Solicitud rechazada. Copia el correo para la contraparte y envíaselo.',
     }[decision];
+  });
+}
+
+/** Corrige el comentario de la última decisión (pedir cambios o rechazar). */
+export async function corregirComentarioAccion(_: Resultado, fd: FormData): Promise<Resultado> {
+  return intentar(async () => {
+    const yo = await permitido('edicion');
+    await corregirComentario(texto(fd, 'codigo', 20), texto(fd, 'comentario', 4000), persona(yo));
+    revalidatePath('/', 'layout');
+    return 'Comentario corregido. El correo para la contraparte ya lleva el texto nuevo.';
+  });
+}
+
+export async function deshacerDecisionAccion(_: Resultado, fd: FormData): Promise<Resultado> {
+  return intentar(async () => {
+    const yo = await permitido('edicion');
+    await deshacerDecision(texto(fd, 'codigo', 20), persona(yo));
+    revalidatePath('/', 'layout');
+    return 'Decisión deshecha: la solicitud vuelve a estar por revisar.';
   });
 }
 

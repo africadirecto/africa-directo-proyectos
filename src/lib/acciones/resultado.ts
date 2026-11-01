@@ -1,6 +1,7 @@
 // Resultado común de las acciones de servidor, para mostrar el mensaje en el formulario.
 
 import { unstable_rethrow } from 'next/navigation';
+import { aNumero } from '../formato';
 
 export interface Resultado {
   ok: boolean;
@@ -29,8 +30,5 @@ export function texto(fd: FormData, campo: string, max = 2000): string {
 }
 
 export function numero(fd: FormData, campo: string): number | null {
-  const t = texto(fd, campo, 40).replace(/\s/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.');
-  if (!t) return null;
-  const n = Number(t);
-  return Number.isFinite(n) ? n : null;
+  return aNumero(texto(fd, campo, 40));
 }

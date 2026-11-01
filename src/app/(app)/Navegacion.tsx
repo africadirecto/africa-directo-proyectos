@@ -22,6 +22,9 @@ export function Navegacion({ porRevisar, admin }: { porRevisar: number; admin: b
       <Link href="/contrapartes" aria-current={actual('/contrapartes')}>
         Contrapartes
       </Link>
+      <Link href="/plantillas" aria-current={actual('/plantillas')}>
+        Plantillas
+      </Link>
       {admin ? (
         <Link href="/admin" aria-current={actual('/admin')}>
           Administración

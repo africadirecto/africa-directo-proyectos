@@ -72,9 +72,12 @@ export interface Proyecto {
    * recibir la solicitud y un voluntario puede corregirlo en «Editar datos».
    */
   presupuestoEur: number | null;
-  /** Suma de aportaciones comprometidas o recibidas, en euros. */
+  /** En euros: lo comprometido por los donantes, lo cobrado por AD y lo enviado a la contraparte. */
   comprometido: number;
   recibido: number;
+  /** Pueden faltar en los proyectos guardados antes de registrar envíos. */
+  enviado?: number;
+  envios?: Envio[];
   numDonantes: number;
   descripcion: string;
   /** Resumen en español hecho por IA a partir de la última solicitud. */
@@ -264,18 +267,36 @@ export interface Donante {
   actualizado: string;
 }
 
-export type EstadoAportacion = 'ofrecida' | 'interesado' | 'comprometida' | 'recibida' | 'descartada';
+/** Un registro de dinero: compromiso de un donante, cobro de AD o envío a la contraparte. */
+export interface Movimiento {
+  id: string;
+  /** En euros. */
+  importe: number;
+  /** AAAA-MM-DD. */
+  fecha: string;
+  nota: string;
+}
 
-/** aportaciones/{id}: relación proyecto–donante. */
+/** Dinero que un donante se compromete a dar. */
+export type Compromiso = Movimiento;
+/** Dinero que llega a Africa Directo de un donante. */
+export type Cobro = Movimiento;
+/** Transferencia de Africa Directo a la contraparte (por proyecto, no por donante). */
+export type Envio = Movimiento;
+
+/** aportaciones/{id}: relación proyecto–donante (una por donante en cada proyecto). */
 export interface Aportacion {
   proyecto: string;
   proyectoTitulo: string;
   donanteId: string;
   donanteNombre: string;
-  /** Siempre en euros: la ONG financia en euros. */
+  /** Lo que se ha comprometido, por fechas (un donante puede ampliar su compromiso). */
+  compromisos: Compromiso[];
+  /** Lo que ya ha llegado a AD. */
+  cobros: Cobro[];
+  /** Sumas de compromisos y cobros, en euros, copiadas para las listas y los informes. */
   importe: number;
-  estado: EstadoAportacion;
-  notas: string;
+  recibido: number;
   creado: string;
   actualizado: string;
   actualizadoPor: Persona;
@@ -300,6 +321,75 @@ export type ExtensionInforme = 'breve' | 'normal' | 'detallado';
 /** Documento (Google Docs), presentación (Google Slides) u hoja de cálculo (Google Sheets, solo de proyectos). */
 export type FormatoInforme = 'docs' | 'slides' | 'sheets';
 
+export type FormatoPlantilla = 'docs' | 'slides';
+/** procesando: se está creando desde un ejemplo. borrador: aún no se ofrece al generar informes. */
+export type EstadoPlantilla = 'procesando' | 'borrador' | 'activa' | 'archivada' | 'error';
+
+/** Lo que se le pide a la IA en una plantilla: en general y en cada campo ({{ia:…}}, {{foto:…}}). */
+export interface InstruccionesPlantilla {
+  general: string;
+  /** clave del campo → instrucción */
+  campos: Record<string, string>;
+}
+
+/** Un campo que la IA rellena, tal como aparece en el documento. */
+export interface CampoPlantilla {
+  clave: string;
+  tipo: 'ia' | 'foto' | 'fotos';
+  /** Cuántas veces aparece (todas reciben el mismo contenido). */
+  veces: number;
+  /** Está dentro de una frase: se rellena con una sola frase. */
+  enLinea: boolean;
+  /** En Slides, el tamaño del recuadro en puntos, para orientar la extensión. */
+  caja?: { ancho: number; alto: number };
+  /** Ya no está en el documento; se conserva su instrucción por si vuelve. */
+  huerfano?: boolean;
+}
+
+/**
+ * plantillas/{id}: una plantilla de informe. El documento es un Google Doc o Slides de la unidad
+ * Plantillas con marcadores (ver dominio/marcadores.ts); aquí se guardan sus instrucciones y lo
+ * que se ha leído del documento. Las plantillas de la ONG son plantillas como las demás.
+ */
+export interface Plantilla {
+  nombre: string;
+  descripcion: string;
+  tipo: TipoInforme;
+  formato: FormatoPlantilla;
+  estado: EstadoPlantilla;
+  /** La que se propone para su tipo y formato. */
+  porDefecto: boolean;
+  /** Si es la plantilla propia de un donante. */
+  donante: { id: string; nombre: string } | null;
+  /** Idioma del texto fijo; si el informe va en otro, se traduce. */
+  idioma: Idioma;
+  archivoId: string;
+  url: string;
+  origen: 'app' | 'ejemplo' | 'drive';
+  /** Informe de ejemplo del que salió, si lo hay. */
+  ejemplo: { archivoId: string; nombre: string } | null;
+  /** Versión de las instrucciones (ver plantillas/{id}/versiones). */
+  version: number;
+  instrucciones: InstruccionesPlantilla;
+  /** Lo que hay en el documento, leído al sincronizar. */
+  estructura: { campos: CampoPlantilla[]; datos: string[]; tablas: string[] };
+  sincronizado: { modificado: string; fecha: string; avisos: string[] } | null;
+  error?: string;
+  creado: string;
+  creadoPor: Persona;
+  actualizado: string;
+  actualizadoPor: Persona;
+}
+
+/** plantillas/{id}/versiones/{n}: cada versión guardada de las instrucciones, para volver atrás. */
+export interface VersionPlantilla {
+  version: number;
+  instrucciones: InstruccionesPlantilla;
+  nota: string;
+  creado: string;
+  creadoPor: Persona;
+}
+
 /**
  * Borradores hechos con IA, en Google Docs o Slides. Los de un proyecto están en
  * proyectos/{codigo}/informes/{id}; los de conjunto, en informes/{id}. La app no los envía:
@@ -311,21 +401,50 @@ export interface Informe {
   formato: FormatoInforme;
   /** En los de conjunto: la contraparte o el donante del informe (null = todos). */
   sobre?: { id: string; nombre: string } | null;
-  plantilla: { id: string; nombre: string };
+  /** En los de conjunto: los filtros con que se eligieron los proyectos. */
+  filtros?: { estados: EstadoProyecto[]; paises: string[] };
+  plantilla: { id: string; nombre: string; version?: number };
   desde: string;
   hasta: string;
   donante: { id: string; nombre: string } | null;
   idioma: Idioma;
-  extension: ExtensionInforme;
+  /** Solo en los informes anteriores al sistema de plantillas. */
+  extension?: ExtensionInforme;
+  /** Lo que el voluntario quiso destacar al pedirlo. */
+  indicaciones?: string;
+  /** Fotos publicables elegidas (ids de Drive); null: las elige la app. */
+  fotos?: string[] | null;
+  /** Archivos del proyecto cuyo texto se dio a la IA como contexto (ids de Drive). */
+  adjuntos?: string[];
+  /** Prueba de una plantilla con los datos de ese proyecto (está en «informes», no en su ficha). */
+  prueba?: { codigo: string } | null;
+  /** Vacíos hasta que el documento está hecho. */
   docId: string;
   url: string;
-  /** Cuántos [PENDIENTE: …] dejó la IA para que los complete un voluntario. */
+  /** Cuántos huecos (resaltados en amarillo) quedan por completar. */
   pendientes: number;
-  /** Notas para la revisión (pendientes y fuentes); también van al final del documento. */
+  /** Solo en los informes anteriores: notas que iban al final del documento. */
   notas?: string[];
+  /** De dónde sale cada campo de la IA: clave → eventos o datos usados. Se ve en la app. */
+  fuentes?: Record<string, string[]>;
   /** Resumen en español, para el siguiente informe y para la lista. */
   resumen: string;
   hechoPorIA: boolean;
+  /** Sin estado: hecho antes del trabajo en segundo plano (está listo). */
+  estado?: EstadoInforme;
+  /** Cómo va: campos redactados de los que hay. */
+  progreso?: { campos: number; hechos: number };
+  /** «lote»: la IA trabaja en un lote de OpenRouter; «directo»: llamadas normales. */
+  modo?: 'lote' | 'directo';
+  lote?: { id: string; enviado: string; comprobado: string; reenviado: boolean } | null;
+  error?: string;
+  /** Hasta cuándo lo está procesando una ejecución (para que no lo hagan dos a la vez). */
+  bloqueo?: string;
+  intentos?: number;
   creado: string;
   creadoPor: Persona;
+  actualizado?: string;
 }
+
+/** en_cola → redactando (la IA, en un lote o directo) → componiendo (el documento) → listo. */
+export type EstadoInforme = 'en_cola' | 'redactando' | 'componiendo' | 'listo' | 'error';

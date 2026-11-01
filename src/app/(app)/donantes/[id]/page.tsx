@@ -4,16 +4,15 @@ import { notFound } from 'next/navigation';
 import { requiere, tienePermiso } from '@/lib/sesion';
 import { leerDonante, TIPOS_DONANTE } from '@/lib/dominio/donantes';
 import { aportacionesDeDonante } from '@/lib/dominio/aportaciones';
-import { ESTADOS_APORTACION } from '@/lib/estados';
 import { dinero, fechaCorta } from '@/lib/formato';
-import { Etiqueta } from '@/componentes/Basicos';
 import { FormDonante } from '../FormDonante';
 import { BotonInformeGeneral } from '../../BotonInformeGeneral';
 import { ListaInformes } from '@/componentes/ListaInformes';
+import { plantillasActivas } from '@/lib/dominio/plantillas';
 import { listarInformesGenerales } from '@/lib/dominio/informesGenerales';
 
-// Generar un informe hace una llamada larga a la IA.
-export const maxDuration = 180;
+// Al pedir un informe, su preparación sigue en segundo plano dentro de la misma petición.
+export const maxDuration = 300;
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const d = await leerDonante((await params).id);
@@ -39,9 +38,9 @@ export default async function Donante({ params }: { params: Promise<{ id: string
             {d.correo ? ` · ${d.correo}` : ''}
           </p>
         </div>
-        {tienePermiso(yo, 'edicion') && aportaciones.length ? <BotonInformeGeneral tipo="donante" sobre={d.id} claseBoton="btn btn-p" /> : null}
+        {tienePermiso(yo, 'edicion') && aportaciones.length ? <BotonInformeGeneral tipo="donante" sobre={d.id} plantillas={await plantillasActivas(['donante'])} claseBoton="btn btn-p" /> : null}
       </div>
-      <ListaInformes informes={await listarInformesGenerales('donante', d.id)} titulo="Informes para este donante" />
+      <ListaInformes informes={await listarInformesGenerales('donante', d.id)} coleccion="informes" editable={tienePermiso(yo, 'edicion')} titulo="Informes para este donante" />
       <div className="fila">
         <section className="card col-ancha" style={{ gap: 8 }}>
           <h2 className="h3">Aportaciones</h2>
@@ -52,9 +51,14 @@ export default async function Donante({ params }: { params: Promise<{ id: string
                   <tr>
                     <th scope="col">Proyecto</th>
                     <th scope="col" className="der">
-                      Importe
+                      Comprometido
                     </th>
-                    <th scope="col">Estado</th>
+                    <th scope="col" className="der">
+                      Cobrado
+                    </th>
+                    <th scope="col" className="der">
+                      Por cobrar
+                    </th>
                     <th scope="col">Actualizada</th>
                   </tr>
                 </thead>
@@ -68,9 +72,8 @@ export default async function Donante({ params }: { params: Promise<{ id: string
                         <span className="sub">{a.proyecto}</span>
                       </td>
                       <td className="der">{dinero(a.importe)}</td>
-                      <td>
-                        <Etiqueta clase={ESTADOS_APORTACION[a.estado].clase}>{ESTADOS_APORTACION[a.estado].nombre}</Etiqueta>
-                      </td>
+                      <td className="der">{a.recibido ? dinero(a.recibido) : '—'}</td>
+                      <td className="der">{a.importe > a.recibido ? dinero(a.importe - a.recibido) : '—'}</td>
                       <td>{fechaCorta(a.actualizado)}</td>
                     </tr>
                   ))}

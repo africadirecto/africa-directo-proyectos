@@ -1,16 +1,17 @@
 'use client';
 
-// Diálogo para un informe de conjunto con IA (Google Docs o Slides): de varios proyectos
-// (página de Proyectos), de contrapartes o de un donante.
+// Diálogo para un informe de conjunto con IA: de varios proyectos (página de Proyectos), de
+// contrapartes o de un donante. Desde Proyectos se puede pedir también la hoja de cálculo.
 
 import { useActionState, useState } from 'react';
 import { Dialogo } from '@/componentes/Dialogo';
 import { Desplegable, type Opcion } from '@/componentes/Desplegable';
 import { Enviar } from '@/componentes/FormAccion';
-import { ElegirFormato, IdiomaYExtension, Indicaciones, ResultadoInforme } from '@/componentes/OpcionesInforme';
-import { generarInformeGeneralAccion } from '@/lib/acciones/informes';
+import { ElegirPlantilla, Idioma, Indicaciones, ResultadoInforme } from '@/componentes/OpcionesInforme';
+import { pedirInformeAccion } from '@/lib/acciones/informes';
 import { ACTIVOS, ESTADOS } from '@/lib/estados';
-import type { EstadoProyecto, FormatoInforme } from '@/lib/tipos';
+import type { OpcionPlantilla } from '@/lib/dominio/plantillas';
+import type { EstadoProyecto } from '@/lib/tipos';
 
 const OPCIONES_ESTADO = (Object.keys(ESTADOS) as EstadoProyecto[]).map((e) => ({ valor: e, texto: ESTADOS[e].nombre }));
 
@@ -23,6 +24,7 @@ const haceUnAnio = () => {
 
 export function BotonInformeGeneral({
   tipo,
+  plantillas,
   sobre,
   opcionesSobre,
   etiquetaSobre = '',
@@ -30,6 +32,8 @@ export function BotonInformeGeneral({
   claseBoton = 'btn btn-s',
 }: {
   tipo: 'cartera' | 'contraparte' | 'donante';
+  /** Las plantillas activas de este tipo. */
+  plantillas: OpcionPlantilla[];
   /** Fijo (por ejemplo, el donante de su página). */
   sobre?: string;
   /** Para elegir (por ejemplo, la contraparte o «todas»). */
@@ -39,8 +43,10 @@ export function BotonInformeGeneral({
   paises?: Opcion[];
   claseBoton?: string;
 }) {
-  const [estado, ejecutar] = useActionState(generarInformeGeneralAccion, { ok: false });
-  const [formato, setFormato] = useState<FormatoInforme>('docs');
+  const [estado, pedir] = useActionState(pedirInformeAccion, { ok: false });
+  const [id, setId] = useState(plantillas[0]?.id ?? (tipo === 'cartera' ? 'sheets' : ''));
+  const elegida = plantillas.find((p) => p.id === id);
+  const hoja = id === 'sheets';
   const titulo = { cartera: 'Informe de proyectos', contraparte: 'Informe de contrapartes', donante: 'Informe para el donante' }[tipo];
   const explicacion = {
     cartera: 'Un informe de varios proyectos: cifras, panorama, avances y retos, con la tabla de proyectos.',
@@ -50,20 +56,20 @@ export function BotonInformeGeneral({
 
   return (
     <Dialogo boton="Generar informe" claseBoton={claseBoton} titulo={titulo}>
-      <form action={ejecutar} className="pila">
-        <input type="hidden" name="tipo" value={tipo} />
+      <form action={pedir} className="pila">
+        <input type="hidden" name="conjunto" value={tipo} />
         {sobre !== undefined ? <input type="hidden" name="sobre" value={sobre} /> : null}
         <p className="meta" style={{ margin: 0 }}>
-          {formato === 'sheets'
+          {hoja
             ? 'Un libro con todos los datos de los proyectos elegidos y resúmenes por estado, país, sector, contraparte y año, con gráficas. Los resúmenes son fórmulas: si corriges un dato en la hoja «Proyectos», se recalculan. No usa IA.'
-            : `${explicacion} La IA lo redacta con los datos de la app; lo que no consta queda como [PENDIENTE]. Revísalo en Google antes de enviarlo.`}
+            : `${explicacion} La IA lo redacta con los datos de la app siguiendo la plantilla; lo que no consta queda resaltado en amarillo. Revísalo en Google antes de enviarlo.`}
         </p>
-        <ElegirFormato valor={formato} onChange={setFormato} conHoja={tipo === 'cartera'} />
         <div className="campos">
+          <ElegirPlantilla plantillas={plantillas} valor={id} onChange={setId} hoja={tipo === 'cartera'} />
           {opcionesSobre ? (
             <label className="field ancho">
               {etiquetaSobre}
-              <Desplegable name="sobre" defaultValue={opcionesSobre[0]?.valor ?? ''} opciones={opcionesSobre} />
+              <Desplegable name="sobre" buscar textoBuscar="Buscar…" defaultValue={opcionesSobre[0]?.valor ?? ''} opciones={opcionesSobre} />
             </label>
           ) : null}
           {tipo !== 'donante' ? (
@@ -88,7 +94,7 @@ export function BotonInformeGeneral({
               <Desplegable multiple name="paises" opciones={paises} placeholder="Todos" textoBuscar="Buscar país…" />
             </label>
           ) : null}
-          {formato !== 'sheets' ? (
+          {!hoja ? (
             <>
               <label className="field">
                 Novedades desde
@@ -98,14 +104,14 @@ export function BotonInformeGeneral({
                 Hasta
                 <input type="date" name="hasta" defaultValue={hoy()} required max={hoy()} />
               </label>
-              <IdiomaYExtension />
+              <Idioma valor={elegida?.idioma ?? 'es'} />
               <Indicaciones ejemplo={tipo === 'donante' ? 'agradece especialmente su apoyo a la escuela de Kinshasa.' : 'centra el informe en los proyectos de agua.'} />
             </>
           ) : null}
         </div>
         <div className="botones">
-          <Enviar pendiente={formato === 'sheets' ? 'Creando la hoja…' : 'Redactando… puede tardar un minuto'}>
-            {formato === 'slides' ? 'Generar presentación' : formato === 'sheets' ? 'Generar hoja de cálculo' : 'Generar informe'}
+          <Enviar pendiente={hoja ? 'Creando la hoja…' : 'Poniéndolo en marcha…'} disabled={!hoja && !elegida}>
+            {hoja ? 'Generar hoja de cálculo' : elegida?.formato === 'slides' ? 'Generar presentación' : 'Generar informe'}
           </Enviar>
         </div>
         <ResultadoInforme estado={estado} />

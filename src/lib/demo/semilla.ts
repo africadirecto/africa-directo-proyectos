@@ -5,6 +5,7 @@ import { almacen } from '../almacen';
 import { modoDemo } from '../config';
 import { drive } from '../drive';
 import { reconstruirIndice } from '../dominio/indice';
+import { crearPlantillasDeLaApp } from '../dominio/plantillasApp';
 import { asegurarCarpetas } from '../dominio/proyectos';
 import { totales } from '../dominio/aportaciones';
 import { nuevoIdEnlace } from '../enlaces';
@@ -17,6 +18,7 @@ import type {
   EstadoProyecto,
   Evento,
   Idioma,
+  Movimiento,
   Proyecto,
   RespuestasSolicitud,
   Usuario,
@@ -114,32 +116,55 @@ async function sembrar() {
     }),
   ];
 
-  const aportaciones: Omit<Aportacion, 'proyectoTitulo' | 'creado' | 'actualizado' | 'actualizadoPor' | 'donanteNombre' | 'notas'>[] = [
-    { proyecto: 'P-2026-014', donanteId: 'horizonte', importe: 12000, estado: 'comprometida' },
-    { proyecto: 'P-2026-014', donanteId: 'aguaviva', importe: 6000, estado: 'recibida' },
-    { proyecto: 'P-2026-006', donanteId: 'solar', importe: 25000, estado: 'recibida' },
-    { proyecto: 'P-2026-006', donanteId: 'particular', importe: 6000, estado: 'recibida' },
-    { proyecto: 'P-2026-009', donanteId: 'ayto', importe: 24000, estado: 'comprometida' },
-    { proyecto: 'P-2026-011', donanteId: 'aguaviva', importe: 3800, estado: 'comprometida' },
-    { proyecto: 'P-2026-011', donanteId: 'horizonte', importe: 5700, estado: 'interesado' },
-    { proyecto: 'P-2026-003', donanteId: 'particular', importe: 6800, estado: 'recibida' },
-    { proyecto: 'P-2025-021', donanteId: 'horizonte', importe: 8200, estado: 'recibida' },
+  // Compromisos y cobros de cada donante: [importe, hace cuántos días, nota].
+  type Fila = [number, number, string];
+  const fuentes: { proyecto: string; donanteId: string; compromisos: Fila[]; cobros: Fila[] }[] = [
+    { proyecto: 'P-2026-014', donanteId: 'horizonte', compromisos: [[12000, 110, 'Convocatoria 2026']], cobros: [[6000, 75, 'Primer plazo']] },
+    { proyecto: 'P-2026-014', donanteId: 'aguaviva', compromisos: [[6000, 100, '']], cobros: [[6000, 30, '']] },
+    { proyecto: 'P-2026-006', donanteId: 'solar', compromisos: [[25000, 130, '']], cobros: [[25000, 95, '']] },
+    { proyecto: 'P-2026-006', donanteId: 'particular', compromisos: [[4000, 60, ''], [2000, 20, 'Amplía su donación']], cobros: [[6000, 12, '']] },
+    { proyecto: 'P-2026-009', donanteId: 'ayto', compromisos: [[24000, 20, 'Subvención municipal']], cobros: [] },
+    { proyecto: 'P-2026-011', donanteId: 'aguaviva', compromisos: [[3800, 15, '']], cobros: [] },
+    { proyecto: 'P-2026-003', donanteId: 'particular', compromisos: [[6800, 300, '']], cobros: [[6800, 250, '']] },
+    { proyecto: 'P-2025-021', donanteId: 'horizonte', compromisos: [[8200, 450, '']], cobros: [[8200, 410, '']] },
   ];
-  for (const [i, a] of aportaciones.entries()) {
-    const p = proyectos.find((x) => x.codigo === a.proyecto)!;
-    await db.guardar(`aportaciones/demo${i}`, {
-      ...a,
+  const registros = (filas: Fila[], prefijo: string): Movimiento[] =>
+    filas.map(([importe, dias, nota], j) => ({ id: `${prefijo}${j + 1}`, importe, fecha: hace(dias).slice(0, 10), nota }));
+  const aportaciones: Aportacion[] = [];
+  for (const [i, f] of fuentes.entries()) {
+    const p = proyectos.find((x) => x.codigo === f.proyecto)!;
+    const compromisos = registros(f.compromisos, 'k');
+    const cobros = registros(f.cobros, 'c');
+    const a: Aportacion = {
+      proyecto: f.proyecto,
+      donanteId: f.donanteId,
+      compromisos,
+      cobros,
+      importe: compromisos.reduce((s, c) => s + c.importe, 0),
+      recibido: cobros.reduce((s, c) => s + c.importe, 0),
       proyectoTitulo: p.titulo,
-      donanteNombre: donantes[a.donanteId].nombre,
-      notas: '',
+      donanteNombre: donantes[f.donanteId].nombre,
       creado: hace(60),
       actualizado: hace(30),
       actualizadoPor: ana,
-    } satisfies Aportacion);
+    };
+    aportaciones.push(a);
+    await db.guardar(`aportaciones/demo${i}`, { ...a });
+  }
+
+  // Envíos a la contraparte: [importe, hace cuántos días, nota].
+  const envios: Record<string, [number, number, string][]> = {
+    'P-2026-014': [[6000, 70, 'Inicio de obra'], [6000, 23, 'Cubierta']],
+    'P-2026-006': [[25000, 90, 'Compra de las placas']],
+    'P-2026-003': [[6800, 240, '']],
+    'P-2025-021': [[8200, 400, '']],
+  };
+  for (const p of proyectos) {
+    p.envios = (envios[p.codigo] ?? []).map(([importe, dias, nota], j) => ({ id: `e${j + 1}`, importe, fecha: hace(dias).slice(0, 10), nota }));
   }
 
   for (const p of proyectos) {
-    const t = totales(aportaciones.filter((a) => a.proyecto === p.codigo));
+    const t = totales(aportaciones.filter((a) => a.proyecto === p.codigo), p.envios);
     Object.assign(p, t);
     const enlace: Enlace = { proyecto: p.codigo, accion: 'solicitud', creado: p.fechas.creado, creadoPor: ana, caduca: new Date(Date.now() + 120 * DIA).toISOString(), revocado: false };
     await db.guardar(`enlaces/${p.formulario.enlaceId}`, { ...enlace });
@@ -242,6 +267,9 @@ async function sembrar() {
     }
   }
 
+  // Las plantillas de la ONG (en demo, solo las de documento, como HTML).
+  await crearPlantillasDeLaApp(ana);
+
   await reconstruirIndice();
 }
 
@@ -296,6 +324,7 @@ function py(
     presupuestoEur: presupuesto,
     comprometido: 0,
     recibido: 0,
+    enviado: 0,
     numDonantes: 0,
     descripcion: extra.descripcion ?? '',
     resumen: '',

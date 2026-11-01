@@ -34,6 +34,8 @@ export function FormNueva({ contrapartes }: { contrapartes: OpcionContraparte[] 
           <Desplegable
             name="contraparte"
             required
+            buscar
+            textoBuscar="Buscar contraparte…"
             value={cp}
             onChange={setCp}
             placeholder="Elige una contraparte…"

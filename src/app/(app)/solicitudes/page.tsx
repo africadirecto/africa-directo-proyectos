@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { requiere, tienePermiso } from '@/lib/sesion';
 import { leerIndice } from '@/lib/dominio/indice';
 import { leerProyecto } from '@/lib/dominio/proyectos';
-import { enlaceDe, listarRevisiones, listarVersiones, textoInvitacion, textoRechazo } from '@/lib/dominio/solicitudes';
+import { decisionAbierta, enlaceDe, listarRevisiones, listarVersiones, textoInvitacion, textoRechazo } from '@/lib/dominio/solicitudes';
 import { iaDisponible } from '@/lib/ia';
 import { enEuros, tiposDeCambio } from '@/lib/cambio';
 import { dinero, fechaCorta, fechaLarga, haceDias } from '@/lib/formato';
@@ -14,7 +14,9 @@ import { Estado, Etiqueta } from '@/componentes/Basicos';
 import { Copiar } from '@/componentes/Copiar';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
 import { VistaSolicitud } from '@/componentes/VistaSolicitud';
-import { decidirSolicitud, reanalizar, renovarEnlaceAccion } from '@/lib/acciones/solicitudes';
+import { reanalizar, renovarEnlaceAccion } from '@/lib/acciones/solicitudes';
+import { FormDecision } from './FormDecision';
+import { DecisionTomada } from './DecisionTomada';
 import type { EstadoFormulario, FilaPanel } from '@/lib/tipos';
 
 export const metadata: Metadata = { title: 'Solicitudes' };
@@ -69,6 +71,8 @@ export default async function Solicitudes({ searchParams }: { searchParams: Prom
   const eur = v && p?.estado === 'revision' && v.respuestas.moneda !== 'EUR' ? enEuros(totalPresupuesto(v.respuestas.lineas), v.respuestas.moneda, await tiposDeCambio()) : null;
   // Al rechazar, el correo para la contraparte sale de la última revisión.
   const rechazo = p?.estado === 'rechazada' ? (await listarRevisiones(p.codigo)).find((r) => r.decision === 'rechazar') : undefined;
+  // La última decisión, mientras se pueda corregir o deshacer.
+  const abierta = p ? await decisionAbierta(p) : null;
 
   return (
     <main className="principal">
@@ -199,27 +203,7 @@ export default async function Solicitudes({ searchParams }: { searchParams: Prom
                 {editor ? (
                   <section className="pila" style={{ borderTop: '1px solid var(--borde-suave)', paddingTop: 20, gap: 12 }}>
                     <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Decisión</h3>
-                    <FormAccion accion={decidirSolicitud} className="pila">
-                      <input type="hidden" name="codigo" value={p.codigo} />
-                      <label className="field">
-                        Comentario para la contraparte{p.contraparte.idioma !== 'es' ? ` (se envía traducido al ${IDIOMAS_ES[p.contraparte.idioma].toLowerCase()})` : ''}
-                        <textarea name="comentario" placeholder="Obligatorio si pides cambios. Por ejemplo: separad el presupuesto en materiales y mano de obra." />
-                      </label>
-                      <div className="botones">
-                        <Enviar name="decision" value="validar" pendiente="Validando…">
-                          Validar propuesta
-                        </Enviar>
-                        <Enviar name="decision" value="cambios" clase="btn btn-s" pendiente="Enviando…">
-                          Pedir cambios
-                        </Enviar>
-                        <Enviar name="decision" value="rechazar" clase="btn btn-d" pendiente="Rechazando…">
-                          Rechazar
-                        </Enviar>
-                      </div>
-                    </FormAccion>
-                    <p className="meta" style={{ margin: 0 }}>
-                      Si pides cambios o la rechazas, la app prepara el correo para la contraparte en su idioma, listo para copiar y enviar.
-                    </p>
+                    <FormDecision codigo={p.codigo} idioma={p.contraparte.idioma !== 'es' ? IDIOMAS_ES[p.contraparte.idioma].toLowerCase() : ''} />
                     {!v.analisis?.hechoPorIA && iaDisponible() ? (
                       <FormAccion accion={reanalizar}>
                         <input type="hidden" name="codigo" value={p.codigo} />
@@ -263,19 +247,7 @@ export default async function Solicitudes({ searchParams }: { searchParams: Prom
                   </div>
                 </dl>
 
-                {p.formulario.estado === 'cambios' && p.formulario.comentarios ? (
-                  <section className="aviso">
-                    <h3>Cambios pedidos</h3>
-                    <p className="p">{p.formulario.comentarios.es}</p>
-                    <p className="meta" style={{ margin: '6px 0 0' }}>
-                      {p.formulario.comentarios.traducido
-                        ? `La contraparte lo ve en ${IDIOMAS_ES[p.formulario.comentarios.idioma].toLowerCase()}: ${p.formulario.comentarios.traducido}`
-                        : p.formulario.comentarios.idioma !== 'es'
-                          ? 'Sin IA no se ha traducido: la contraparte lo ve en español.'
-                          : null}
-                    </p>
-                  </section>
-                ) : null}
+                {abierta ? <DecisionTomada codigo={p.codigo} r={abierta} idioma={p.contraparte.idioma} editor={editor} /> : null}
 
                 {editor ? (
                   <section className="pila">
@@ -306,6 +278,7 @@ export default async function Solicitudes({ searchParams }: { searchParams: Prom
                 <p className="p">
                   Esta solicitud ya no está pendiente. <Link href={`/proyectos/${p.codigo}`}>Abrir la ficha del proyecto →</Link>
                 </p>
+                {abierta ? <DecisionTomada codigo={p.codigo} r={abierta} idioma={p.contraparte.idioma} editor={editor} /> : null}
                 {editor && rechazo ? (
                   <section className="pila">
                     <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Avisar a la contraparte</h3>

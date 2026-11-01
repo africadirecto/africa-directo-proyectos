@@ -61,6 +61,47 @@ export async function archivosDelProyecto(p: Proyecto): Promise<{ carpetas: Carp
   return { carpetas, fotos, error };
 }
 
+/** Una foto o un archivo del proyecto que se puede usar en un informe. */
+export interface MaterialInforme {
+  id: string;
+  nombre: string;
+  fecha: string;
+  mime: string;
+  carpeta: Subcarpeta;
+  miniatura: string;
+  medidas?: { ancho: number; alto: number };
+  /** En las fotos: la descripción que hizo la IA (se guarda para no repetirla). */
+  descripcion?: string;
+}
+
+/**
+ * Lo que se puede usar al generar un informe: las fotos publicables (solo esas pueden aparecer
+ * en un informe) y los demás archivos de las cuatro carpetas, más recientes primero.
+ */
+export async function materialesDelProyecto(p: Proyecto): Promise<{ fotos: MaterialInforme[]; archivos: MaterialInforme[] }> {
+  if (!p.drive) return { fotos: [], archivos: [] };
+  const d = await drive();
+  const sub = p.drive.subcarpetas;
+  const carpetaDe = new Map((Object.keys(sub) as Subcarpeta[]).map((k) => [sub[k], k]));
+  const [registros, enDrive] = await Promise.all([
+    (await almacen()).consultar<ArchivoProyecto & { ia?: { descripcion: string } }>(`proyectos/${p.codigo}/archivos`),
+    d.listar(Object.values(sub)),
+  ]);
+  const porId = new Map(registros.map((r) => [r.id, r]));
+  const fotos: MaterialInforme[] = [];
+  const archivos: MaterialInforme[] = [];
+  for (const a of enDrive) {
+    if (a.mime === ES_CARPETA) continue;
+    const r = porId.get(a.id);
+    const m: MaterialInforme = { id: a.id, nombre: a.nombre, fecha: r?.fecha ?? a.creado, mime: a.mime, carpeta: carpetaDe.get(a.carpetaId) ?? 'seguimiento', miniatura: d.urlMiniatura(a.id), ...(a.medidas ? { medidas: a.medidas } : {}), ...(r?.ia?.descripcion ? { descripcion: r.ia.descripcion } : {}) };
+    if (a.mime.startsWith('image/')) {
+      if (r?.publicable) fotos.push(m);
+    } else archivos.push(m);
+  }
+  const reciente = (x: MaterialInforme, y: MaterialInforme) => y.fecha.localeCompare(x.fecha);
+  return { fotos: fotos.sort(reciente), archivos: archivos.sort(reciente) };
+}
+
 /** Anota en la cronología un archivo que ha subido un voluntario y, si es foto, lo registra. */
 export async function registrarSubida(p: Proyecto, a: ArchivoDrive, clave: Subcarpeta, autor: Persona): Promise<void> {
   const d = await drive();

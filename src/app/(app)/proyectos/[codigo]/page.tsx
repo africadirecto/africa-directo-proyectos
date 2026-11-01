@@ -4,11 +4,10 @@ import { notFound } from 'next/navigation';
 import { requiere, tienePermiso } from '@/lib/sesion';
 import { leerProyecto } from '@/lib/dominio/proyectos';
 import { drive } from '@/lib/drive';
-import { ESTADOS, FASES, esFinal, indiceFase, transicionesDesde } from '@/lib/estados';
-import { dinero, diasDesde } from '@/lib/formato';
+import { ESTADOS, FASES, esFinal, estadosManuales, indiceFase } from '@/lib/estados';
+import { dinero } from '@/lib/formato';
 import { nombrePais } from '@/lib/paises';
 import { nombreSector } from '@/lib/formulario/textos';
-import { DIAS_SIN_NOTICIAS } from '@/lib/dominio/atencion';
 import { Estado } from '@/componentes/Basicos';
 import { Dialogo } from '@/componentes/Dialogo';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
@@ -17,7 +16,8 @@ import { cambiarEstadoAccion, crearCarpetaAccion } from '@/lib/acciones/proyecto
 import { EditarProyecto } from './EditarProyecto';
 import { GenerarInforme } from './GenerarInforme';
 import { LogoDrive } from '@/componentes/Iconos';
-import { desdePropuesto, listarInformes, listarPlantillas } from '@/lib/dominio/informes';
+import { desdePropuesto, listarInformes } from '@/lib/dominio/informes';
+import { plantillasActivas } from '@/lib/dominio/plantillas';
 import { presupuestoEnEuros } from '@/lib/dominio/aportaciones';
 import { listarDonantes } from '@/lib/dominio/donantes';
 import { iaDisponible } from '@/lib/ia';
@@ -36,41 +36,12 @@ const PESTANAS = {
   solicitud: 'Solicitud',
 } as const;
 
-// Generar un informe hace una llamada larga a la IA: se da margen a las acciones de esta página.
-export const maxDuration = 180;
+// Al pedir un informe, su preparación sigue en segundo plano dentro de la misma petición.
+export const maxDuration = 300;
 type Pestana = keyof typeof PESTANAS;
 
 export async function generateMetadata({ params }: { params: Promise<{ codigo: string }> }): Promise<Metadata> {
   return { title: (await params).codigo };
-}
-
-/** Sugerencia de "Siguiente paso" según el estado. */
-function siguientePaso(p: Proyecto): { texto: string; enlace?: [string, string] } | null {
-  const falta = (presupuestoEnEuros(p) ?? 0) - p.comprometido;
-  switch (p.estado) {
-    case 'solicitud':
-      return { texto: p.formulario.estado === 'cambios' ? 'esperando a que la contraparte corrija la solicitud.' : 'esperando a que la contraparte rellene el formulario.', enlace: ['Ver el enlace', `/solicitudes?p=${p.codigo}`] };
-    case 'revision':
-      return { texto: 'revisar la solicitud y decidir.', enlace: ['Revisar', `/solicitudes?p=${p.codigo}`] };
-    case 'validada':
-      return { texto: 'buscar financiación: añade los donantes a los que se presenta el proyecto.', enlace: ['Financiación', '?pestana=financiacion'] };
-    case 'financiacion':
-      return { texto: falta > 0 ? `faltan ${dinero(falta)} por comprometer.` : 'revisa el presupuesto: la financiación ya lo cubre.', enlace: ['Financiación', '?pestana=financiacion'] };
-    case 'aprobado':
-      return { texto: 'cuando empiece la obra, pasa el proyecto a «En ejecución».' };
-    case 'ejecucion': {
-      const d = diasDesde(p.ultimaNoticia);
-      return d > DIAS_SIN_NOTICIAS
-        ? { texto: `no hay noticias desde hace ${d} días: escribe a la contraparte.`, enlace: ['Seguimiento', '?pestana=seguimiento'] }
-        : { texto: 'seguimiento de la obra: anota las novedades.', enlace: ['Seguimiento', '?pestana=seguimiento'] };
-    }
-    case 'parado':
-      return { texto: 'proyecto parado: anota la causa y cuándo se reanuda.', enlace: ['Seguimiento', '?pestana=seguimiento'] };
-    case 'completado':
-      return { texto: 'recoge las fotos finales y el informe final, y cierra el proyecto.', enlace: ['Archivos', '?pestana=archivos'] };
-    default:
-      return null;
-  }
 }
 
 export default async function FichaProyecto({
@@ -89,8 +60,7 @@ export default async function FichaProyecto({
   const pestana: Pestana = q.pestana && q.pestana in PESTANAS ? (q.pestana as Pestana) : 'resumen';
   const d = await drive();
   const fase = indiceFase(p.estado);
-  const siguiente = siguientePaso(p);
-  const opciones = transicionesDesde(p.estado).filter((e) => !(p.estado === 'revision' && e === 'solicitud'));
+  const opciones = estadosManuales(p.estado);
 
   return (
     <main className="principal" style={{ paddingTop: 20, gap: 20 }}>
@@ -132,7 +102,7 @@ export default async function FichaProyecto({
             {editor && p.drive ? (
               <GenerarInforme
                 codigo={p.codigo}
-                plantillas={await listarPlantillas()}
+                plantillas={await plantillasActivas(['seguimiento', 'final', 'financiacion'])}
                 donantes={(await listarDonantes()).map((d) => ({ id: d.id, nombre: d.nombre }))}
                 tipo={['completado', 'cerrado'].includes(p.estado) ? 'final' : ['revision', 'validada', 'financiacion'].includes(p.estado) ? 'financiacion' : 'seguimiento'}
                 desde={desdePropuesto(p, await listarInformes(p.codigo))}
@@ -142,11 +112,16 @@ export default async function FichaProyecto({
             ) : null}
             {editor && opciones.length ? (
               <Dialogo boton="Cambiar estado" claseBoton="btn btn-p" titulo="Cambiar estado">
-                <FormAccion accion={cambiarEstadoAccion} className="pila">
+                <FormAccion accion={cambiarEstadoAccion} className="pila" limpiar>
                   <input type="hidden" name="codigo" value={p.codigo} />
                   <p className="meta" style={{ margin: 0 }}>
                     Estado actual: {ESTADOS[p.estado].nombre}. Queda anotado quién, cuándo y por qué.
                   </p>
+                  {p.estado === 'solicitud' || p.estado === 'revision' ? (
+                    <p className="meta" style={{ margin: 0 }}>
+                      Para validar, pedir cambios o rechazar la solicitud, usa <Link href={`/solicitudes?p=${p.codigo}`}>Solicitudes</Link>.
+                    </p>
+                  ) : null}
                   <label className="field">
                     Nuevo estado
                     <Desplegable name="estado" required opciones={opciones.map((e) => ({ valor: e, texto: ESTADOS[e].nombre }))} />
@@ -188,19 +163,6 @@ export default async function FichaProyecto({
             })}
           </ol>
         )}
-
-        {siguiente ? (
-          <div className="siguiente">
-            <p>
-              <b>Siguiente paso:</b> {siguiente.texto}
-            </p>
-            {siguiente.enlace ? (
-              <Link className="btn btn-s" style={{ minHeight: 40 }} href={siguiente.enlace[1]}>
-                {siguiente.enlace[0]}
-              </Link>
-            ) : null}
-          </div>
-        ) : null}
       </section>
 
       <nav className="tabs" aria-label="Secciones del proyecto">

@@ -1,11 +1,14 @@
 'use client';
 
-// Piezas comunes de los diálogos de informe: elegir formato (Docs o Slides), idioma,
-// extensión, indicaciones para la IA y el resultado con el enlace al archivo.
+// Piezas comunes de los diálogos de informe: elegir la plantilla, el idioma y las indicaciones
+// para la IA, y el resultado (el progreso del informe en segundo plano o el enlace al archivo).
 
+import Link from 'next/link';
 import { LogoDocs, LogoSheets, LogoSlides } from './Iconos';
 import { Desplegable } from './Desplegable';
-import type { FormatoInforme } from '@/lib/tipos';
+import { ProgresoInforme } from './ProgresoInforme';
+import type { OpcionPlantilla } from '@/lib/dominio/plantillas';
+import type { TipoInforme } from '@/lib/tipos';
 
 export const IDIOMAS_INFORME = [
   { valor: 'es', texto: 'Español' },
@@ -13,49 +16,54 @@ export const IDIOMAS_INFORME = [
   { valor: 'en', texto: 'Inglés' },
   { valor: 'pt', texto: 'Portugués' },
 ];
-export const EXTENSIONES = [
-  { valor: 'breve', texto: 'Breve' },
-  { valor: 'normal', texto: 'Normal' },
-  { valor: 'detallado', texto: 'Detallado' },
-];
 
-const FORMATOS = [
-  ['docs', 'Informe', 'Documento de Google Docs', <LogoDocs key="d" tamano={22} />],
-  ['slides', 'Presentación', 'Diapositivas de Google Slides', <LogoSlides key="s" tamano={22} />],
-  ['sheets', 'Hoja de cálculo', 'Datos y resúmenes en Google Sheets', <LogoSheets key="h" tamano={22} />],
-] as const;
+const TIPOS: Record<TipoInforme, string> = {
+  seguimiento: 'De seguimiento',
+  final: 'Final',
+  financiacion: 'Para buscar financiación',
+  cartera: 'Varios proyectos',
+  contraparte: 'Sobre una contraparte',
+  donante: 'Para un donante',
+};
 
-/** Elegir formato. La hoja de cálculo solo se ofrece si `conHoja` (informe de proyectos). */
-export function ElegirFormato({ valor, onChange, conHoja = false }: { valor: FormatoInforme; onChange: (f: FormatoInforme) => void; conHoja?: boolean }) {
+/** Elegir plantilla, agrupadas por tipo de informe. `hoja`: añade la hoja de cálculo (sin IA). */
+export function ElegirPlantilla({ plantillas, valor, onChange, hoja = false }: { plantillas: OpcionPlantilla[]; valor: string; onChange: (id: string) => void; hoja?: boolean }) {
+  if (!plantillas.length && !hoja) {
+    return (
+      <p className="aviso ancho" style={{ margin: 0 }}>
+        No hay plantillas activas para este informe. Actívalas o créalas en <Link href="/plantillas">Plantillas</Link>.
+      </p>
+    );
+  }
   return (
-    <fieldset className="formatos">
-      <legend>Formato</legend>
-      {FORMATOS.filter(([f]) => conHoja || f !== 'sheets').map(([f, nombre, detalle, icono]) => (
-        <label key={f} className="formato" data-elegido={valor === f ? '' : undefined}>
-          <input type="radio" name="formato" value={f} checked={valor === f} onChange={() => onChange(f)} className="oculto" />
-          {icono}
-          <span>
-            <b>{nombre}</b>
-            <span className="meta">{detalle}</span>
-          </span>
-        </label>
-      ))}
-    </fieldset>
+    <label className="field ancho">
+      Plantilla
+      <Desplegable
+        name="plantilla"
+        required
+        value={valor}
+        onChange={onChange}
+        opciones={[
+          ...plantillas.map((p) => ({
+            valor: p.id,
+            texto: `${p.nombre}${p.donante ? ` · de ${p.donante.nombre}` : ''}${p.porDefecto ? ' (por defecto)' : ''}`,
+            grupo: TIPOS[p.tipo],
+            icono: p.formato === 'slides' ? <LogoSlides tamano={16} /> : <LogoDocs tamano={16} />,
+          })),
+          ...(hoja ? [{ valor: 'sheets', texto: 'Hoja de cálculo con los datos (sin IA)', grupo: 'Datos', icono: <LogoSheets tamano={16} /> }] : []),
+        ]}
+      />
+    </label>
   );
 }
 
-export function IdiomaYExtension() {
+export function Idioma({ valor }: { valor: string }) {
   return (
-    <>
-      <label className="field">
-        Idioma
-        <Desplegable name="idioma" defaultValue="es" opciones={IDIOMAS_INFORME} />
-      </label>
-      <label className="field">
-        Extensión
-        <Desplegable name="extension" defaultValue="normal" opciones={EXTENSIONES} />
-      </label>
-    </>
+    <label className="field">
+      Idioma
+      {/* La clave fuerza el valor inicial al cambiar de plantilla. */}
+      <Desplegable key={valor} name="idioma" defaultValue={valor} opciones={IDIOMAS_INFORME} />
+    </label>
   );
 }
 
@@ -63,21 +71,24 @@ export function Indicaciones({ ejemplo }: { ejemplo: string }) {
   return (
     <label className="field ancho">
       <span>
-        Indicaciones para la IA <span className="ayuda">opcional</span>
+        Indicaciones para la IA <span className="ayuda">opcional: lo que quieres destacar en este informe</span>
       </span>
-      <textarea name="instrucciones" rows={3} placeholder={`Por ejemplo: ${ejemplo}`} />
+      <textarea name="indicaciones" rows={3} placeholder={`Por ejemplo: ${ejemplo}`} />
     </label>
   );
 }
 
-export function ResultadoInforme({ estado }: { estado: { ok: boolean; mensaje?: string; url?: string; vez?: number } }) {
-  if (!estado.vez || !estado.mensaje) return null;
+/** El resultado de pedir un informe: su progreso, la hoja ya hecha o el error. */
+export function ResultadoInforme({ estado }: { estado: { ok: boolean; mensaje?: string; url?: string; ruta?: string; vez?: number } }) {
+  if (!estado.vez) return null;
+  if (estado.ok && estado.ruta) return <ProgresoInforme key={estado.ruta} ruta={estado.ruta} />;
+  if (!estado.mensaje) return null;
   return (
     <div role="status" className={estado.ok ? 'aviso-ok' : 'aviso-error'} style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
       <span>{estado.mensaje}</span>
       {estado.url ? (
         <a className="btn btn-s btn-peq" href={estado.url} target="_blank" rel="noreferrer">
-          {estado.url.includes('/presentation/') ? <LogoSlides tamano={16} /> : estado.url.includes('/spreadsheets/') ? <LogoSheets tamano={16} /> : <LogoDocs tamano={16} />} Abrir
+          Abrir
         </a>
       ) : null}
     </div>

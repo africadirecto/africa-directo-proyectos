@@ -80,6 +80,10 @@ export function Desplegable(props: PropsDesplegable) {
     return Array.isArray(d) ? d : d ? [d] : [];
   };
   const [interno, setInterno] = useState<string[]>(inicial);
+  // El valor inicial más reciente: al vaciar el formulario se vuelve a él, no al de la primera vez
+  // (si no, tras guardar un cambio se vería otra vez el valor antiguo).
+  const ultimoInicial = useRef(inicial);
+  ultimoInicial.current = inicial;
   const controlado = props.value !== undefined;
   const elegidos = useMemo<string[]>(() => {
     if (!controlado) return interno;
@@ -182,10 +186,9 @@ export function Desplegable(props: PropsDesplegable) {
   useEffect(() => {
     const form = raiz.current?.closest('form');
     if (!form || controlado) return;
-    const reiniciar = () => setInterno(inicial());
+    const reiniciar = () => setInterno(ultimoInicial.current());
     form.addEventListener('reset', reiniciar);
     return () => form.removeEventListener('reset', reiniciar);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [controlado]);
 
   const mover = (desde: number, paso: number) => {
