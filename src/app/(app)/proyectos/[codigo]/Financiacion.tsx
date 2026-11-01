@@ -2,6 +2,7 @@ import { aportacionesDeProyecto, presupuestoEnEuros } from '@/lib/dominio/aporta
 import { listarDonantes, TIPOS_DONANTE } from '@/lib/dominio/donantes';
 import { dinero, fechaCorta, porcentaje } from '@/lib/formato';
 import { Dialogo } from '@/componentes/Dialogo';
+import { BarraFinanciacion } from '@/componentes/BarraFinanciacion';
 import { IconoCobro, IconoCompromiso, IconoEnvio } from '@/componentes/Iconos';
 import { quitarEnvioAccion } from '@/lib/acciones/financiacion';
 import { FormCompromiso } from './FormCompromiso';
@@ -19,7 +20,6 @@ export async function Financiacion({ p, editor }: { p: Proyecto; editor: boolean
   const envios = p.envios ?? [];
   const enviado = p.enviado ?? 0;
   const hoy = new Date().toISOString().slice(0, 10);
-  const ancho = (n: number) => `${Math.min(100, objetivo ? (n / objetivo) * 100 : 0)}%`;
 
   return (
     <section className="card financiacion">
@@ -46,21 +46,7 @@ export async function Financiacion({ p, editor }: { p: Proyecto; editor: boolean
         <b>{dinero(p.comprometido)}</b> comprometidos de {dinero(objetivo)}
         {objetivo ? <span className="meta"> · {porcentaje(p.comprometido, objetivo)} %</span> : null}
       </p>
-      <div className="bar bar-grande bar-etapas" role="img" aria-label={`Comprometido el ${porcentaje(p.comprometido, objetivo)} % del presupuesto`}>
-        <span className="etapa-comprometida" style={{ width: ancho(p.comprometido) }} />
-        <span className="etapa-recibida" style={{ width: ancho(p.recibido) }} />
-        <span className="etapa-enviada" style={{ width: ancho(enviado) }} />
-      </div>
-      <p className="leyenda fin-leyenda">
-        <span>
-          <span className="leyenda-punto etapa-recibida" />
-          Cobrado {dinero(p.recibido)}
-        </span>
-        <span>
-          <span className="leyenda-punto etapa-enviada" />
-          Enviado {dinero(enviado)}
-        </span>
-      </p>
+      <BarraFinanciacion comprometido={p.comprometido} recibido={p.recibido} enviado={enviado} total={objetivo} conComprometido={false} />
 
       <h3 className="fin-seccion fin-seccion-cifras">
         <span>Donantes</span>

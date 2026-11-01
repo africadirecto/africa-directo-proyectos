@@ -3,7 +3,8 @@ import { listarEventos } from '@/lib/dominio/eventos';
 import { leerContraparte } from '@/lib/dominio/contrapartes';
 import { aliasProyecto } from '@/lib/avisos';
 import { presupuestoEnEuros } from '@/lib/dominio/aportaciones';
-import { dinero, fechaLarga, porcentaje } from '@/lib/formato';
+import { dinero, fechaLarga } from '@/lib/formato';
+import { BarraFinanciacion } from '@/componentes/BarraFinanciacion';
 import { IDIOMAS_ES } from '@/lib/formulario/textos';
 import type { Proyecto } from '@/lib/tipos';
 import { ListaEventos } from './Seguimiento';
@@ -34,29 +35,32 @@ export async function Resumen({ p }: { p: Proyecto }) {
               </dd>
             </div>
             <div>
-              <dt>Financiado</dt>
-              <dd>
-                {presupuestoEnEuros(p) ? `${porcentaje(p.comprometido, presupuestoEnEuros(p))} %` : '—'}
-                {p.numDonantes ? ` · ${p.numDonantes} donante${p.numDonantes === 1 ? '' : 's'}` : ''}
-              </dd>
-            </div>
-            <div>
               <dt>Inicio de obra</dt>
               <dd>{fechaLarga(p.fechas.inicio)}</dd>
-            </div>
-            <div>
-              <dt>Fin previsto</dt>
-              <dd>{fechaLarga(p.fechas.finPrevisto)}</dd>
             </div>
             <div>
               <dt>Beneficiarios</dt>
               <dd>{p.beneficiarios || '—'}</dd>
             </div>
             <div>
-              <dt>Coordenadas</dt>
-              <dd>{p.lat != null && p.lng != null ? `${p.lat.toFixed(2).replace('.', ',')} · ${p.lng.toFixed(2).replace('.', ',')}` : '—'}</dd>
+              <dt>Ubicación</dt>
+              <dd>
+                {p.lat != null && p.lng != null ? (
+                  <a className="btn-enlace" href={`https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}`} target="_blank" rel="noreferrer">
+                    Ver en Google Maps ↗
+                  </a>
+                ) : (
+                  '—'
+                )}
+              </dd>
             </div>
           </dl>
+          <div className="resumen-financiacion">
+            <h3 className="fin-seccion" style={{ marginTop: 0 }}>
+              Financiación
+            </h3>
+            <BarraFinanciacion comprometido={p.comprometido} recibido={p.recibido} enviado={p.enviado ?? 0} total={presupuestoEnEuros(p)} />
+          </div>
         </section>
         <section className="card">
           <div className="card-cab">

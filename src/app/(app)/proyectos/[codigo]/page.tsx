@@ -5,10 +5,9 @@ import { requiere, tienePermiso } from '@/lib/sesion';
 import { leerProyecto } from '@/lib/dominio/proyectos';
 import { drive } from '@/lib/drive';
 import { ESTADOS, FASES, esFinal, estadosManuales, indiceFase } from '@/lib/estados';
-import { dinero, diasDesde } from '@/lib/formato';
+import { dinero } from '@/lib/formato';
 import { nombrePais } from '@/lib/paises';
 import { nombreSector } from '@/lib/formulario/textos';
-import { DIAS_SIN_NOTICIAS } from '@/lib/dominio/atencion';
 import { Estado } from '@/componentes/Basicos';
 import { Dialogo } from '@/componentes/Dialogo';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
@@ -44,35 +43,6 @@ export async function generateMetadata({ params }: { params: Promise<{ codigo: s
   return { title: (await params).codigo };
 }
 
-/** Sugerencia de "Siguiente paso" según el estado. */
-function siguientePaso(p: Proyecto): { texto: string; enlace?: [string, string] } | null {
-  const falta = (presupuestoEnEuros(p) ?? 0) - p.comprometido;
-  switch (p.estado) {
-    case 'solicitud':
-      return { texto: p.formulario.estado === 'cambios' ? 'esperando a que la contraparte corrija la solicitud.' : 'esperando a que la contraparte rellene el formulario.', enlace: ['Ver el enlace', `/solicitudes?p=${p.codigo}`] };
-    case 'revision':
-      return { texto: 'revisar la solicitud y decidir.', enlace: ['Revisar', `/solicitudes?p=${p.codigo}`] };
-    case 'validada':
-      return { texto: 'buscar financiación. Cuando un donante se comprometa, añádelo en Financiación.', enlace: ['Financiación', '?pestana=financiacion'] };
-    case 'financiacion':
-      return { texto: falta > 0 ? `faltan ${dinero(falta)} por comprometer.` : 'revisa el presupuesto: la financiación ya lo cubre.', enlace: ['Financiación', '?pestana=financiacion'] };
-    case 'aprobado':
-      return { texto: 'cuando empiece la obra, pasa el proyecto a «En ejecución».' };
-    case 'ejecucion': {
-      const d = diasDesde(p.ultimaNoticia);
-      return d > DIAS_SIN_NOTICIAS
-        ? { texto: `no hay noticias desde hace ${d} días: escribe a la contraparte.`, enlace: ['Seguimiento', '?pestana=seguimiento'] }
-        : { texto: 'seguimiento de la obra: anota las novedades.', enlace: ['Seguimiento', '?pestana=seguimiento'] };
-    }
-    case 'parado':
-      return { texto: 'proyecto parado: anota la causa y cuándo se reanuda.', enlace: ['Seguimiento', '?pestana=seguimiento'] };
-    case 'completado':
-      return { texto: 'recoge las fotos finales y el informe final, y cierra el proyecto.', enlace: ['Archivos', '?pestana=archivos'] };
-    default:
-      return null;
-  }
-}
-
 export default async function FichaProyecto({
   params,
   searchParams,
@@ -89,7 +59,6 @@ export default async function FichaProyecto({
   const pestana: Pestana = q.pestana && q.pestana in PESTANAS ? (q.pestana as Pestana) : 'resumen';
   const d = await drive();
   const fase = indiceFase(p.estado);
-  const siguiente = siguientePaso(p);
   const opciones = estadosManuales(p.estado);
 
   return (
@@ -193,19 +162,6 @@ export default async function FichaProyecto({
             })}
           </ol>
         )}
-
-        {siguiente ? (
-          <div className="siguiente">
-            <p>
-              <b>Siguiente paso:</b> {siguiente.texto}
-            </p>
-            {siguiente.enlace ? (
-              <Link className="btn btn-s" style={{ minHeight: 40 }} href={siguiente.enlace[1]}>
-                {siguiente.enlace[0]}
-              </Link>
-            ) : null}
-          </div>
-        ) : null}
       </section>
 
       <nav className="tabs" aria-label="Secciones del proyecto">
