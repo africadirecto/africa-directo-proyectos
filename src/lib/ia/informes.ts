@@ -10,7 +10,7 @@
 
 import { IDIOMAS_ES } from '../formulario/textos';
 import { sinContactos } from '../dominio/informesComun';
-import { pedirJson, pedirTexto } from './openrouter';
+import { parteImagen, pedirJson, pedirTexto } from './openrouter';
 import { iaDisponible } from './index';
 import type { CampoPlantilla, FormatoPlantilla, Idioma } from '../tipos';
 import type { PeticionLote } from './lotes';
@@ -106,6 +106,105 @@ export async function traducirTextos(textos: string[], de: Idioma, a: Idioma): P
     });
   }
   return salida;
+}
+
+// ── Fotos ───────────────────────────────────────────────────────────────────
+
+/** Tipos de imagen que admiten los modelos (en demo las fotos de ejemplo son SVG: no se describen). */
+export const IMAGEN_LEGIBLE = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+/**
+ * Describe una foto (vía directa, sin retención). `documento`: es un archivo adjunto (una factura,
+ * un plano…): se transcribe su texto. La foto va en base64, nunca como enlace.
+ */
+export async function describirImagen(bytes: Buffer, mime: string, o: { pista: string; documento?: boolean }): Promise<string> {
+  if (!iaDisponible() || !IMAGEN_LEGIBLE.includes(mime)) return '';
+  const r = await pedirJson<{ descripcion: string }>({
+    tarea: 'vision',
+    nombre: 'descripcion_imagen',
+    esquema: { type: 'object', additionalProperties: false, required: ['descripcion'], properties: { descripcion: { type: 'string' } } },
+    instrucciones: o.documento
+      ? 'Es un documento de un proyecto de una ONG (factura, presupuesto, plano, acta…). Transcribe en castellano lo importante que se lee (conceptos, cifras, fechas) y di qué es. Sin nombres de personas ni datos de contacto.'
+      : 'Describe en castellano, en una o dos frases, lo que se ve en esta foto de un proyecto de una ONG en África: la obra o la actividad, el lugar, en qué fase está. No identifiques a nadie ni digas nombres; si hay menores, di solo «niños» o «alumnos».',
+    entrada: [parteImagen(bytes, mime), { type: 'text', text: o.pista }],
+    timeoutMs: 90_000,
+  });
+  return sinContactos(r.descripcion.trim());
+}
+
+export interface FotoDisponible {
+  id: string;
+  fecha: string;
+  descripcion: string;
+}
+
+export interface HuecoFoto {
+  clave: string;
+  tipo: 'foto' | 'fotos';
+  instruccion: string;
+}
+
+/** Fotos por galería, como mucho. */
+export const MAX_GALERIA = 6;
+
+/**
+ * Qué foto va en cada hueco de la plantilla y su pie. Con IA, según las descripciones y las
+ * instrucciones de cada hueco; sin IA (o si falla), en orden y sin pie.
+ */
+export async function asignarFotos(fotos: FotoDisponible[], huecos: HuecoFoto[], idioma: Idioma): Promise<Record<string, { id: string; pie: string }[]>> {
+  const enOrden = () => {
+    const r: Record<string, { id: string; pie: string }[]> = {};
+    let n = 0;
+    for (const h of huecos.filter((x) => x.tipo === 'foto')) if (fotos[n]) r[h.clave] = [{ id: fotos[n++].id, pie: '' }];
+    for (const h of huecos.filter((x) => x.tipo === 'fotos')) r[h.clave] = fotos.slice(n, n + MAX_GALERIA).map((f) => ({ id: f.id, pie: '' }));
+    return r;
+  };
+  if (!fotos.length || !huecos.length) return {};
+  if (!iaDisponible() || fotos.every((f) => !f.descripcion)) return enOrden();
+  try {
+    const r = await pedirJson<{ huecos: { clave: string; fotos: { id: string; pie: string }[] }[] }>({
+      tarea: 'rapida',
+      nombre: 'asignacion_fotos',
+      esquema: {
+        type: 'object',
+        additionalProperties: false,
+        required: ['huecos'],
+        properties: {
+          huecos: {
+            type: 'array',
+            items: {
+              type: 'object',
+              additionalProperties: false,
+              required: ['clave', 'fotos'],
+              properties: {
+                clave: { type: 'string' },
+                fotos: { type: 'array', items: { type: 'object', additionalProperties: false, required: ['id', 'pie'], properties: { id: { type: 'string' }, pie: { type: 'string' } } } },
+              },
+            },
+          },
+        },
+      },
+      instrucciones: [
+        'Eliges las fotos de un informe de una ONG. Recibes las fotos disponibles (con su descripción y fecha) y los huecos de la plantilla.',
+        `- En cada hueco de tipo «foto» va una sola foto; en uno de tipo «fotos» (galería), entre 2 y ${MAX_GALERIA}. Sigue la instrucción de cada hueco.`,
+        '- No repitas una foto en dos huecos si hay otras. Deja un hueco sin fotos si ninguna encaja.',
+        `- Para cada foto, un pie en ${IDIOMAS_ES[idioma].toLowerCase()} de como mucho 15 palabras que diga qué se ve, sin nombres de personas.`,
+      ].join('\n'),
+      entrada: JSON.stringify({ fotos, huecos }),
+    });
+    const validas = new Set(fotos.map((f) => f.id));
+    const salida: Record<string, { id: string; pie: string }[]> = {};
+    for (const h of r.huecos) {
+      const hueco = huecos.find((x) => x.clave === h.clave);
+      if (!hueco) continue;
+      const elegidas = h.fotos.filter((f) => validas.has(f.id)).slice(0, hueco.tipo === 'foto' ? 1 : MAX_GALERIA);
+      salida[hueco.clave] = elegidas.map((f) => ({ id: f.id, pie: sinContactos(f.pie.trim()) }));
+    }
+    return salida;
+  } catch (e) {
+    console.error('IA: no se pudieron asignar las fotos', e);
+    return enOrden();
+  }
 }
 
 /** Resumen en español del informe, para la lista y para dar continuidad al siguiente. */

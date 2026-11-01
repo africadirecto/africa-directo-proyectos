@@ -191,11 +191,15 @@ en_cola ──preparar──▶ redactando ──▶ componiendo ──▶ listo
    - de un proyecto: ficha, financiación y eventos del periodo, sin correos ni teléfonos;
    - de conjunto: los proyectos elegidos.
    
+   Además, en los informes de un proyecto (`lib/trabajos/materiales.ts`):
+   - prepara las **fotos** publicables: las elegidas o las del periodo. Cada una se describe una vez con IA, sin retención, y la descripción se guarda;
+   - lee el texto de los **archivos adjuntos**, convirtiendo los de Office y los PDF en una copia temporal que va a la papelera.
+
    Después pide a la IA **un texto por cada campo** de la plantilla (`lib/ia/informes.ts`). La petición lleva lo común primero (reglas y datos) y lo del campo al final, y el texto vuelve en Markdown con una última línea `FUENTES:`.
 2. **Redactar.** En producción, las peticiones van en un **lote** de la Batch API de OpenRouter (`lib/ia/lotes.ts`): sin límite de tiempo y a mitad de precio.
    - Al terminar, OpenRouter avisa a `/api/ia/lotes`. La app lee el lote, guarda los textos, reenvía una vez los que fallaron y **borra el lote**.
    - En local, en demo o con `IA_LOTES=0`, se redacta por la vía directa.
-3. **Componer.** Copia la plantilla en `03_Informes` (o en `_Informes generales`), la rellena y anota el borrador en la cronología. Con lote, avisa también en Google Chat.
+3. **Componer.** Reparte las fotos por los huecos con sus pies (`asignarFotos`), copia la plantilla en `03_Informes` (o en `_Informes generales`), la rellena y anota el borrador en la cronología. Con lote, avisa también en Google Chat.
 
 `avanzarInforme` hace el paso que toque y lo llaman varias piezas:
 - la acción que pide el informe (con `after()`);
@@ -216,7 +220,7 @@ Con `anthropic/claude-haiku-5.5` en lotes, un informe de unas 6 secciones cuesta
 | Fase | Qué incluye |
 | --- | --- |
 | **2. Seguimiento** | "Añadir correo" en la ficha (`.eml`, `.msg` o texto con adjuntos), lectura automática del buzón de la app según [CORREO.md](CORREO.md), bandeja de correos sin asignar y página de subida de fotos para la contraparte |
-| **3. Documentos con IA** | Hecho: plantillas unificadas con sus instrucciones, generación en segundo plano por lotes y presentaciones. Falta: fotos dentro del informe y archivos del proyecto como contexto, y crear una plantilla a partir de un informe de ejemplo (Word o PowerPoint) |
+| **3. Documentos con IA** | Hecho: plantillas unificadas con sus instrucciones, generación en segundo plano por lotes y presentaciones. También fotos dentro del informe y archivos del proyecto como contexto. Falta: crear una plantilla a partir de un informe de ejemplo (Word o PowerPoint) |
 | **4. Mejoras** | Ficha de solo lectura para donantes, estadísticas, formulario instalable sin conexión y WhatsApp si compensa |
 
 ## Fuentes

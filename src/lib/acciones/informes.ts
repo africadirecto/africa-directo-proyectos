@@ -10,6 +10,9 @@ import { unstable_rethrow } from 'next/navigation';
 import { permitido, persona } from '../sesion';
 import { generarHojaDeProyectos, type TipoInformeGeneral } from '../dominio/informesGenerales';
 import { avanzarInforme, pedirInforme, reintentarInforme } from '../trabajos/informe';
+import { MAX_ADJUNTOS, MAX_FOTOS } from '../trabajos/materiales';
+import { materialesDelProyecto, type MaterialInforme } from '../dominio/archivos';
+import { leerProyecto } from '../dominio/proyectos';
 import { ESTADOS } from '../estados';
 import { PAISES } from '../paises';
 import { esIdioma } from '../formulario/textos';
@@ -52,6 +55,9 @@ export async function pedirInformeAccion(_: ResultadoPedido, fd: FormData): Prom
         donanteId: texto(fd, 'donante', 100),
         idioma: esIdioma(idioma) ? idioma : 'es',
         indicaciones: texto(fd, 'indicaciones', 1500),
+        // Si el voluntario abrió la lista de fotos, las que marcó; si no, las elige la app.
+        fotos: fd.get('fotosElegidas') ? fd.getAll('fotos').map(String).slice(0, MAX_FOTOS) : null,
+        adjuntos: fd.getAll('adjuntos').map(String).slice(0, MAX_ADJUNTOS),
       },
       persona(yo),
     );
@@ -63,6 +69,19 @@ export async function pedirInformeAccion(_: ResultadoPedido, fd: FormData): Prom
     unstable_rethrow(e);
     console.error(e);
     return { ok: false, mensaje: e instanceof Error ? e.message : 'No se pudo pedir el informe.', vez: Date.now() };
+  }
+}
+
+/** Fotos publicables y archivos del proyecto, para elegirlos en el diálogo (se piden al abrir esa parte). */
+export async function materialesParaInformeAccion(codigo: string): Promise<{ fotos: MaterialInforme[]; archivos: MaterialInforme[]; error?: string }> {
+  await permitido('edicion');
+  const p = await leerProyecto(codigo);
+  if (!p) return { fotos: [], archivos: [], error: 'Proyecto no encontrado.' };
+  try {
+    return await materialesDelProyecto(p);
+  } catch (e) {
+    console.error('Informe: no se pudieron listar los archivos', e);
+    return { fotos: [], archivos: [], error: 'No se pudo leer la carpeta de Drive.' };
   }
 }
 

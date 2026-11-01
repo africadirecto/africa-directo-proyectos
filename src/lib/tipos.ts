@@ -412,6 +412,10 @@ export interface Informe {
   extension?: ExtensionInforme;
   /** Lo que el voluntario quiso destacar al pedirlo. */
   indicaciones?: string;
+  /** Fotos publicables elegidas (ids de Drive); null: las elige la app. */
+  fotos?: string[] | null;
+  /** Archivos del proyecto cuyo texto se dio a la IA como contexto (ids de Drive). */
+  adjuntos?: string[];
   /** Vacíos hasta que el documento está hecho. */
   docId: string;
   url: string;

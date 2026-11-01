@@ -51,6 +51,17 @@ describe('petición de un campo', () => {
   });
 });
 
+describe('fotos en los huecos (sin IA)', () => {
+  it('una por hueco de foto y el resto en las galerías, en orden y sin repetir', async () => {
+    const { asignarFotos } = await import('./informes');
+    const fotos = Array.from({ length: 9 }, (_, i) => ({ id: `f${i}`, fecha: '2026-10-01', descripcion: '' }));
+    const r = await asignarFotos(fotos, [{ clave: 'portada', tipo: 'foto', instruccion: '' }, { clave: 'obra', tipo: 'fotos', instruccion: '' }], 'es');
+    expect(r.portada).toEqual([{ id: 'f0', pie: '' }]);
+    expect(r.obra.map((f) => f.id)).toEqual(['f1', 'f2', 'f3', 'f4', 'f5', 'f6']); // como mucho 6 por galería
+    expect(await asignarFotos([], [{ clave: 'portada', tipo: 'foto', instruccion: '' }], 'es')).toEqual({});
+  });
+});
+
 describe('aviso de OpenRouter', () => {
   const secreto = 'secreto';
   const cuerpo = '{"type":"batch.completed","data":{"id":"batch_1"}}';

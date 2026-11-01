@@ -371,6 +371,8 @@ export interface OpcionPlantilla {
   porDefecto: boolean;
   idioma: Idioma;
   donante: { id: string; nombre: string } | null;
+  /** Tiene huecos de foto ({{foto:…}} o {{fotos:…}}). */
+  conFotos: boolean;
 }
 
 /** Las plantillas activas de esos tipos, primero las propuestas por defecto. */
@@ -378,7 +380,7 @@ export async function plantillasActivas(tipos: TipoInforme[]): Promise<OpcionPla
   return (await listarPlantillas())
     .filter((p) => p.estado === 'activa' && tipos.includes(p.tipo))
     .sort((a, b) => Number(b.porDefecto) - Number(a.porDefecto))
-    .map((p) => ({ id: p.id, nombre: p.nombre, tipo: p.tipo, formato: p.formato, porDefecto: p.porDefecto, idioma: p.idioma, donante: p.donante }));
+    .map((p) => ({ id: p.id, nombre: p.nombre, tipo: p.tipo, formato: p.formato, porDefecto: p.porDefecto, idioma: p.idioma, donante: p.donante, conFotos: p.estructura.campos.some((c) => c.tipo !== 'ia' && !c.huerfano) }));
 }
 
 /** Campos que la IA rellena y aún no tienen instrucción (para avisar en la lista). */

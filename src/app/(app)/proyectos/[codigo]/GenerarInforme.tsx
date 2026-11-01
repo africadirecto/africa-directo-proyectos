@@ -9,6 +9,7 @@ import { Dialogo } from '@/componentes/Dialogo';
 import { Desplegable } from '@/componentes/Desplegable';
 import { Enviar } from '@/componentes/FormAccion';
 import { ElegirPlantilla, Idioma, Indicaciones, ResultadoInforme } from '@/componentes/OpcionesInforme';
+import { FotosYAdjuntos } from '@/componentes/FotosYAdjuntos';
 import { pedirInformeAccion } from '@/lib/acciones/informes';
 import type { OpcionPlantilla } from '@/lib/dominio/plantillas';
 import type { TipoInforme } from '@/lib/tipos';
@@ -76,6 +77,7 @@ export function GenerarInforme({
               </label>
             </>
           ) : null}
+          <FotosYAdjuntos codigo={codigo} conFotos={!!elegida?.conFotos} desde={financiacion ? '0000' : desde} hasta={hoy} />
           <Indicaciones ejemplo={financiacion ? 'insiste en que la escuela es la única del barrio y en la aportación de las familias.' : 'destaca la participación de las madres en la obra.'} />
         </div>
         <div className="botones">

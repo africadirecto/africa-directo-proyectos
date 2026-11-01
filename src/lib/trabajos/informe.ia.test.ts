@@ -22,12 +22,17 @@ describe.skipIf(!activa)('motor de informes con IA', () => {
       const { almacen } = await import('../almacen');
       const { pedirInforme, avanzarInforme } = await import('./informe');
       const { rutaLocal } = await import('../drive/local');
+      const { materialesDelProyecto } = await import('../dominio/archivos');
+      const { leerProyecto } = await import('../dominio/proyectos');
+      // Un archivo del proyecto como adjunto (en demo, el PDF de la solicitud se guarda como HTML).
+      const materiales = await materialesDelProyecto((await leerProyecto('P-2026-014'))!);
+      const adjunto = materiales.archivos.find((a) => a.mime.startsWith('text/'));
       const db = await almacen();
       const plantilla = (await db.consultar<{ tipo: string; formato: string; porDefecto: boolean }>('plantillas')).find((p) => p.tipo === 'seguimiento' && p.formato === 'docs' && p.porDefecto);
       expect(plantilla, 'abre antes el demo para que existan sus plantillas').toBeDefined();
 
       const ruta = await pedirInforme(
-        { plantillaId: plantilla!.id, codigo: 'P-2026-014', desde: '2025-01-01', hasta: new Date().toISOString().slice(0, 10), donanteId: '', idioma: 'fr', indicaciones: 'Destaca la participación de las familias.' },
+        { plantillaId: plantilla!.id, codigo: 'P-2026-014', desde: '2025-01-01', hasta: new Date().toISOString().slice(0, 10), donanteId: '', idioma: 'fr', indicaciones: 'Destaca la participación de las familias.', fotos: null, adjuntos: adjunto ? [adjunto.id] : [] },
         { id: 'prueba@demo', nombre: 'Prueba' },
       );
       type Estado = { estado: string; modo?: string; error?: string; docId: string; pendientes: number; fuentes?: Record<string, string[]>; resumen: string; progreso?: { campos: number; hechos: number } };
@@ -49,6 +54,10 @@ describe.skipIf(!activa)('motor de informes con IA', () => {
       expect(html).not.toMatch(/\{\{ia:/); // todos los campos redactados
       expect(html).not.toContain('Resumen del periodo'); // el texto fijo, traducido
       expect(html).toContain('P-2026-014');
+      // Las fotos publicables del demo, en la galería de la plantilla.
+      expect(materiales.fotos.length).toBeGreaterThan(0);
+      expect((html.match(/<img [^>]*src="\/api\/drive-local\//g) ?? []).length).toBe(Math.min(materiales.fotos.length, 6));
+      console.log('Adjunto:', adjunto?.nombre ?? '(ninguno)', '· fotos:', materiales.fotos.length);
       expect(Object.keys(i!.fuentes ?? {}).length).toBeGreaterThan(0);
       // Lo de trabajo se borra al terminar.
       expect(await db.leer(`${ruta}/trabajo/contexto`)).toBeNull();

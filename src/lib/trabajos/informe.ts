@@ -16,7 +16,8 @@
 // cabe de sobra en los 300 s de una función de Vercel.
 
 import { almacen } from '../almacen';
-import { config } from '../config';
+import { config, modoDemo } from '../config';
+import { urlFoto } from '../enlaces';
 import { conFecha, drive } from '../drive';
 import { ES_DOC, ES_PRESENTACION, ErrorDrive } from '../drive/tipos';
 import { leerDoc, rellenarDoc, textosFijos } from '../drive/plantillaDocs';
@@ -26,9 +27,14 @@ import { avisarChat } from '../avisos';
 import { iaDisponible } from '../ia';
 import { ErrorIA } from '../ia/openrouter';
 import { borrarLote, enviarLote, leerLote } from '../ia/lotes';
-import { leerCampo, peticionCampo, redactarDirecto, resumirInforme, traducirTextos, type CampoPedido } from '../ia/informes';
+import { asignarFotos, leerCampo, peticionCampo, redactarDirecto, resumirInforme, traducirTextos, type CampoPedido, type HuecoFoto } from '../ia/informes';
 import { DATOS, type Relleno } from '../dominio/marcadores';
 import { anotarEvento } from '../dominio/eventos';
+import { materialesDelProyecto } from '../dominio/archivos';
+import { leerProyecto } from '../dominio/proyectos';
+import { nombrePais } from '../paises';
+import { nombreSector } from '../formulario/textos';
+import { leerAdjuntos, prepararFotos, type FotoTrabajo } from './materiales';
 import { contextoProyecto } from '../dominio/informes';
 import { contextoConjunto, type TipoInformeGeneral } from '../dominio/informesGenerales';
 import { leerPlantilla, sincronizarPlantilla, TIPOS_PLANTILLA, type PlantillaConId } from '../dominio/plantillas';
@@ -54,6 +60,9 @@ interface Trabajo {
   mime: string;
   /** Datos que usa la plantilla (para contar los que faltan). */
   datosUsados: string[];
+  /** Fotos publicables para los huecos de foto de la plantilla, con su descripción. */
+  fotos: FotoTrabajo[];
+  huecosFoto: HuecoFoto[];
   carpetaId: string;
   nombre: string;
 }
@@ -78,6 +87,10 @@ export interface PedidoInforme {
   donanteId: string;
   idioma: Idioma;
   indicaciones: string;
+  /** Fotos elegidas por el voluntario; sin elegir, las elige la app. */
+  fotos?: string[] | null;
+  /** Archivos del proyecto cuyo texto se da a la IA como contexto. */
+  adjuntos?: string[];
 }
 
 const claveTrabajo = (ruta: string) => ruta.replace(/\//g, '~');
@@ -105,6 +118,8 @@ export async function pedirInforme(o: PedidoInforme, autor: Persona): Promise<st
     donante: o.donanteId ? { id: o.donanteId, nombre: '' } : null,
     idioma: o.idioma,
     indicaciones: o.indicaciones,
+    fotos: o.fotos ?? null,
+    adjuntos: o.adjuntos ?? [],
     docId: '',
     url: '',
     pendientes: 0,
@@ -269,8 +284,25 @@ async function preparar(ruta: string, i: Informe) {
   const campos: CampoPedido[] = plantilla.estructura.campos
     .filter((c) => c.tipo === 'ia' && !c.huerfano)
     .map((c) => ({ clave: c.clave, instruccion: plantilla.instrucciones.campos[c.clave] ?? '', enLinea: c.enLinea, ...(c.caja ? { caja: c.caja } : {}) }));
+
+  // Fotos y adjuntos, solo en los informes de un proyecto.
+  const huecosFoto: HuecoFoto[] = plantilla.estructura.campos
+    .filter((c) => (c.tipo === 'foto' || c.tipo === 'fotos') && !c.huerfano)
+    .map((c) => ({ clave: c.clave, tipo: c.tipo as 'foto' | 'fotos', instruccion: plantilla.instrucciones.campos[c.clave] ?? '' }));
+  let fotos: FotoTrabajo[] = [];
+  let adjuntos: { nombre: string; texto: string }[] = [];
+  if (codigo && (huecosFoto.length || i.adjuntos?.length)) {
+    const p = await leerProyecto(codigo);
+    const materiales = p ? await materialesDelProyecto(p) : { fotos: [], archivos: [] };
+    if (p && huecosFoto.length) {
+      fotos = await prepararFotos(codigo, materiales.fotos, i.fotos, { desde: i.tipo === 'financiacion' ? '0000' : i.desde, hasta: i.hasta, pista: `Proyecto de ${nombreSector(p.sector).toLowerCase()} en ${nombrePais(p.pais)}: ${p.titulo}` });
+    }
+    if (i.adjuntos?.length) adjuntos = await leerAdjuntos(materiales.archivos, i.adjuntos);
+  }
+
   const trabajo: Trabajo = {
-    contexto: JSON.stringify(ctx.contexto),
+    // Lo que va a la IA: los datos y, si los hay, el texto de los adjuntos (nunca las fotos).
+    contexto: JSON.stringify(adjuntos.length ? { ...ctx.contexto, adjuntos } : ctx.contexto),
     eventos: ctx.eventos,
     datos: ctx.datos,
     tablas: ctx.tablas,
@@ -282,6 +314,8 @@ async function preparar(ruta: string, i: Informe) {
     plantillaArchivo: plantilla.archivoId,
     mime: meta.mime,
     datosUsados: plantilla.estructura.datos,
+    fotos,
+    huecosFoto,
     carpetaId: ctx.carpetaId,
     nombre: ctx.nombre,
   };
@@ -403,7 +437,7 @@ async function componer(ruta: string, i: Informe) {
     // Un dato que no consta queda como hueco resaltado con lo que es.
     datos: Object.fromEntries(Object.entries(t.datos).map(([k, v]) => [k, v || `[PENDIENTE: ${(DATOS[k]?.descripcion ?? k).toLowerCase()}]`])),
     textos: Object.fromEntries(campos.map((c) => [c.id, c.texto])),
-    fotos: {},
+    fotos: await fotosDelRelleno(t, i, codigoDe(ruta)),
     tablas: t.tablas,
     tablasSinCabecera: t.tablasSinCabecera,
     traducciones: t.traducciones,
@@ -453,6 +487,26 @@ async function componer(ruta: string, i: Informe) {
   for (const c of campos) await db.borrar(`${ruta}/campos/${c.id}`);
   await db.borrar(`${ruta}/trabajo/contexto`);
   await db.borrar(`trabajos/${claveTrabajo(ruta)}`).catch(() => undefined);
+}
+
+/**
+ * Qué foto va en cada hueco y su dirección. Google descarga las fotos de /api/foto con un enlace
+ * que caduca; en demo, el HTML las muestra desde el Drive local.
+ */
+async function fotosDelRelleno(t: Trabajo, i: Informe, codigo: string): Promise<Relleno['fotos']> {
+  if (!codigo || !t.fotos?.length || !t.huecosFoto?.length) return {};
+  const d = await drive();
+  const asignacion = await asignarFotos(t.fotos.map((f) => ({ id: f.id, fecha: f.fecha, descripcion: f.descripcion })), t.huecosFoto, i.idioma);
+  const porId = new Map(t.fotos.map((f) => [f.id, f]));
+  return Object.fromEntries(
+    Object.entries(asignacion).map(([clave, lista]) => [
+      clave,
+      lista.flatMap((x) => {
+        const f = porId.get(x.id);
+        return f ? [{ url: modoDemo ? d.urlArchivo(f.id) : urlFoto(codigo, f.id), nombre: f.nombre, pie: x.pie, ...(f.ancho && f.alto ? { ancho: f.ancho, alto: f.alto } : {}) }] : [];
+      }),
+    ]),
+  );
 }
 
 /** Traducciones del texto fijo de la plantilla, con caché por plantilla e idioma. */

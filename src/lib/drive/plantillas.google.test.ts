@@ -127,6 +127,32 @@ describe.skipIf(!activa)('compositores contra Google', () => {
     }
   }, 300_000);
 
+  it('adjuntos: texto de un Google Doc y de un .docx (copia temporal a la papelera); la IA describe una imagen', async () => {
+    const { driveGoogle } = await import('./google');
+    const { leerAdjuntos } = await import('../trabajos/materiales');
+    const { describirImagen } = await import('../ia/informes');
+    const carpeta = await driveGoogle.carpetaHija('_Pruebas técnicas', driveGoogle.raizSistema);
+    const archivos = await driveGoogle.listar([carpeta]);
+    const docx = archivos.find((a) => a.nombre === 'plantilla-donante-prueba.docx');
+    const doc = archivos.find((a) => a.mime === 'application/vnd.google-apps.document' && a.nombre.startsWith('S4 marcadores'));
+    expect(docx && doc, 'faltan los archivos de las pruebas S3 y S4 en «_Pruebas técnicas»').toBeTruthy();
+    const material = (a: NonNullable<typeof docx>) => ({ id: a.id, nombre: a.nombre, fecha: a.creado, mime: a.mime, carpeta: 'seguimiento' as const, miniatura: '' });
+
+    const textos = await leerAdjuntos([material(docx!), material(doc!)], [docx!.id, doc!.id]);
+    expect(textos.map((t) => t.nombre)).toEqual([docx!.nombre, doc!.nombre]);
+    expect(textos[0].texto).toContain('Actividades realizadas en el periodo');
+    expect(textos[0].texto).toContain('Las lluvias de marzo');
+    expect(textos[1].texto).toContain('Aula en Kinshasa');
+    // La copia temporal del .docx ya no está (va a la papelera).
+    const temporal = await driveGoogle.carpetaHija('_Temporal', driveGoogle.raizSistema);
+    expect((await driveGoogle.listar([temporal])).length).toBe(0);
+
+    const logo = Buffer.from(await (await fetch(PUBLICA)).arrayBuffer());
+    const descripcion = await describirImagen(logo, 'image/png', { pista: 'Imagen de prueba' });
+    console.log('Descripción:', descripcion);
+    expect(descripcion.length).toBeGreaterThan(10);
+  }, 180_000);
+
   it('Slides: textos con formato, fotos en recuadros y en imágenes con texto alternativo', async () => {
     const { driveGoogle, apiGoogle } = await import('./google');
     const { ES_PRESENTACION } = await import('./tipos');

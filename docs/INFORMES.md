@@ -13,6 +13,8 @@ La app prepara **borradores de informe (Google Docs) y presentaciones (Google Sl
    | **Para el donante** | Rellena `{{donante.*}}` y orienta el texto (por ejemplo, el agradecimiento) |
    | **Idioma** | Por defecto, el de la plantilla. Si es otro, también se traduce el texto fijo de la plantilla |
    | **Desde / Hasta** | El periodo (no en el de financiación). Solo entra la cronología de esas fechas. Por defecto, desde el final del último informe |
+   | **Fotos** | Si la plantilla tiene huecos de foto. Si no las eliges, van las **publicables** del periodo (y, si faltan, las más recientes), hasta 12. Al abrir «Fotos» puedes quitar o añadir. La IA decide en qué hueco va cada una y escribe su pie |
+   | **Archivos del proyecto para la IA** | Opcional. La IA lee el texto de los archivos que marques (actas, presupuestos, informes de la contraparte…) y lo usa en el informe. Hasta 8. No marques listas de beneficiarios ni documentos con datos personales |
    | **Indicaciones para la IA** | Lo que quieras destacar en este informe, en tus palabras |
 
 3. **Generar.** El informe se hace **en segundo plano**:
@@ -57,10 +59,13 @@ Solo los del proyecto (o de los proyectos), y sin datos de contacto:
 - **Financiación:** por donante, lo comprometido y lo cobrado; y los envíos a la contraparte, con su fecha.
 - **Cronología del periodo:** notas, cambios de estado, archivos, correos y aportaciones. Se quitan correos y teléfonos. No entran los eventos internos (revisiones, enlaces).
 - **Informe anterior:** su resumen, para dar continuidad.
+- **Archivos que marques:** su texto, sin correos ni teléfonos y como mucho unas 20.000 letras por archivo. Los de Word, Excel, PowerPoint y PDF se convierten en una copia temporal que va a la papelera; de las imágenes se transcribe lo que se lee.
 - Las **instrucciones de la plantilla** y tus indicaciones.
 
+**Fotos.** Las fotos **no van a la IA que redacta**. Para repartirlas por los huecos, otra llamada (sin retención de datos) describe cada foto publicable una vez, sin identificar a nadie; la descripción se guarda para no repetirla. Google las descarga para insertarlas desde la app, con un enlace que caduca en minutos: nunca se hacen públicas en Drive.
+
 **Privacidad.** En producción, la redacción va en **lotes** de OpenRouter (Batch API): a mitad de precio y sin límite de tiempo, pero sin retención cero y por servidores de EE. UU. Por eso:
-- solo se envía ese texto ya limpio, sin fotos;
+- solo se envía ese texto ya limpio (también el de los archivos que marques), sin fotos;
 - la app **borra cada lote en cuanto lo lee**;
 - lo demás (traducir, resumir, «Cambiar con IA») va por la vía normal, a proveedores que no guardan los datos.
 
@@ -107,6 +112,5 @@ El formato antiguo `{{ia:clave|150 palabras|instrucción}}` sigue funcionando: l
 
 ## Todavía no está hecho
 
-- **Fotos dentro del informe:** el sistema ya inserta fotos (y se ha probado con Google), pero aún falta elegirlas al generar el informe. Mientras, los huecos de foto quedan resaltados o vacíos.
-- **Archivos del proyecto como contexto** para la IA (opcional al generar).
+- **Fotos en los informes de conjunto:** solo los de un proyecto llevan fotos.
 - **Crear una plantilla a partir de un informe de ejemplo** en Word o PowerPoint: la app lo convertirá, propondrá los marcadores y escribirá las instrucciones.
