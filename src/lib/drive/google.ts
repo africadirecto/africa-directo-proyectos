@@ -321,7 +321,6 @@ export const driveGoogle: Drive = {
   urlCarpeta: (id) => `https://drive.google.com/drive/folders/${id}`,
   urlArchivo: (id) => `https://drive.google.com/file/d/${id}/view`,
   // Funciona en el navegador de quien tenga sesión de Google con acceso a la unidad compartida.
-  urlMiniatura: (id) => `https://drive.google.com/thumbnail?id=${id}&sz=w480`,
   urlDocumento: (id) => `https://docs.google.com/document/d/${id}/edit`,
   urlPresentacion: (id) => `https://docs.google.com/presentation/d/${id}/edit`,
   urlHoja: (id) => `https://docs.google.com/spreadsheets/d/${id}/edit`,

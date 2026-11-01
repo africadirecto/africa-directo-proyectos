@@ -60,8 +60,7 @@ export async function Archivos({ p, editor }: { p: Proyecto; editor: boolean }) 
               {fotos.map((f) => (
                 <div key={f.id} className="foto">
                   <a href={f.url} target="_blank" rel="noreferrer">
-                    {/* Miniatura de Drive: se ve si tienes sesión de Google con acceso a la unidad. */}
-                    <img src={f.miniatura} alt={f.nombre} loading="lazy" referrerPolicy="no-referrer" />
+                    <img src={f.miniatura} alt={f.nombre} loading="lazy" />
                   </a>
                   <span className="meta" title={f.nombre} style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {fechaCorta(f.fecha)} · {f.nombre}

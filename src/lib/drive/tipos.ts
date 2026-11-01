@@ -74,7 +74,6 @@ export interface Drive {
   crearVacio(nombre: string, mime: string, carpetaId: string): Promise<ArchivoDrive>;
   urlCarpeta(id: string): string;
   urlArchivo(id: string): string;
-  urlMiniatura(id: string): string;
   /** Dirección para abrir un documento (en Google, el editor de Docs). */
   urlDocumento(id: string): string;
   /** Dirección para abrir una presentación (en Google, el editor de Slides). */

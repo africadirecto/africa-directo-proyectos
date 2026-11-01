@@ -24,6 +24,9 @@ export interface FotoProyecto {
   miniatura: string;
 }
 
+/** La miniatura la sirve la app (ver api/proyectos/[codigo]/miniatura): la de Drive pide sesión de Google. */
+const miniatura = (codigo: string, id: string) => `/api/proyectos/${codigo}/miniatura/${id}`;
+
 export async function archivosDelProyecto(p: Proyecto): Promise<{ carpetas: CarpetaResumen[]; fotos: FotoProyecto[]; error?: string }> {
   if (!p.drive) return { carpetas: [], fotos: [] };
   const d = await drive();
@@ -53,7 +56,7 @@ export async function archivosDelProyecto(p: Proyecto): Promise<{ carpetas: Carp
   const anadir = (id: string, nombre: string, fecha: string) => {
     if (ids.has(id)) return;
     ids.add(id);
-    fotos.push({ id, nombre, fecha, publicable: !!porId.get(id)?.publicable, url: d.urlArchivo(id), miniatura: d.urlMiniatura(id) });
+    fotos.push({ id, nombre, fecha, publicable: !!porId.get(id)?.publicable, url: d.urlArchivo(id), miniatura: miniatura(p.codigo, id) });
   };
   for (const a of enDrive) if (a.mime.startsWith('image/') && a.mime !== ES_CARPETA) anadir(a.id, a.nombre, a.creado);
   for (const r of registros) if (r.esFoto) anadir(r.id, r.nombre, r.fecha);
@@ -93,7 +96,7 @@ export async function materialesDelProyecto(p: Proyecto): Promise<{ fotos: Mater
   for (const a of enDrive) {
     if (a.mime === ES_CARPETA) continue;
     const r = porId.get(a.id);
-    const m: MaterialInforme = { id: a.id, nombre: a.nombre, fecha: r?.fecha ?? a.creado, mime: a.mime, carpeta: carpetaDe.get(a.carpetaId) ?? 'seguimiento', miniatura: d.urlMiniatura(a.id), ...(a.medidas ? { medidas: a.medidas } : {}), ...(r?.ia?.descripcion ? { descripcion: r.ia.descripcion } : {}) };
+    const m: MaterialInforme = { id: a.id, nombre: a.nombre, fecha: r?.fecha ?? a.creado, mime: a.mime, carpeta: carpetaDe.get(a.carpetaId) ?? 'seguimiento', miniatura: miniatura(p.codigo, a.id), ...(a.medidas ? { medidas: a.medidas } : {}), ...(r?.ia?.descripcion ? { descripcion: r.ia.descripcion } : {}) };
     if (a.mime.startsWith('image/')) {
       if (r?.publicable) fotos.push(m);
     } else archivos.push(m);

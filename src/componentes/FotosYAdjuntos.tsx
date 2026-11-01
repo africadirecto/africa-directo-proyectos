@@ -53,7 +53,7 @@ export function FotosYAdjuntos({ codigo, conFotos, desde, hasta }: { codigo: str
                     {materiales!.fotos.map((f) => (
                       <label key={f.id} className="foto" style={{ cursor: 'pointer' }}>
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={f.miniatura} alt={f.nombre} loading="lazy" referrerPolicy="no-referrer" />
+                        <img src={f.miniatura} alt={f.nombre} loading="lazy" />
                         <span className="check" style={{ minHeight: 0 }}>
                           <input type="checkbox" name="fotos" value={f.id} checked={fotos?.includes(f.id) ?? false} onChange={() => setFotos(alternar(fotos ?? [], f.id, MAX_FOTOS))} />
                           {fechaCorta(f.fecha)}

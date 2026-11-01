@@ -176,7 +176,6 @@ export const driveLocal: Drive = {
 
   urlCarpeta: (id) => `/api/drive-local/${id}`,
   urlArchivo: (id) => `/api/drive-local/${id}`,
-  urlMiniatura: (id) => `/api/drive-local/${id}`,
   urlDocumento: (id) => `/api/drive-local/${id}`,
   urlPresentacion: (id) => `/api/drive-local/${id}`,
   urlHoja: (id) => `/api/drive-local/${id}`,
