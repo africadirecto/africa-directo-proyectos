@@ -22,7 +22,6 @@ export type Idioma = 'es' | 'fr' | 'en' | 'pt';
 export type EstadoProyecto =
   | 'solicitud'
   | 'revision'
-  | 'validada'
   | 'financiacion'
   | 'aprobado'
   | 'ejecucion'
@@ -109,6 +108,24 @@ export interface Proyecto {
   /** Última noticia de la contraparte (formulario, correo, fotos o una nota marcada como noticia). */
   ultimaNoticia: string;
   anio: number;
+  /** El último cambio de estado, para poder deshacerlo. Falta en los proyectos anteriores. */
+  ultimoCambio?: CambioEstado;
+}
+
+/**
+ * manual: desde la ficha. automatico: lo hace la app (formulario enviado, financiación cubierta o no).
+ * revision: decisión del revisor (se deshace con deshacerDecision). deshacer: vuelta atrás de otro cambio.
+ */
+export type OrigenCambio = 'manual' | 'automatico' | 'revision' | 'deshacer';
+
+export interface CambioEstado {
+  de: EstadoProyecto;
+  a: EstadoProyecto;
+  origen: OrigenCambio;
+  fecha: string;
+  autor: Persona | null;
+  /** Lo que el cambio toca, tal como estaba antes, para dejarlo igual al deshacerlo. */
+  antes: { formulario: EstadoFormulario; inicio: string | null; aprobado: string | null; cierre: string | null };
 }
 
 /** Fila del índice del panel (indices/proyectos → items[codigo]). Un solo documento para todo el panel. */
@@ -224,7 +241,7 @@ export interface Revision {
   fecha: string;
 }
 
-export type TipoEvento = 'estado' | 'nota' | 'solicitud' | 'revision' | 'aportacion' | 'correo' | 'archivo' | 'sistema';
+export type TipoEvento = 'estado' | 'nota' | 'solicitud' | 'revision' | 'aportacion' | 'correo' | 'archivo' | 'informe' | 'sistema';
 export type CategoriaEvento = 'avance' | 'incidencia' | 'economico' | 'otro';
 
 /** proyectos/{codigo}/eventos/{id}: la cronología del proyecto. */

@@ -100,7 +100,7 @@ async function sembrar() {
     py('P-2026-011', 'Pozo y depósito de agua', 'agua', 'kara', 'Kara', 9.55, 1.19, 'financiacion', 9500, 9, 90, {
       descripcion: 'Pozo de 60 m con bomba solar y depósito elevado de 10 m³ para el barrio y la escuela.',
     }),
-    py('P-2026-015', 'Dormitorio del internado', 'educacion', 'meru', 'Meru', 0.05, 37.65, 'validada', 21000, 7, 60, {
+    py('P-2026-015', 'Dormitorio del internado', 'educacion', 'meru', 'Meru', 0.05, 37.65, 'financiacion', 21000, 7, 60, {
       descripcion: 'Dormitorio para 40 alumnas internas que hoy duermen en las aulas.',
     }),
     py('P-2026-017', 'Comedor escolar', 'educacion', 'uagadugu', 'Uagadugú', 12.37, -1.52, 'revision', 12300, 2, 20, {}),
@@ -185,7 +185,7 @@ async function sembrar() {
     ['P-2026-014', { tipo: 'correo', categoria: 'avance', autor: null, texto: 'Cimientos terminados.' }, 58],
     ['P-2026-014', { tipo: 'estado', autor: ana, de: 'aprobado', a: 'ejecucion', texto: 'Aprobado → En ejecución. Empieza la obra.' }, 87],
     ['P-2026-014', { tipo: 'estado', autor: null, de: 'financiacion', a: 'aprobado', texto: 'Financiación → Aprobado. Financiación cubierta: 18.000 € comprometidos de 18.000 €.' }, 100],
-    ['P-2026-014', { tipo: 'estado', autor: luis, de: 'revision', a: 'validada', texto: 'En revisión → Validada. Propuesta validada.' }, 133],
+    ['P-2026-014', { tipo: 'estado', autor: luis, de: 'revision', a: 'financiacion', texto: 'En revisión → Financiación. Propuesta validada.' }, 133],
     ['P-2026-006', { tipo: 'estado', autor: ana, de: 'ejecucion', a: 'parado', texto: 'En ejecución → Parado. El proveedor no entrega las baterías.' }, 47],
     ['P-2026-016', { tipo: 'estado', autor: luis, de: 'revision', a: 'solicitud', texto: 'En revisión → Solicitud. Se piden cambios: falta el desglose del presupuesto.' }, 9],
   ];

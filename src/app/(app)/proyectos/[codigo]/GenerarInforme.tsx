@@ -10,6 +10,7 @@ import { Desplegable } from '@/componentes/Desplegable';
 import { Enviar } from '@/componentes/FormAccion';
 import { ElegirPlantilla, Idioma, Indicaciones, ResultadoInforme } from '@/componentes/OpcionesInforme';
 import { FotosYAdjuntos } from '@/componentes/FotosYAdjuntos';
+import { IconoInforme } from '@/componentes/Iconos';
 import { pedirInformeAccion } from '@/lib/acciones/informes';
 import type { OpcionPlantilla } from '@/lib/dominio/plantillas';
 
@@ -34,7 +35,7 @@ export function GenerarInforme({
   const elegida = plantillas.find((p) => p.id === id);
 
   return (
-    <Dialogo boton="Generar informe" titulo="Generar informe">
+    <Dialogo boton={<><IconoInforme tamano={18} /> Generar informe</>} titulo="Generar informe">
       <form action={pedir} className="pila">
         <input type="hidden" name="codigo" value={codigo} />
         <p className="meta" style={{ margin: 0 }}>

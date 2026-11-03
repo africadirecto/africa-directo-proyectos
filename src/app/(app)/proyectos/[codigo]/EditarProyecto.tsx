@@ -5,6 +5,7 @@ import { Dialogo } from '@/componentes/Dialogo';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
 import { Desplegable } from '@/componentes/Desplegable';
 import { opcionesMonedas, opcionesPaises } from '@/componentes/opciones';
+import { IconoEditar } from '@/componentes/Iconos';
 import { editarProyecto } from '@/lib/acciones/proyectos';
 import { SECTORES } from '@/lib/formulario/textos';
 import { nombrePais } from '@/lib/paises';
@@ -38,7 +39,7 @@ export function EditarProyecto({ p }: { p: Proyecto }) {
   };
 
   return (
-    <Dialogo boton="Editar datos" titulo="Datos del proyecto">
+    <Dialogo boton={<><IconoEditar tamano={18} /> Editar datos</>} titulo="Datos del proyecto">
       <FormAccion accion={editarProyecto} className="pila">
         <div ref={form} className="campos">
           <input type="hidden" name="codigo" value={p.codigo} />

@@ -33,12 +33,12 @@ Africa Directo es una ONG española que financia proyectos en varios países de 
 Ciclo de estados acordado:
 
 ```
-Solicitud → En revisión → Validada → Financiación → Aprobado → En ejecución → Completado → Cerrado
-                ↓ (pide cambios: vuelve a Solicitud)                  ↕ Parado
-            Rechazada                                   (Cancelado posible desde cualquier estado)
+Solicitud → En revisión → Financiación → Aprobado → En ejecución → Completado → Cerrado
+                ↓ (pide cambios: vuelve a Solicitud)          ↕ Parado
+            Rechazada                         (Cancelado posible desde cualquier estado)
 ```
 
-Se distinguen dos aprobaciones: la propuesta queda **Validada** tras la revisión interna, y el proyecto pasa a **Aprobado** cuando los donantes comprometen el 100 % del presupuesto. Cada cambio de estado guarda quién, cuándo y por qué.
+Se distinguen dos aprobaciones: la propuesta se **valida** tras la revisión interna y pasa a **Financiación** (se buscan donantes), y el proyecto pasa a **Aprobado** cuando los donantes comprometen el 100 % del presupuesto. Antes de empezar, Financiación y Aprobado los pone la app según el dinero, en los dos sentidos. Cada cambio de estado guarda quién, cuándo y por qué, y el último hecho a mano se puede deshacer (ver `docs/ARQUITECTURA.md`).
 
 ### Ejemplo de principio a fin
 

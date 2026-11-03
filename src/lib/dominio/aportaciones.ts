@@ -11,7 +11,7 @@ import { almacen } from '../almacen';
 import { dinero, fechaCorta } from '../formato';
 import { cambiarEstado, actualizarProyecto, leerProyecto } from './proyectos';
 import { anotarEvento } from './eventos';
-import type { Aportacion, Cobro, Compromiso, Envio, EstadoProyecto, Movimiento, Persona, Proyecto } from '../tipos';
+import type { Aportacion, Cobro, Compromiso, Envio, Movimiento, Persona, Proyecto } from '../tipos';
 
 export type AportacionConId = Aportacion & { id: string };
 
@@ -95,9 +95,13 @@ export function presupuestoEnEuros(p: Pick<Proyecto, 'presupuestoEur' | 'presupu
   return p.presupuestoEur ?? (p.moneda === 'EUR' ? p.presupuesto : null);
 }
 
-/** El proyecto pasa a Aprobado cuando lo comprometido (en euros) cubre el presupuesto en euros. */
-export function cubrePresupuesto(estado: EstadoProyecto, presupuesto: number | null, comprometido: number): boolean {
-  return estado === 'financiacion' && !!presupuesto && presupuesto > 0 && comprometido >= presupuesto;
+/** Si lo comprometido (en euros) cubre el presupuesto en euros: entonces el proyecto está Aprobado. */
+export function cubrePresupuesto(presupuesto: number | null, comprometido: number): boolean {
+  return !!presupuesto && presupuesto > 0 && comprometido >= presupuesto;
+}
+
+export function estaCubierto(p: Pick<Proyecto, 'presupuestoEur' | 'presupuesto' | 'moneda' | 'comprometido'>): boolean {
+  return cubrePresupuesto(presupuestoEnEuros(p), p.comprometido);
 }
 
 export async function aportacionesDeProyecto(codigo: string): Promise<AportacionConId[]> {
@@ -121,16 +125,18 @@ async function leerAportacion(id: string): Promise<AportacionConId> {
   return normalizar({ ...a, id });
 }
 
-/** Recalcula los totales del proyecto y aplica los cambios de estado automáticos. */
+/**
+ * Recalcula los totales del proyecto y, antes de empezar la ejecución, lo pone en Aprobado o en
+ * Financiación según cubra o no el presupuesto (también hacia atrás, si se quita un compromiso).
+ */
 export async function recalcularFinanciacion(codigo: string, autor: Persona): Promise<void> {
   const [aps, actual] = await Promise.all([aportacionesDeProyecto(codigo), leerProyecto(codigo)]);
-  let p = await actualizarProyecto(codigo, totales(aps, actual?.envios ?? []));
-  if (p.estado === 'validada' && aps.some((a) => a.importe > 0)) {
-    p = await cambiarEstado(codigo, 'financiacion', 'Empieza la financiación (primer compromiso de un donante).', autor);
-  }
-  const objetivo = presupuestoEnEuros(p);
-  if (cubrePresupuesto(p.estado, objetivo, p.comprometido)) {
-    await cambiarEstado(codigo, 'aprobado', `Financiación cubierta: ${dinero(p.comprometido)} comprometidos de ${dinero(objetivo)}.`, autor);
+  const p = await actualizarProyecto(codigo, totales(aps, actual?.envios ?? []));
+  const cifras = `${dinero(p.comprometido)} comprometidos de ${dinero(presupuestoEnEuros(p))}`;
+  if (p.estado === 'financiacion' && estaCubierto(p)) {
+    await cambiarEstado(codigo, 'aprobado', `Financiación cubierta: ${cifras}.`, autor);
+  } else if (p.estado === 'aprobado' && !estaCubierto(p)) {
+    await cambiarEstado(codigo, 'financiacion', `La financiación ya no cubre el presupuesto: ${cifras}.`, autor);
   }
 }
 

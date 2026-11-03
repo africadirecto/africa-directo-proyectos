@@ -5,6 +5,7 @@
 
 import { almacen } from '../almacen';
 import { presupuestoEnEuros } from './aportaciones';
+import { normalizarEstado } from '../estados';
 import type { FilaPanel, Proyecto } from '../tipos';
 
 const RUTA = 'indices/proyectos';
@@ -18,7 +19,7 @@ export function filaDe(p: Proyecto): FilaPanel {
     lugar: p.lugar,
     lat: p.lat,
     lng: p.lng,
-    estado: p.estado,
+    estado: normalizarEstado(p.estado),
     moneda: p.moneda,
     presupuesto: p.presupuesto,
     presupuestoEur: presupuestoEnEuros(p),
@@ -40,7 +41,9 @@ export async function actualizarIndice(p: Proyecto): Promise<void> {
 
 export async function leerIndice(): Promise<FilaPanel[]> {
   const doc = await (await almacen()).leer<{ items?: Record<string, FilaPanel> }>(RUTA);
-  return Object.values(doc?.items ?? {}).sort((a, b) => b.codigo.localeCompare(a.codigo));
+  return Object.values(doc?.items ?? {})
+    .map((f) => ({ ...f, estado: normalizarEstado(f.estado) }))
+    .sort((a, b) => b.codigo.localeCompare(a.codigo));
 }
 
 export async function reconstruirIndice(): Promise<number> {

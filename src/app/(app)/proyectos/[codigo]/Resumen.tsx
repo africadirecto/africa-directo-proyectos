@@ -7,7 +7,7 @@ import { dinero, fechaLarga } from '@/lib/formato';
 import { BarraFinanciacion } from '@/componentes/BarraFinanciacion';
 import { IDIOMAS_ES } from '@/lib/formulario/textos';
 import type { Proyecto } from '@/lib/tipos';
-import { ListaEventos } from './Seguimiento';
+import { ListaEventos } from './Eventos';
 
 export async function Resumen({ p }: { p: Proyecto }) {
   const [eventos, contraparte] = await Promise.all([listarEventos(p.codigo, 3), leerContraparte(p.contraparte.id)]);

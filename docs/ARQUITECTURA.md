@@ -37,11 +37,13 @@ stateDiagram-v2
   [*] --> Solicitud: voluntario registra
   Solicitud --> EnRevision: contraparte envía el formulario
   EnRevision --> Solicitud: se piden cambios
-  EnRevision --> Validada: revisor valida
+  EnRevision --> Financiacion: revisor valida
   EnRevision --> Rechazada
-  Validada --> Financiacion: primera aportación
   Financiacion --> Aprobado: lo comprometido cubre el presupuesto
+  Aprobado --> Financiacion: deja de cubrirlo
   Aprobado --> EnEjecucion
+  Financiacion --> EnEjecucion: empezar sin el 100 %
+  EnEjecucion --> Aprobado: volver a antes de empezar
   EnEjecucion --> Parado
   Parado --> EnEjecucion
   EnEjecucion --> Completado
@@ -49,6 +51,11 @@ stateDiagram-v2
 ```
 
 *Cancelado es posible desde cualquier estado no final. Cada cambio guarda quién, cuándo y por qué en la cronología.*
+
+- **Antes de empezar, Financiación y Aprobado los pone la app según el dinero**, en los dos sentidos: Aprobado cuando lo comprometido cubre el presupuesto en euros, y de vuelta a Financiación si deja de cubrirlo (se quita un compromiso o sube el presupuesto). A mano solo se elige uno de los dos al volver desde En ejecución (si la ejecución no había empezado de verdad; se borra la fecha de inicio), y la app pone el que corresponde al dinero.
+- **Se puede empezar sin el 100 %:** de Financiación a En ejecución, con un aviso en el diálogo.
+- **Deshacer:** el último cambio hecho a mano en la ficha se puede deshacer, también Cancelado y Cerrado. El proyecto vuelve al estado anterior con el formulario de la contraparte y las fechas (inicio, aprobación, cierre) como estaban; si el anterior era Financiación o Aprobado, al que diga el dinero ahora. Para eso el proyecto guarda `ultimoCambio` (de, a, origen, autor y lo que había antes). Los cambios automáticos no se deshacen (se corrige el dato que los causó) y deshacer no se deshace. La última decisión de revisión se deshace con su propia regla (punto 4), desde la ficha o desde Solicitudes.
+- Hasta noviembre de 2026 había un estado «Validada» entre la revisión y la financiación; los datos antiguos con ese estado se leen como Financiación (`normalizarEstado`).
 
 Qué ocurre por dentro en cada paso:
 
@@ -63,14 +70,14 @@ Qué ocurre por dentro en cada paso:
    - Se guarda la versión `vN`, se copian los datos a la ficha y el proyecto pasa a «En revisión».
    - Al terminar la respuesta, y sin hacer esperar a la contraparte, la IA traduce, resume y señala lo que falta, se genera el PDF en `01_Solicitud` y se avisa en Chat.
 4. **Revisión:** validar, pedir cambios o rechazar, solo desde Solicitudes.
-   - La última decisión se puede corregir (el comentario, que se vuelve a traducir) o deshacer mientras el proyecto siga donde ella lo dejó: la contraparte no ha enviado otra versión y una propuesta validada aún no tiene donantes. Deshacer borra la revisión y devuelve el proyecto a «En revisión».
+   - La última decisión se puede corregir (el comentario, que se vuelve a traducir) o deshacer mientras el proyecto siga donde ella lo dejó: la contraparte no ha enviado otra versión y una propuesta validada aún no tiene compromisos de donantes. Deshacer borra la revisión y devuelve el proyecto a «En revisión». Validar pasa la propuesta a «Financiación» y guarda la fecha de validación.
    - Al pedir cambios, el comentario se traduce al idioma de la contraparte, el mismo enlace se reabre (y se alarga su caducidad) y la app prepara el correo para que el voluntario lo envíe. La app no envía correos.
 5. **Financiación:**
    - Tres movimientos, todos en euros: **compromiso** (un donante se compromete; si ya estaba en el proyecto, se suma), **cobro** (llega a AD dinero de un donante, con fecha) y **envío** (AD transfiere a la contraparte, con fecha; va por proyecto, no por donante).
    - Límites: no se cobra de un donante más de lo que ha comprometido ni se envía más de lo cobrado en el proyecto (el formulario no deja guardar y explica por qué; el servidor lo comprueba otra vez). Tampoco se puede quitar un compromiso si lo comprometido quedaría por debajo de lo cobrado, ni un cobro si lo enviado quedaría por encima de lo cobrado. Un donante que se queda sin registros sale del proyecto.
    - En la ficha, cada donante se despliega para ver sus registros (compromisos y cobros) con fecha y nota; los envíos tienen su propia lista.
    - Cada aportación (una por donante y proyecto) guarda sus compromisos y sus cobros, cada uno con fecha y nota, y sus totales; el proyecto guarda sus envíos y los totales comprometido, `recibido` (cobrado) y `enviado`. Las aportaciones antiguas (un importe y un estado) se leen así: «comprometida» y «recibida» pasan a ser un compromiso (la recibida, también un cobro); las demás no cuentan y no se muestran.
-   - Al cambiar una, se recalculan los totales. La primera pasa el proyecto a «Financiación», y cuando lo comprometido cubre el presupuesto pasa solo a «Aprobado».
+   - Al cambiar una, se recalculan los totales. Cuando lo comprometido cubre el presupuesto el proyecto pasa solo a «Aprobado», y si deja de cubrirlo antes de empezar, vuelve solo a «Financiación».
 6. **Ejecución y seguimiento:** notas, cambios de estado y, en la fase 2, correos y fotos que llegan.
    - La app avisa de los proyectos sin noticias en más de 30 días.
 7. **Informes:** borradores de IA en Google Docs o Slides que un voluntario revisa en Google y descarga para enviarlos. Ver [INFORMES.md](INFORMES.md).

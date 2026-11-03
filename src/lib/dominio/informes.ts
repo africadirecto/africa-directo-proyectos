@@ -103,7 +103,7 @@ export async function contextoProyecto(codigo: string, o: OpcionesProyecto): Pro
   const objetivo = presupuestoEnEuros(p);
 
   const delPeriodo = eventos
-    .filter((e) => !['sistema', 'revision', 'solicitud'].includes(e.tipo))
+    .filter((e) => !['sistema', 'revision', 'solicitud', 'informe'].includes(e.tipo))
     .reverse()
     .slice(-80)
     .map((e, i) => ({ id: `E${i + 1}`, fecha: e.fecha.slice(0, 10), tipo: e.tipo, categoria: e.categoria ?? '', texto: sinContactos(e.texto).slice(0, 1500) }));

@@ -2,7 +2,7 @@
 // Se ejecutan con: npm test
 
 import { describe, expect, it } from 'vitest';
-import { puedePasar, transicionesDesde, indiceFase } from './estados';
+import { puedePasar, transicionesDesde, indiceFase, estadosManuales, esVueltaAtras, normalizarEstado } from './estados';
 import { totales, cubrePresupuesto, excedeCobro, excedeEnvio, fechaValida, importeValido } from './dominio/aportaciones';
 import { requiereAtencion } from './dominio/atencion';
 import { hojasFinanciacion } from './dominio/financiacionHoja';
@@ -15,11 +15,30 @@ describe('estados', () => {
   it('sigue el ciclo acordado', () => {
     expect(puedePasar('solicitud', 'revision')).toBe(true);
     expect(puedePasar('revision', 'solicitud')).toBe(true); // pedir cambios
-    expect(puedePasar('revision', 'validada')).toBe(true);
+    expect(puedePasar('revision', 'financiacion')).toBe(true); // validar
+    expect(puedePasar('financiacion', 'aprobado')).toBe(true);
+    expect(puedePasar('aprobado', 'financiacion')).toBe(true);
     expect(puedePasar('ejecucion', 'parado')).toBe(true);
     expect(puedePasar('parado', 'ejecucion')).toBe(true);
     expect(puedePasar('solicitud', 'aprobado')).toBe(false);
-    expect(puedePasar('validada', 'ejecucion')).toBe(false);
+    expect(puedePasar('financiacion', 'completado')).toBe(false);
+  });
+
+  it('a mano, Financiación y Aprobado solo se eligen al volver desde En ejecución', () => {
+    expect(estadosManuales('financiacion', false)).toEqual(['ejecucion', 'cancelado']);
+    expect(estadosManuales('aprobado', true)).toEqual(['ejecucion', 'cancelado']);
+    expect(estadosManuales('ejecucion', true)).toEqual(['parado', 'completado', 'aprobado', 'cancelado']);
+    expect(estadosManuales('ejecucion', false)).toEqual(['parado', 'completado', 'financiacion', 'cancelado']);
+    expect(estadosManuales('revision', false)).toEqual(['cancelado']);
+    expect(estadosManuales('cancelado', false)).toEqual([]);
+    expect(esVueltaAtras('ejecucion', 'aprobado')).toBe(true);
+    expect(esVueltaAtras('completado', 'ejecucion')).toBe(true);
+    expect(esVueltaAtras('ejecucion', 'cancelado')).toBe(false);
+  });
+
+  it('lee «validada» de los datos antiguos como Financiación', () => {
+    expect(normalizarEstado('validada')).toBe('financiacion');
+    expect(normalizarEstado('aprobado')).toBe('aprobado');
   });
 
   it('permite cancelar desde cualquier estado que no sea final', () => {
@@ -77,11 +96,11 @@ describe('financiación', () => {
     expect(registros.filas.slice(1).map((f) => f[1])).toEqual(['Compromiso', 'Cobro', 'Envío']);
   });
 
-  it('aprueba al cubrir el 100 % del presupuesto en financiación', () => {
-    expect(cubrePresupuesto('financiacion', 18000, 18000)).toBe(true);
-    expect(cubrePresupuesto('financiacion', 18000, 17999)).toBe(false);
-    expect(cubrePresupuesto('validada', 18000, 18000)).toBe(false);
-    expect(cubrePresupuesto('financiacion', null, 5000)).toBe(false);
+  it('aprueba al cubrir el 100 % del presupuesto', () => {
+    expect(cubrePresupuesto(18000, 18000)).toBe(true);
+    expect(cubrePresupuesto(18000, 17999)).toBe(false);
+    expect(cubrePresupuesto(null, 5000)).toBe(false);
+    expect(cubrePresupuesto(0, 0)).toBe(false);
   });
 });
 

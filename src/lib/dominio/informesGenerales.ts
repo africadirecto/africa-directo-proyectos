@@ -63,7 +63,7 @@ export async function contextoResumen(o: OpcionesResumen & { plantilla: string }
     conDetalle.map(async (f) => {
       const [p, evs] = await Promise.all([leerProyecto(f.codigo), eventosEntre(f.codigo, o.desde, o.hasta, 30)]);
       const delPeriodo = evs
-        .filter((e) => !['sistema', 'revision', 'solicitud'].includes(e.tipo))
+        .filter((e) => !['sistema', 'revision', 'solicitud', 'informe'].includes(e.tipo))
         .slice(0, 8)
         .reverse()
         .map((e) => ({ fecha: e.fecha.slice(0, 10), tipo: e.tipo, categoria: e.categoria ?? '', texto: sinContactos(e.texto).slice(0, 400) }));

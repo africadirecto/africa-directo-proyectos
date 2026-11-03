@@ -1,70 +1,15 @@
 import { listarEventos } from '@/lib/dominio/eventos';
-import { fechaCorta } from '@/lib/formato';
 import { Dialogo } from '@/componentes/Dialogo';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
 import { Desplegable } from '@/componentes/Desplegable';
 import { anadirNota } from '@/lib/acciones/proyectos';
-import type { Evento, Proyecto } from '@/lib/tipos';
+import type { Proyecto } from '@/lib/tipos';
+import { CronologiaFiltrada } from './CronologiaFiltrada';
 
-const ETIQUETA: Record<string, string> = {
-  avance: 'Avance',
-  incidencia: 'Incidencia',
-  economico: 'Económico',
-  otro: 'Nota',
-  estado: 'Cambio de estado',
-  solicitud: 'Solicitud',
-  revision: 'Revisión',
-  sistema: 'Sistema',
-};
-
-const ORIGEN: Record<Evento['tipo'], string> = {
-  estado: '',
-  nota: 'nota',
-  solicitud: 'formulario',
-  revision: 'revisión',
-  aportacion: 'financiación',
-  correo: 'correo',
-  archivo: 'archivo',
-  sistema: 'sistema',
-};
-
-export function ListaEventos({ eventos }: { eventos: Evento[] }) {
-  if (!eventos.length) return <p className="vacio">Todavía no hay actividad.</p>;
-  return (
-    <div>
-      {eventos.map((e, i) => {
-        const clave = e.categoria ?? e.tipo;
-        return (
-          <div key={i} className="ev">
-            <div className="d">
-              {fechaCorta(e.fecha)}
-              <small>{[ORIGEN[e.tipo], e.autor?.nombre.split(' ')[0]].filter(Boolean).join(' · ') || 'automático'}</small>
-            </div>
-            <div>
-              <span className={`st ev-${clave}`}>{ETIQUETA[clave] ?? ETIQUETA.otro}</span>
-              <p>{e.texto}</p>
-              {e.enlaces?.length ? (
-                <p className="meta" style={{ marginTop: 6 }}>
-                  {e.enlaces.map((l, j) => (
-                    <span key={j}>
-                      {j ? ' · ' : ''}
-                      <a href={l.url} target="_blank" rel="noreferrer">
-                        {l.texto} ↗
-                      </a>
-                    </span>
-                  ))}
-                </p>
-              ) : null}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
+const LIMITE = 200;
 
 export async function Seguimiento({ p, editor }: { p: Proyecto; editor: boolean }) {
-  const eventos = await listarEventos(p.codigo, 200);
+  const eventos = await listarEventos(p.codigo, LIMITE);
   return (
     <section className="card">
       <div className="card-cab">
@@ -102,9 +47,9 @@ export async function Seguimiento({ p, editor }: { p: Proyecto; editor: boolean 
         ) : null}
       </div>
       <p className="meta" style={{ margin: '0 0 8px' }}>
-        Formulario de la contraparte, notas del equipo, financiación y cambios de estado.
+        Formulario de la contraparte, notas del equipo, financiación, informes y cambios de estado.
       </p>
-      <ListaEventos eventos={eventos} />
+      <CronologiaFiltrada eventos={eventos} limite={LIMITE} />
     </section>
   );
 }

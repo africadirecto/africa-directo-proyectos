@@ -45,7 +45,6 @@ Cada estado tiene una etiqueta con punto de color. El rojo queda reservado para 
 | --- | --- | --- |
 | Solicitud | `#EEEDE8` | `#4A4943` |
 | En revisión | `#FBEFD5` | `#7A4B00` |
-| Validada | `#E3EDFB` | `#1F4E8C` |
 | Financiación | `#EDE8FB` | `#4F3A99` |
 | Aprobado | `#DDF0E5` | `#1D6B50` |
 | En ejecución | `#D6EEF0` | `#0F5E66` |

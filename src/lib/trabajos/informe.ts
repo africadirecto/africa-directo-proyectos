@@ -417,7 +417,7 @@ async function componer(ruta: string, i: Informe) {
   const que = `${i.formato === 'slides' ? 'Presentación' : 'Informe'} «${i.plantilla.nombre}»${i.donante?.nombre ? ` para ${i.donante.nombre}` : ''}`;
   if (codigo) {
     await anotarEvento(codigo, {
-      tipo: 'sistema',
+      tipo: 'informe',
       autor: i.creadoPor,
       texto: `Borrador listo: ${que}. Revísalo antes de enviarlo.`,
       enlaces: [{ texto: i.formato === 'slides' ? 'Abrir en Google Slides' : 'Abrir en Google Docs', url }],

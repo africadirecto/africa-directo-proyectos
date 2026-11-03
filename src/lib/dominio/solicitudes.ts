@@ -302,7 +302,7 @@ export async function listarRevisiones(codigo: string): Promise<(Revision & { id
 
 /**
  * Decisión del revisor sobre la versión vigente:
- * - validar: pasa a Validada.
+ * - validar: pasa a Financiación.
  * - cambios: vuelve a Solicitud y reabre el mismo enlace con los comentarios traducidos.
  * - rechazar: pasa a Rechazada.
  * La app no envía correos: el voluntario copia el texto que prepara (textoInvitacion, textoRechazo).
@@ -334,33 +334,39 @@ export async function decidir(
   };
   await (await almacen()).crear(`proyectos/${codigo}/revisiones`, { ...revision });
 
+  const origen = { origen: 'revision' } as const;
   if (decision === 'validar') {
-    await actualizarProyecto(codigo, { revisor: { ...autor, fecha: ahora }, formulario: { ...p.formulario, estado: 'cerrado', comentarios: null } });
-    await cambiarEstado(codigo, 'validada', comentario.trim() ? `Validada: ${comentario.trim()}` : 'Propuesta validada.', autor);
+    await actualizarProyecto(codigo, {
+      revisor: { ...autor, fecha: ahora },
+      formulario: { ...p.formulario, estado: 'cerrado', comentarios: null },
+      fechas: { validada: ahora } as Proyecto['fechas'],
+    });
+    await cambiarEstado(codigo, 'financiacion', comentario.trim() ? `Validada: ${comentario.trim()}` : 'Propuesta validada.', autor, origen);
   } else if (decision === 'cambios') {
     await alargarEnlace(p.formulario.enlaceId);
     await actualizarProyecto(codigo, {
       formulario: { ...p.formulario, estado: 'cambios', enviadoEn: ahora, comentarios: { es: comentario.trim(), traducido, idioma } },
     });
-    await cambiarEstado(codigo, 'solicitud', `Se piden cambios: ${comentario.trim()}`, autor);
+    await cambiarEstado(codigo, 'solicitud', `Se piden cambios: ${comentario.trim()}`, autor, origen);
   } else {
     await actualizarProyecto(codigo, { revisor: { ...autor, fecha: ahora } });
-    await cambiarEstado(codigo, 'rechazada', comentario.trim() ? `Rechazada: ${comentario.trim()}` : 'Solicitud rechazada.', autor);
+    await cambiarEstado(codigo, 'rechazada', comentario.trim() ? `Rechazada: ${comentario.trim()}` : 'Solicitud rechazada.', autor, origen);
   }
   return { traducido };
 }
 
 /** Estado al que lleva cada decisión. */
-const RESULTADO: Record<Decision, Proyecto['estado']> = { validar: 'validada', cambios: 'solicitud', rechazar: 'rechazada' };
+const RESULTADO: Record<Decision, Proyecto['estado']> = { validar: 'financiacion', cambios: 'solicitud', rechazar: 'rechazada' };
 
 /**
  * La última decisión se puede corregir o deshacer mientras el proyecto siga donde ella lo dejó:
- * la contraparte no ha enviado otra versión, y una propuesta validada aún no tiene donantes.
+ * la contraparte no ha enviado otra versión, y una propuesta validada aún no tiene compromisos de donantes.
  */
 export async function decisionAbierta(p: Proyecto): Promise<(Revision & { id: string }) | null> {
   const r = (await listarRevisiones(p.codigo))[0];
   if (!r || r.version !== p.formulario.version || p.estado !== RESULTADO[r.decision]) return null;
   if (r.decision === 'cambios' && p.formulario.estado !== 'cambios') return null;
+  if (r.decision === 'validar' && p.comprometido > 0) return null;
   return r;
 }
 
@@ -398,7 +404,7 @@ export async function deshacerDecision(codigo: string, autor: Persona): Promise<
   const nombre = { validar: 'validar', cambios: 'pedir cambios', rechazar: 'rechazar' }[r.decision];
 
   await db.borrar(`proyectos/${codigo}/revisiones/${r.id}`);
-  await cambiarEstado(codigo, 'revision', `Se deshace la decisión de ${nombre}.`, autor, { forzar: true });
+  await cambiarEstado(codigo, 'revision', `Se deshace la decisión de ${nombre}.`, autor, { origen: 'deshacer', forzar: true });
   await actualizarProyecto(codigo, { revisor: null, formulario: { ...p.formulario, estado: 'enviado', comentarios: null } });
   if (r.decision === 'validar') await db.borrarCampo(`proyectos/${codigo}`, ['fechas', 'validada']);
   if (r.decision === 'rechazar') await db.borrarCampo(`proyectos/${codigo}`, ['fechas', 'cierre']);

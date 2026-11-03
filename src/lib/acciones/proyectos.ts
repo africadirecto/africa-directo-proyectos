@@ -2,8 +2,9 @@
 
 import { revalidatePath } from 'next/cache';
 import { permitido, persona } from '../sesion';
-import { actualizarProyecto, asegurarCarpetas, cambiarEstado, leerProyecto } from '../dominio/proyectos';
-import { recalcularFinanciacion } from '../dominio/aportaciones';
+import { actualizarProyecto, asegurarCarpetas, cambiarEstado, cambioDeshacible, deshacerCambio, leerProyecto } from '../dominio/proyectos';
+import { decisionAbierta, deshacerDecision } from '../dominio/solicitudes';
+import { estaCubierto, recalcularFinanciacion } from '../dominio/aportaciones';
 import { anotarEvento } from '../dominio/eventos';
 import { marcarPublicable } from '../dominio/archivos';
 import { ESTADOS, estadosManuales } from '../estados';
@@ -27,12 +28,38 @@ export async function cambiarEstadoAccion(_: Resultado, fd: FormData): Promise<R
     if (!ESTADOS[estado]) throw new Error('Elige el nuevo estado.');
     if (motivo.length < 3) throw new Error('Explica brevemente el motivo del cambio.');
     const p = await leerProyecto(codigo);
-    if (p && !estadosManuales(p.estado).includes(estado)) {
-      throw new Error('Las solicitudes se validan, se devuelven o se rechazan desde Solicitudes.');
+    if (!p) throw new Error('Proyecto no encontrado');
+    if (!estadosManuales(p.estado, estaCubierto(p)).includes(estado)) {
+      throw new Error(
+        p.estado === 'solicitud' || p.estado === 'revision'
+          ? 'Las solicitudes se validan, se devuelven o se rechazan desde Solicitudes.'
+          : `No se puede pasar de «${ESTADOS[p.estado].nombre}» a «${ESTADOS[estado].nombre}».`,
+      );
     }
-    await cambiarEstado(codigo, estado, motivo, persona(yo));
+    await cambiarEstado(codigo, estado, motivo, persona(yo), { origen: 'manual' });
     rutas(codigo);
     return `Estado cambiado a «${ESTADOS[estado].nombre}».`;
+  });
+}
+
+/** Deshace el último cambio de estado: uno hecho a mano en la ficha o la última decisión de revisión. */
+export async function deshacerCambioAccion(_: Resultado, fd: FormData): Promise<Resultado> {
+  return intentar(async () => {
+    const yo = await permitido('edicion');
+    const codigo = texto(fd, 'codigo', 20);
+    const p = await leerProyecto(codigo);
+    if (!p) throw new Error('Proyecto no encontrado');
+    let destino: EstadoProyecto;
+    if (cambioDeshacible(p)) {
+      destino = await deshacerCambio(codigo, persona(yo));
+    } else if (await decisionAbierta(p)) {
+      await deshacerDecision(codigo, persona(yo));
+      destino = 'revision';
+    } else {
+      throw new Error('Este cambio ya no se puede deshacer.');
+    }
+    rutas(codigo);
+    return `Cambio deshecho: el proyecto vuelve a «${ESTADOS[destino].nombre}».`;
   });
 }
 

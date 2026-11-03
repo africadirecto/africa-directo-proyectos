@@ -2,11 +2,12 @@
 
 import { almacen } from '../almacen';
 import { drive, SUBCARPETAS, type Subcarpeta } from '../drive';
-import { ESTADOS, puedePasar } from '../estados';
+import { ANTES_DE_EMPEZAR, ESTADOS, antesDeEmpezar, esFinal, normalizarEstado, puedePasar } from '../estados';
 import { nuevoIdEnlace } from '../enlaces';
 import { actualizarIndice } from './indice';
 import { anotarEvento } from './eventos';
-import type { Contraparte, Enlace, EstadoProyecto, Persona, Proyecto } from '../tipos';
+import { estaCubierto } from './aportaciones';
+import type { CambioEstado, Contraparte, Enlace, EstadoProyecto, OrigenCambio, Persona, Proyecto } from '../tipos';
 
 const CODIGO = /^P-\d{4}-\d{3,}$/;
 const DIAS_ENLACE = 180;
@@ -15,7 +16,8 @@ export const esCodigo = (c: string) => CODIGO.test(c);
 
 export async function leerProyecto(codigo: string): Promise<Proyecto | null> {
   if (!esCodigo(codigo)) return null;
-  return (await almacen()).leer<Proyecto>(`proyectos/${codigo}`);
+  const p = await (await almacen()).leer<Proyecto>(`proyectos/${codigo}`);
+  return p && { ...p, estado: normalizarEstado(p.estado) };
 }
 
 /** Código legible P-AAAA-NNN con un contador por año (en transacción para no repetir). */
@@ -129,7 +131,7 @@ export async function crearProyecto(o: {
 
   await db.guardar(`proyectos/${codigo}`, { ...proyecto });
   await actualizarIndice(proyecto);
-  await anotarEvento(codigo, { tipo: 'sistema', autor: o.autor, texto: `Solicitud registrada para ${o.contraparte.nombre}.` });
+  await anotarEvento(codigo, { tipo: 'solicitud', autor: o.autor, texto: `Solicitud registrada para ${o.contraparte.nombre}.` });
   return { proyecto, errorDrive };
 }
 
@@ -159,9 +161,19 @@ export async function cambiarEstado(
   a: EstadoProyecto,
   motivo: string,
   autor: Persona | null,
-  /** Saltarse el ciclo de estados (solo para deshacer una decisión de revisión). */
-  { forzar = false }: { forzar?: boolean } = {},
+  {
+    origen = 'automatico',
+    forzar = false,
+    restaurar,
+  }: {
+    origen?: OrigenCambio;
+    /** Saltarse el ciclo de estados (solo para deshacer). */
+    forzar?: boolean;
+    /** Al deshacer: el formulario y las fechas como estaban antes del cambio que se deshace. */
+    restaurar?: CambioEstado['antes'];
+  } = {},
 ): Promise<Proyecto> {
+  const db = await almacen();
   const p = await leerProyecto(codigo);
   if (!p) throw new Error('Proyecto no encontrado');
   if (!forzar && !puedePasar(p.estado, a)) {
@@ -169,16 +181,35 @@ export async function cambiarEstado(
   }
   const ahora = new Date().toISOString();
   const fechas: Partial<Proyecto['fechas']> = {};
-  if (a === 'validada') fechas.validada = ahora;
-  if (a === 'aprobado') fechas.aprobado = ahora;
-  if (a === 'ejecucion' && !p.fechas.inicio) fechas.inicio = ahora;
-  if (a === 'cerrado' || a === 'cancelado' || a === 'rechazada') fechas.cierre = ahora;
-
-  const cambios: Partial<Proyecto> = { estado: a, fechas: fechas as Proyecto['fechas'] };
-  if (a === 'cerrado' || a === 'cancelado' || a === 'rechazada') {
-    cambios.formulario = { ...p.formulario, estado: 'cerrado' };
+  const borrar: ('inicio' | 'aprobado' | 'cierre')[] = [];
+  let formulario = p.formulario;
+  if (restaurar) {
+    for (const k of ['inicio', 'aprobado', 'cierre'] as const) {
+      if (restaurar[k]) fechas[k] = restaurar[k];
+      else borrar.push(k);
+    }
+    formulario = { ...p.formulario, estado: restaurar.formulario };
+  } else {
+    if (a === 'aprobado' && p.estado === 'financiacion') fechas.aprobado = ahora;
+    if (a === 'ejecucion' && !p.fechas.inicio) fechas.inicio = ahora;
+    // De vuelta a antes de empezar: la ejecución aún no ha empezado.
+    if (ANTES_DE_EMPEZAR.includes(a) && (p.estado === 'ejecucion' || p.estado === 'parado')) borrar.push('inicio');
+    if (esFinal(a)) {
+      fechas.cierre = ahora;
+      formulario = { ...p.formulario, estado: 'cerrado' };
+    }
   }
-  const nuevo = await actualizarProyecto(codigo, cambios);
+  const ultimoCambio: CambioEstado = {
+    de: p.estado,
+    a,
+    origen,
+    fecha: ahora,
+    autor,
+    antes: { formulario: p.formulario.estado, inicio: p.fechas.inicio ?? null, aprobado: p.fechas.aprobado ?? null, cierre: p.fechas.cierre ?? null },
+  };
+
+  for (const k of borrar) if (p.fechas[k]) await db.borrarCampo(`proyectos/${codigo}`, ['fechas', k]);
+  const nuevo = await actualizarProyecto(codigo, { estado: a, fechas: fechas as Proyecto['fechas'], formulario, ultimoCambio });
   await anotarEvento(codigo, {
     tipo: 'estado',
     autor,
@@ -187,4 +218,30 @@ export async function cambiarEstado(
     texto: `${ESTADOS[p.estado].nombre} → ${ESTADOS[a].nombre}.${motivo.trim() ? ` ${motivo.trim()}` : ''}`,
   });
   return nuevo;
+}
+
+/** El último cambio hecho a mano desde la ficha, mientras el proyecto siga donde lo dejó. */
+export function cambioDeshacible(p: Proyecto): CambioEstado | null {
+  const c = p.ultimoCambio;
+  return c && c.origen === 'manual' && c.a === p.estado ? c : null;
+}
+
+/** Adónde vuelve el proyecto al deshacer ese cambio: antes de empezar, a lo que diga el dinero. */
+export function destinoAlDeshacer(p: Proyecto, c: CambioEstado): EstadoProyecto {
+  return ANTES_DE_EMPEZAR.includes(c.de) ? antesDeEmpezar(estaCubierto(p)) : c.de;
+}
+
+/** Deshace el último cambio hecho a mano: vuelve al estado anterior, con el formulario y las fechas de entonces. */
+export async function deshacerCambio(codigo: string, autor: Persona): Promise<EstadoProyecto> {
+  const p = await leerProyecto(codigo);
+  if (!p) throw new Error('Proyecto no encontrado');
+  const c = cambioDeshacible(p);
+  if (!c) throw new Error('Este cambio ya no se puede deshacer.');
+  const destino = destinoAlDeshacer(p, c);
+  await cambiarEstado(codigo, destino, `Se deshace el cambio «${ESTADOS[c.de].nombre} → ${ESTADOS[c.a].nombre}».`, autor, {
+    origen: 'deshacer',
+    forzar: true,
+    restaurar: c.antes,
+  });
+  return destino;
 }

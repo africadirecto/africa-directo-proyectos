@@ -23,7 +23,7 @@ const Mapa = dynamic(() => import('./Mapa'), {
   loading: () => <div className="mapa" aria-hidden="true" />,
 });
 
-const ORDEN: EstadoProyecto[] = ['ejecucion', 'parado', 'aprobado', 'financiacion', 'validada', 'revision', 'solicitud', 'completado', 'cerrado', 'rechazada', 'cancelado'];
+const ORDEN: EstadoProyecto[] = ['ejecucion', 'parado', 'aprobado', 'financiacion', 'revision', 'solicitud', 'completado', 'cerrado', 'rechazada', 'cancelado'];
 
 const OPCIONES_ESTADO = ORDEN.map((e) => ({ valor: e, texto: ESTADOS[e].nombre }));
 const ATAJOS_ESTADO = [

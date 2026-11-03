@@ -26,6 +26,11 @@ export function fechaCorta(iso: string | undefined | null): string {
     .replace('.', '');
 }
 
+/** "2026-08-03": el día en España, para comparar con un <input type="date">. */
+export function diaEnEspana(iso: string): string {
+  return new Date(iso).toLocaleDateString('sv-SE', { timeZone: ZONA });
+}
+
 /** "3 ago 2026". */
 export function fechaLarga(iso: string | undefined | null): string {
   if (!iso) return '—';
