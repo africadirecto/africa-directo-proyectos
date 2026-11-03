@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { requiere, tienePermiso } from '@/lib/sesion';
 import { leerIndice } from '@/lib/dominio/indice';
 import { requiereAtencion } from '@/lib/dominio/atencion';
@@ -9,6 +10,7 @@ import { ListaInformes } from '@/componentes/ListaInformes';
 import { plantillasActivas } from '@/lib/dominio/plantillas';
 import { PanelProyectos } from './PanelProyectos';
 import { GenerarResumen } from './GenerarResumen';
+import { AltaManual } from './AltaManual';
 
 // Al pedir un resumen, su preparación sigue en segundo plano dentro de la misma petición.
 export const maxDuration = 300;
@@ -46,6 +48,15 @@ export default async function Proyectos() {
         sinResponder={atencion.sinResponder.length}
       />
       <ListaInformes informes={await listarResumenes()} coleccion="informes" editable={editor} titulo="Resúmenes" />
+      {editor ? (
+        <section className="alta-manual" aria-label="Añadir un proyecto a mano">
+          <p className="meta" style={{ margin: 0 }}>
+            Lo habitual es registrar la solicitud en <Link href="/solicitudes/nueva">Solicitudes</Link> y que la contraparte rellene el formulario. Si no
+            puede, añade tú el proyecto con sus datos.
+          </p>
+          <AltaManual />
+        </section>
+      ) : null}
     </main>
   );
 }

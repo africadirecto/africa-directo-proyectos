@@ -63,6 +63,7 @@ Qué ocurre por dentro en cada paso:
    - Se crea la contraparte, si es nueva, y el proyecto con un código `P-AAAA-NNN` de un contador anual.
    - Se crea su carpeta en Drive con las 7 subcarpetas y un enlace firmado para la contraparte.
    - Si el correo está configurado, se le envía el formulario en su idioma.
+   - **A mano** (al final de Proyectos, `altaManual`): si la contraparte no puede usar el formulario, el voluntario rellena sus datos en un diálogo; se da de alta igual y se envía la versión 1 con su nombre como autor, así que pasa directamente al paso 3.
 2. **Formulario de la contraparte** (`/f/<token>`):
    - Se guarda a cada cambio en el móvil y, a los 2,5 s, en el servidor (borrador).
    - Las fotos se reducen en el navegador antes de subir. Los archivos van a Drive en trozos de 1 MiB, y si se corta la conexión se reanuda donde se quedó (detalle más abajo).

@@ -399,6 +399,10 @@ dialog.dialogo h2 { margin: 0; font-size: 20px; font-weight: 700; }
 .form-publico .lema { font-size: 15px; }
 .estado-guardado { position: sticky; bottom: 0; background: rgba(246, 246, 243, 0.96); border-top: 1px solid var(--borde); padding: 12px 0; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
 .linea-ppto { display: grid; grid-template-columns: minmax(0, 1fr) 140px auto; gap: 8px; align-items: end; }
+/* Alta de un proyecto a mano: al final de Proyectos, discreta (no es el camino habitual). */
+.alta-manual { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px 20px; padding-top: 20px; border-top: 1px solid var(--borde); }
+.alta-manual > .meta { flex: 1 1 320px; }
+.alta-seccion { margin: 6px 0 -4px; font-size: 15px; font-weight: 700; }
 .subidas { display: flex; flex-direction: column; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .subidas li { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; border: 1px solid var(--borde); border-radius: 8px; font-size: 14px; background: #fff; }
 .subidas progress { width: 120px; accent-color: var(--acento); }

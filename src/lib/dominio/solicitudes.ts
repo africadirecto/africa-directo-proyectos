@@ -165,8 +165,11 @@ export async function listarVersiones(codigo: string): Promise<VersionSolicitud[
   return docs.filter((d) => d.id !== 'borrador').sort((a, b) => b.version - a.version);
 }
 
-/** Guarda una versión nueva, pasa el proyecto a En revisión y copia los datos a la ficha. */
-export async function enviarSolicitud(codigo: string, respuestas: RespuestasSolicitud, idioma: Idioma): Promise<number> {
+/**
+ * Guarda una versión nueva, pasa el proyecto a En revisión y copia los datos a la ficha. Con
+ * `autor`, no la envía la contraparte: la ha rellenado a mano un voluntario.
+ */
+export async function enviarSolicitud(codigo: string, respuestas: RespuestasSolicitud, idioma: Idioma, autor: Persona | null = null): Promise<number> {
   const db = await almacen();
   const p = await leerProyecto(codigo);
   if (!p || !formularioEditable(p)) throw new Error('El formulario no está abierto');
@@ -212,11 +215,13 @@ export async function enviarSolicitud(codigo: string, respuestas: RespuestasSoli
     formulario: { ...p.formulario, estado: 'enviado', version, recibidoEn: ahora },
     ultimaNoticia: ahora,
   });
-  await cambiarEstado(codigo, 'revision', `Recibida la versión ${version} de la solicitud.`, null);
+  await cambiarEstado(codigo, 'revision', `Recibida la versión ${version} de la solicitud.`, autor);
   await anotarEvento(codigo, {
     tipo: 'solicitud',
-    autor: null,
-    texto: `La contraparte envía la solicitud (versión ${version}) con ${archivos.length} archivo${archivos.length === 1 ? '' : 's'}.`,
+    autor,
+    texto: autor
+      ? `Solicitud rellenada a mano por ${autor.nombre} (versión ${version}).`
+      : `La contraparte envía la solicitud (versión ${version}) con ${archivos.length} archivo${archivos.length === 1 ? '' : 's'}.`,
   });
   return version;
 }
