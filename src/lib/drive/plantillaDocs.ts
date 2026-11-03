@@ -26,6 +26,7 @@ import {
   type Relleno,
   type ResultadoRelleno,
 } from '../dominio/marcadores';
+import type { CambioDocumento } from '../dominio/cambiosPlantilla';
 
 const DOCS = 'https://docs.googleapis.com/v1/documents';
 
@@ -376,6 +377,8 @@ export interface Bloque {
   imagen?: { objeto: string; flotante: boolean };
   /** Último párrafo de su celda o segmento (no se puede borrar su salto). */
   ultimo?: boolean;
+  /** Estilo del párrafo (HEADING_2, NORMAL_TEXT…). */
+  estilo?: string;
 }
 
 /** Los bloques del documento en orden: títulos, párrafos, celdas, imágenes y tablas (con su texto). */
@@ -410,6 +413,7 @@ export function bloquesDoc(doc: DocumentoDocs & { body?: { content?: (ElementoDo
           fin: inicio + limpio.length,
           ...(tabla ? { tabla } : {}),
           ...(k === todos.length - 1 ? { ultimo: true } : {}),
+          ...(estilo ? { estilo } : {}),
         });
       } else if (e.table) {
         const id = `T${++t}`;
@@ -522,6 +526,81 @@ export async function aplicarAnalisisDoc(id: string, bloques: Bloque[], a: Anali
     }
   }
   return avisos;
+}
+
+// ── Cambiar la estructura («Cambiar con IA») ────────────────────────────────
+
+/** Al quitar el estilo heredado, vuelve a mandar el del párrafo (título o normal). */
+const SIN_ESTILO = 'bold,italic,underline,fontSize,weightedFontFamily,foregroundColor,backgroundColor';
+
+/**
+ * Peticiones para los cambios ya validados (ver dominio/cambiosPlantilla.ts): cambiar un texto
+ * dentro de un bloque, añadir párrafos tras un bloque y quitar bloques. Del final al principio
+ * de cada segmento; en un mismo sitio, primero lo que se añade detrás.
+ */
+export function planCambios(bloques: Bloque[], cambios: CambioDocumento[]): object[] {
+  const porId = new Map(bloques.map((b) => [b.id, b]));
+  const lista: { seg: string; inicio: number; requests: object[] }[] = [];
+  const tras = new Map<string, CambioDocumento[]>();
+  for (const c of cambios) {
+    const b = porId.get(c.bloque);
+    if (!b) continue;
+    if (c.accion === 'insertar') tras.set(b.id, [...(tras.get(b.id) ?? []), c]);
+    else if (c.accion === 'borrar') {
+      const requests =
+        b.tipo === 'imagen'
+          ? [b.imagen!.flotante ? { deletePositionedObject: { objectId: b.imagen!.objeto } } : { deleteContentRange: { range: rango(b.seg, b.inicio, b.fin) } }]
+          : b.tipo === 'tabla'
+            ? [{ deleteContentRange: { range: rango(b.seg, b.inicio, b.fin) } }]
+            : // El párrafo con su salto, salvo el último de su celda o segmento (queda vacío).
+              [{ deleteContentRange: { range: rango(b.seg, b.inicio, b.ultimo ? b.fin : b.fin + 1) } }];
+      lista.push({ seg: b.seg, inicio: b.inicio, requests });
+    } else {
+      const a = b.inicio + b.texto.indexOf(c.buscar);
+      const z = a + c.buscar.length;
+      lista.push({
+        seg: b.seg,
+        inicio: a,
+        requests: c.texto ? reemplazarRango(b.seg, a, z, [{ tipo: 'p', trozos: [{ texto: c.texto }] }], true) : [{ deleteContentRange: { range: rango(b.seg, a, z) } }],
+      });
+    }
+  }
+  for (const [id, cs] of tras) {
+    const b = porId.get(id)!;
+    // Un título nuevo, del mismo nivel que el último título de antes (o HEADING_2).
+    const previo = bloques
+      .slice(0, bloques.indexOf(b) + 1)
+      .reverse()
+      .find((x) => x.estilo?.startsWith('HEADING_'));
+    const nivel = previo?.estilo ?? 'HEADING_2';
+    const requests: object[] = [{ insertText: { location: lugar(b.seg, b.fin), text: cs.map((c) => `\n${c.texto}`).join('') } }];
+    let pos = b.fin + 1;
+    for (const c of cs) {
+      const r = rango(b.seg, pos, pos + c.texto.length);
+      if (c.estilo === 'titulo') {
+        requests.push(
+          { updateParagraphStyle: { range: r, paragraphStyle: { namedStyleType: nivel }, fields: 'namedStyleType' } },
+          { updateTextStyle: { range: r, textStyle: {}, fields: SIN_ESTILO } },
+          { deleteParagraphBullets: { range: r } },
+        );
+      } else if (b.tipo === 'titulo') {
+        // Tras un título, un párrafo normal: sin el estilo del título.
+        requests.push({ updateParagraphStyle: { range: r, paragraphStyle: { namedStyleType: 'NORMAL_TEXT' }, fields: 'namedStyleType' } }, { updateTextStyle: { range: r, textStyle: {}, fields: SIN_ESTILO } });
+      }
+      pos += c.texto.length + 1;
+    }
+    // +0,5: en el mismo sitio que un cambio al final del bloque, va antes.
+    lista.push({ seg: b.seg, inicio: b.fin + 0.5, requests });
+  }
+  return alReves(lista).flatMap((x) => x.requests);
+}
+
+/** Aplica los cambios si el documento sigue en la revisión `revision` (si no, falla sin tocarlo). */
+export async function aplicarCambiosDoc(id: string, cambios: CambioDocumento[], revision: string): Promise<void> {
+  const doc = await leerDoc(id);
+  if (revision && doc.revisionId !== revision) throw new Error('El documento ha cambiado desde la propuesta: vuelve a pedirla.');
+  const requests = planCambios(bloquesDoc(doc), cambios);
+  if (requests.length) await enviar(id, requests, doc.revisionId);
 }
 
 // ── Relleno ─────────────────────────────────────────────────────────────────

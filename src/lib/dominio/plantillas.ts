@@ -38,18 +38,22 @@ export const TIPOS_PLANTILLA: Record<TipoInforme, string> = {
 
 /** Las plantillas guardadas con los tipos de antes (seguimiento, final, cartera…) pasan a su ámbito. */
 const RESUMEN_ANTES = ['cartera', 'contraparte', 'donante'];
-const conTipo = <T extends { tipo: string }>(p: T): T => (p.tipo in TIPOS_PLANTILLA ? p : { ...p, tipo: RESUMEN_ANTES.includes(p.tipo) ? 'resumen' : 'proyecto' });
+const conTipo = <T extends { tipo: string; estado: string }>(p: T): T => ({
+  ...p,
+  ...(p.tipo in TIPOS_PLANTILLA ? {} : { tipo: RESUMEN_ANTES.includes(p.tipo) ? 'resumen' : 'proyecto' }),
+  // Ya no hay borradores: una plantilla se puede usar en cuanto está lista (o se archiva).
+  ...(p.estado === 'borrador' ? { estado: 'activa' } : {}),
+});
 
 export const ESTADOS_PLANTILLA: Record<EstadoPlantilla, string> = {
   procesando: 'Preparándose',
-  borrador: 'Borrador',
   activa: 'Activa',
   archivada: 'Archivada',
   error: 'Con error',
 };
 
 /** Color de la etiqueta de cada estado (clases de globals.css). */
-export const CLASE_ESTADO: Record<EstadoPlantilla, string> = { activa: 's-apr', borrador: 's-rev', archivada: 's-cer', procesando: 's-val', error: 's-par' };
+export const CLASE_ESTADO: Record<EstadoPlantilla, string> = { activa: 's-apr', archivada: 's-cer', procesando: 's-val', error: 's-par' };
 
 export const FORMATOS_PLANTILLA: Record<FormatoPlantilla, string> = { docs: 'Documento', slides: 'Presentación' };
 
@@ -214,7 +218,8 @@ export async function sincronizarPlantilla(id: string, autor: Persona, forzar = 
   if (!forzar && p.sincronizado?.modificado && p.sincronizado.modificado === meta.modificado) return p;
 
   const { estructura, avisos, extras } = analizarEstructura(await leerMarcadores(p.archivoId, meta.mime), p.tipo, p.formato, p.instrucciones);
-  const sincronizado = { modificado: meta.modificado ?? ahora, fecha: ahora, avisos };
+  // Sin fecha de cambio (archivos antiguos de la demo), se vuelve a leer siempre.
+  const sincronizado = { modificado: meta.modificado ?? '', fecha: ahora, avisos };
   await db.guardar(`plantillas/${id}`, { estructura, sincronizado }, { fusionar: true });
 
   const importadas = Object.entries(extras).filter(([clave]) => !p.instrucciones.campos[clave]?.trim());
@@ -323,9 +328,9 @@ export async function editarPlantilla(id: string, datos: DatosPlantilla, autor: 
   if (datos.tipo !== p.tipo) await sincronizarPlantilla(id, autor, true);
 }
 
-export async function cambiarEstadoPlantilla(id: string, estado: 'activa' | 'borrador' | 'archivada', autor: Persona): Promise<void> {
+export async function cambiarEstadoPlantilla(id: string, estado: 'activa' | 'archivada', autor: Persona): Promise<void> {
   const cambios: Partial<Plantilla> = { estado, actualizado: new Date().toISOString(), actualizadoPor: autor };
-  // Una plantilla que no está activa no puede ser la que se propone.
+  // Una plantilla archivada no puede ser la que se propone.
   if (estado !== 'activa') cambios.porDefecto = false;
   await (await almacen()).guardar(`plantillas/${id}`, cambios, { fusionar: true });
 }
@@ -341,7 +346,7 @@ export async function marcarPorDefecto(id: string, autor: Persona): Promise<void
   await db.guardar(`plantillas/${id}`, { porDefecto: true, estado: 'activa', actualizado: ahora, actualizadoPor: autor }, { fusionar: true });
 }
 
-/** Copia el documento en la misma carpeta y la registra como borrador, con las mismas instrucciones. */
+/** Copia el documento en la misma carpeta y la registra con las mismas instrucciones. */
 export async function duplicarPlantilla(id: string, nombre: string, autor: Persona): Promise<PlantillaConId> {
   const p = await leerPlantilla(id);
   if (!p) throw new Error('Plantilla no encontrada.');
@@ -351,7 +356,7 @@ export async function duplicarPlantilla(id: string, nombre: string, autor: Perso
   const copia = await d.copiar(p.archivoId, meta.carpetaId, nombre);
   return registrarPlantilla(
     copia.id,
-    { nombre, descripcion: p.descripcion, tipo: p.tipo, idioma: p.idioma, donante: p.donante, origen: 'drive', estado: 'borrador', instrucciones: p.instrucciones },
+    { nombre, descripcion: p.descripcion, tipo: p.tipo, idioma: p.idioma, donante: p.donante, origen: 'drive', estado: 'activa', instrucciones: p.instrucciones },
     autor,
   );
 }

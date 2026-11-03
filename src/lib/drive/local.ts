@@ -31,7 +31,8 @@ const rutaSubida = (sid: string) => path.join(DIR, '_subidas', sid);
 
 function registrar(carpetaId: string, nombre: string, mime: string, tamano: number): ArchivoDrive {
   const m = leerMeta();
-  const archivo = { id: nuevoId(), nombre, mime, tamano, carpetaId, creado: new Date().toISOString() };
+  const ahora = new Date().toISOString();
+  const archivo = { id: nuevoId(), nombre, mime, tamano, carpetaId, creado: ahora, modificado: ahora };
   m.archivos[archivo.id] = archivo;
   guardarMeta(m);
   return archivo;
@@ -63,6 +64,15 @@ export const driveLocal: Drive = {
   async renombrar(id, nombre) {
     const m = leerMeta();
     if (m.archivos[id]) m.archivos[id].nombre = nombre;
+    guardarMeta(m);
+  },
+
+  async reemplazarContenido(id, mime, contenido) {
+    const m = leerMeta();
+    const a = m.archivos[id];
+    if (!a || a.papelera) throw new Error('Archivo no encontrado');
+    fs.writeFileSync(path.join(DIR, id), contenido);
+    m.archivos[id] = { ...a, mime, tamano: contenido.byteLength, modificado: new Date().toISOString() };
     guardarMeta(m);
   },
 

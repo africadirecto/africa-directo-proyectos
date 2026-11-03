@@ -21,8 +21,9 @@ import {
   type Relleno,
   type ResultadoRelleno,
 } from '../dominio/marcadores';
+import type { CambioDocumento } from '../dominio/cambiosPlantilla';
 
-const SLIDES = 'https://slides.googleapis.com/v1/presentations';
+const SLIDES ='https://slides.googleapis.com/v1/presentations';
 const EMU = 12700;
 
 type ElementoTexto = { startIndex?: number; endIndex?: number; textRun?: { content?: string }; autoText?: { content?: string } };
@@ -330,6 +331,44 @@ export async function aplicarAnalisisSlides(id: string, bloques: BloqueSlides[],
   const requests = [...ordenar(textos).flatMap((x) => x.requests), ...altText];
   if (requests.length) await enviar(id, requests, (await leerSlides(id)).revisionId);
   return avisos;
+}
+
+// ── Cambiar la estructura («Cambiar con IA») ────────────────────────────────
+
+/**
+ * Aplica los cambios ya validados (ver dominio/cambiosPlantilla.ts) si la presentación sigue en
+ * la revisión `revision`: cambiar texto de un párrafo, añadir párrafos tras él en el mismo
+ * recuadro y quitar párrafos o imágenes. No se crean diapositivas.
+ */
+export async function aplicarCambiosSlides(id: string, cambios: CambioDocumento[], revision: string): Promise<void> {
+  const p = await leerSlides(id);
+  if (revision && p.revisionId !== revision) throw new Error('La presentación ha cambiado desde la propuesta: vuelve a pedirla.');
+  const porId = new Map(bloquesSlides(p).map((b) => [b.id, b]));
+  const textos: (Destino & { inicio: number; requests: object[] })[] = [];
+  const objetos: object[] = [];
+  const tras = new Map<string, CambioDocumento[]>();
+  const plano = (t: string) => [{ tipo: 'p' as const, trozos: [{ texto: t }] }];
+  for (const c of cambios) {
+    const b = porId.get(c.bloque);
+    if (!b) continue;
+    if (c.accion === 'insertar') tras.set(b.id, [...(tras.get(b.id) ?? []), c]);
+    else if (c.accion === 'borrar') {
+      if (b.tipo === 'imagen') objetos.push({ deleteObject: { objectId: b.destino.objectId } });
+      // El último párrafo se lleva el salto de antes, para no dejar una línea vacía.
+      else textos.push({ ...b.destino, inicio: b.inicio, requests: [{ deleteText: { ...donde(b.destino), textRange: b.ultimo ? tramo(Math.max(0, b.inicio - 1), b.fin) : tramo(b.inicio, b.fin + 1) } }] });
+    } else {
+      const a = b.inicio + b.texto.indexOf(c.buscar);
+      const z = a + c.buscar.length;
+      textos.push({ ...b.destino, inicio: a, requests: c.texto ? reemplazarEnSlides(b.destino, a, z, plano(c.texto)) : [{ deleteText: { ...donde(b.destino), textRange: tramo(a, z) } }] });
+    }
+  }
+  for (const [bid, cs] of tras) {
+    const b = porId.get(bid)!;
+    // +0,5: en el mismo sitio que un cambio al final del párrafo, va antes.
+    textos.push({ ...b.destino, inicio: b.fin + 0.5, requests: [{ insertText: { ...donde(b.destino), insertionIndex: b.fin, text: cs.map((c) => `\n${c.texto}`).join('') } }] });
+  }
+  const requests = [...ordenar(textos).flatMap((x) => x.requests), ...objetos];
+  if (requests.length) await enviar(id, requests, p.revisionId);
 }
 
 // ── Relleno ─────────────────────────────────────────────────────────────────

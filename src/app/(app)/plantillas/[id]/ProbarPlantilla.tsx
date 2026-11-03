@@ -1,6 +1,6 @@
 'use client';
 
-// Probar una plantilla (aunque esté en borrador) con los datos de un proyecto. El informe de prueba
+// Probar una plantilla con los datos de un proyecto. El informe de prueba
 // va a «AD · Plantillas / _Pruebas» y aparece en esta página, no en la ficha del proyecto.
 
 import { useActionState } from 'react';

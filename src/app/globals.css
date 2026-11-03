@@ -105,6 +105,18 @@ img { max-width: 100%; }
 .perfil-correo { margin: 0; padding: 8px 10px 10px; font-size: 13px; color: var(--texto-2); border-bottom: 1px solid var(--borde-suave); margin-bottom: 6px; overflow-wrap: anywhere; }
 .perfil-opcion { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 42px; padding: 0 10px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 15px; color: var(--texto); cursor: pointer; text-align: left; }
 .perfil-opcion:hover, .perfil-opcion:focus-visible { background: #f3f2ee; }
+
+/* Menú «Más» de acciones secundarias (componentes/MenuAcciones.tsx) */
+.menu-acciones { position: relative; }
+.menu-acciones-panel { position: absolute; top: calc(100% + 6px); z-index: 1000; min-width: 250px; background: #fff; border: 1px solid var(--borde); border-radius: 10px; box-shadow: 0 10px 30px rgba(27, 27, 24, 0.14); padding: 6px; }
+.menu-opcion { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 42px; padding: 0 10px; border: 0; border-radius: 6px; background: none; font: inherit; font-size: 15px; color: var(--texto); cursor: pointer; text-align: left; white-space: nowrap; }
+.menu-opcion svg { color: var(--texto-2); }
+.menu-opcion:hover, .menu-opcion:focus-visible { background: #f3f2ee; }
+.menu-opcion[data-peligro], .menu-opcion[data-peligro] svg { color: var(--error); }
+.menu-opcion[data-peligro]:hover, .menu-opcion[data-peligro]:focus-visible { background: var(--error-fondo); }
+.menu-opcion[data-separada] { margin-top: 6px; position: relative; }
+.menu-opcion[data-separada]::before { content: ""; position: absolute; left: 0; right: 0; top: -4px; border-top: 1px solid var(--borde-suave); }
+.menu-acciones-aviso { position: absolute; top: calc(100% + 6px); z-index: 999; width: max-content; max-width: min(380px, 85vw); margin: 0; cursor: pointer; box-shadow: 0 6px 20px rgba(27, 27, 24, 0.12); }
 .avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--activo-fondo); color: var(--activo-texto); font-weight: 600; font-size: 14px; display: flex; align-items: center; justify-content: center; flex: none; }
 .yo-datos { display: flex; flex-direction: column; font-size: 14px; line-height: 1.25; }
 .yo-datos b { font-weight: 600; }
@@ -446,3 +458,16 @@ button.barra { cursor: pointer; }
 .marcador { font-family: ui-monospace, SFMono-Regular, Consolas, monospace; font-size: 13px; background: var(--fondo); color: var(--texto); border: 1px solid var(--borde-suave); border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
 .campo-suelto { flex: 1 1 220px; font: inherit; font-size: 15px; min-height: 44px; padding: 0 12px; border: 1px solid var(--borde-campo); border-radius: 8px; background: #fff; color: var(--texto); min-width: 0; }
 summary.enlace { color: var(--enlace); font-size: 14px; font-weight: 500; }
+
+/* «Cambiar con IA» de una plantilla: la propuesta (plantillas/[id]/Instrucciones.tsx) */
+.con-icono { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.propuesta { border-top: 1px solid var(--borde); padding-top: 12px; }
+.propuesta-cab { margin: 0 0 6px; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: var(--texto-2); }
+.cambios { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.cambio { display: flex; gap: 8px; align-items: baseline; font-size: 14px; line-height: 1.45; color: var(--texto); overflow-wrap: anywhere; }
+.cambio > span:first-child { flex: none; width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; transform: translateY(2px); }
+.cambio[data-tipo='mas'] > span:first-child { background: var(--ok-fondo); color: var(--ok); }
+.cambio[data-tipo='menos'] > span:first-child { background: var(--error-fondo); color: var(--error); }
+.cambio[data-tipo='cambia'] > span:first-child { background: var(--aviso-fondo); color: var(--aviso-texto); }
+.cambio s { color: var(--texto-2); }
+.sub-linea { color: var(--texto-2); font-size: 13px; }

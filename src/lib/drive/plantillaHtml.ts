@@ -13,6 +13,7 @@ import {
   type Relleno,
   type ResultadoRelleno,
 } from '../dominio/marcadores';
+import type { CambioDocumento } from '../dominio/cambiosPlantilla';
 
 const escapar = (t: string) => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
@@ -58,6 +59,89 @@ export function marcadoresHtml(html: string): { original: string; solo: boolean;
     enAlt: false,
   }));
   return [...resto, ...enAlt];
+}
+
+// ── Cambiar la estructura («Cambiar con IA») ────────────────────────────────
+
+export interface BloqueHtml {
+  id: string;
+  tipo: 'titulo' | 'parrafo' | 'celda' | 'imagen';
+  texto: string;
+  /** El elemento entero, [inicio, fin) en el HTML. */
+  inicio: number;
+  fin: number;
+  /** El contenido del elemento, entre sus etiquetas. */
+  interior: [number, number];
+  /** La etiqueta de apertura (para copiar el estilo de un título). */
+  apertura: string;
+}
+
+const desescapar = (t: string) => t.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
+
+/** Títulos, párrafos, celdas e imágenes del cuerpo, en orden (como bloquesDoc en Docs). */
+export function bloquesHtml(html: string): BloqueHtml[] {
+  const cuerpo = Math.max(0, html.search(/<body\b/i));
+  const bloques: BloqueHtml[] = [];
+  let n = 0;
+  for (const m of html.slice(cuerpo).matchAll(/<(h[1-6]|p|li|td|th)\b[^>]*>([\s\S]*?)<\/\1>|<img\b[^>]*>/gi)) {
+    const inicio = cuerpo + m.index!;
+    const fin = inicio + m[0].length;
+    const apertura = m[0].slice(0, m[0].indexOf('>') + 1);
+    if (!m[1]) {
+      const alt = m[0].match(/\balt="([^"]*)"/)?.[1];
+      bloques.push({ id: `B${++n}`, tipo: 'imagen', texto: `[imagen${alt ? `: ${desescapar(alt)}` : ''}]`, inicio, fin, interior: [fin, fin], apertura });
+      continue;
+    }
+    const texto = desescapar(m[2].replace(/<[^>]+>/g, '')).replace(/\s+/g, ' ').trim();
+    if (!texto) continue;
+    const etiqueta = m[1].toLowerCase();
+    bloques.push({
+      id: `B${++n}`,
+      tipo: etiqueta.startsWith('h') ? 'titulo' : etiqueta === 'td' || etiqueta === 'th' ? 'celda' : 'parrafo',
+      texto,
+      inicio,
+      fin,
+      interior: [inicio + apertura.length, fin - `</${m[1]}>`.length],
+      apertura,
+    });
+  }
+  return bloques;
+}
+
+/** El HTML con los cambios ya validados (ver dominio/cambiosPlantilla.ts). */
+export function aplicarCambiosHtml(html: string, cambios: CambioDocumento[]): string {
+  const bloques = bloquesHtml(html);
+  const porId = new Map(bloques.map((b) => [b.id, b]));
+  const cortes: { inicio: number; fin: number; texto: string; orden: number }[] = [];
+  for (const c of cambios) {
+    const b = porId.get(c.bloque);
+    if (!b) continue;
+    if (c.accion === 'borrar') cortes.push({ inicio: b.inicio, fin: b.fin, texto: '', orden: 0 });
+    else if (c.accion === 'insertar') {
+      // Un título nuevo copia la etiqueta (y el estilo) del último título de antes.
+      const previo = bloques
+        .slice(0, bloques.indexOf(b) + 1)
+        .reverse()
+        .find((x) => x.tipo === 'titulo');
+      const abre = c.estilo === 'titulo' ? (previo?.apertura ?? '<h2>') : '<p>';
+      const etiqueta = abre.match(/^<(\w+)/)![1];
+      const orden = 2 - cambios.indexOf(c) / cambios.length;
+      // En una celda, otra línea dentro de la misma celda.
+      if (b.tipo === 'celda') cortes.push({ inicio: b.interior[1], fin: b.interior[1], texto: `<br>${escapar(c.texto)}`, orden });
+      else cortes.push({ inicio: b.fin, fin: b.fin, texto: `\n${abre}${escapar(c.texto)}</${etiqueta}>`, orden });
+    } else {
+      const interior = html.slice(b.interior[0], b.interior[1]);
+      const k = interior.indexOf(escapar(c.buscar)) >= 0 ? interior.indexOf(escapar(c.buscar)) : interior.indexOf(c.buscar);
+      if (k < 0) continue;
+      const largo = interior.indexOf(escapar(c.buscar)) >= 0 ? escapar(c.buscar).length : c.buscar.length;
+      cortes.push({ inicio: b.interior[0] + k, fin: b.interior[0] + k + largo, texto: escapar(c.texto), orden: 0 });
+    }
+  }
+  // Del final al principio. En un mismo sitio, primero lo que se quita y luego lo que se añade,
+  // del último al primero (así quedan en su orden).
+  let salida = html;
+  for (const x of cortes.sort((a, b) => b.inicio - a.inicio || a.orden - b.orden)) salida = salida.slice(0, x.inicio) + x.texto + salida.slice(x.fin);
+  return salida;
 }
 
 export function rellenarHtml(html: string, r: Relleno): { html: string; resultado: ResultadoRelleno } {

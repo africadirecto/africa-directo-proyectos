@@ -73,6 +73,7 @@ export default async function Solicitudes({ searchParams }: { searchParams: Prom
   const rechazo = p?.estado === 'rechazada' ? (await listarRevisiones(p.codigo)).find((r) => r.decision === 'rechazar') : undefined;
   // La última decisión, mientras se pueda corregir o deshacer.
   const abierta = p ? await decisionAbierta(p) : null;
+  const conIA = await iaDisponible();
 
   return (
     <main className="principal">
@@ -204,7 +205,7 @@ export default async function Solicitudes({ searchParams }: { searchParams: Prom
                   <section className="pila" style={{ borderTop: '1px solid var(--borde-suave)', paddingTop: 20, gap: 12 }}>
                     <h3 style={{ margin: 0, fontSize: 16, fontWeight: 600 }}>Decisión</h3>
                     <FormDecision codigo={p.codigo} idioma={p.contraparte.idioma !== 'es' ? IDIOMAS_ES[p.contraparte.idioma].toLowerCase() : ''} />
-                    {!v.analisis?.hechoPorIA && iaDisponible() ? (
+                    {!v.analisis?.hechoPorIA && conIA ? (
                       <FormAccion accion={reanalizar}>
                         <input type="hidden" name="codigo" value={p.codigo} />
                         <input type="hidden" name="version" value={v.version} />

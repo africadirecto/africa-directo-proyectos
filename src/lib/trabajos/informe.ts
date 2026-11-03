@@ -91,14 +91,14 @@ export interface PedidoInforme {
   fotos?: string[] | null;
   /** Archivos del proyecto cuyo texto se da a la IA como contexto. */
   adjuntos?: string[];
-  /** Prueba de una plantilla (aunque esté en borrador): va aparte, no a la ficha del proyecto. */
+  /** Prueba de una plantilla: va aparte, no a la ficha del proyecto. */
   prueba?: boolean;
 }
 
 /** Crea el informe en cola y devuelve su ruta. Después hay que llamar a avanzarInforme. */
 export async function pedirInforme(o: PedidoInforme, autor: Persona): Promise<string> {
   const p = await leerPlantilla(o.plantillaId);
-  if (!p || (p.estado !== 'activa' && !(o.prueba && p.estado === 'borrador'))) throw new Error(o.prueba ? 'Solo se pueden probar las plantillas en borrador o activas.' : 'Elige una plantilla activa.');
+  if (!p || p.estado !== 'activa') throw new Error(p?.estado === 'archivada' ? 'Esa plantilla está archivada.' : 'Esa plantilla aún no está lista.');
   if (o.prueba && !o.codigo) throw new Error('Elige el proyecto con el que probarla.');
   if (!o.codigo && !o.resumen) throw new Error('Falta el proyecto.');
   if (p.tipo !== (o.codigo ? 'proyecto' : 'resumen')) throw new Error(`Esa plantilla es para «${TIPOS_PLANTILLA[p.tipo]}».`);
@@ -122,7 +122,7 @@ export async function pedirInforme(o: PedidoInforme, autor: Persona): Promise<st
     url: '',
     pendientes: 0,
     resumen: '',
-    hechoPorIA: iaDisponible(),
+    hechoPorIA: await iaDisponible(),
     estado: 'en_cola',
     progreso: { campos: 0, hechos: 0 },
     intentos: 0,
@@ -277,11 +277,11 @@ async function preparar(ruta: string, i: Informe) {
   };
 
   if (!faltan.length) cambios.estado = 'componiendo';
-  else if (!iaDisponible()) {
+  else if (!(await iaDisponible())) {
     // Sin IA (demo sin clave): cada campo queda como hueco con su instrucción, para ver el resultado.
     for (const c of faltan) await guardarCampo(ruta, c, `[PENDIENTE: ${c.instruccion || c.clave}]`, true);
     Object.assign(cambios, { estado: 'componiendo', hechoPorIA: false, progreso: { campos: campos.length, hechos: campos.length } });
-  } else if (usarLotes()) {
+  } else if (await usarLotes()) {
     const lote = await enviarLote(faltan.map((c) => peticion(trabajo, i, c)), urlAviso());
     const ahora = new Date().toISOString();
     Object.assign(cambios, { estado: 'redactando', modo: 'lote', lote: { id: lote, enviado: ahora, comprobado: ahora, reenviado: false } });
@@ -453,7 +453,7 @@ async function fotosDelRelleno(t: Trabajo, i: Informe, codigo: string): Promise<
 
 /** Traducciones del texto fijo de la plantilla, con caché por plantilla e idioma. */
 async function traduccionesDe(p: PlantillaConId, mime: string, idioma: Idioma): Promise<Record<string, string>> {
-  if (!iaDisponible()) return {};
+  if (!(await iaDisponible())) return {};
   const textos =
     mime === ES_DOC
       ? textosFijos(await leerDoc(p.archivoId))

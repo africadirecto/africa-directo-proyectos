@@ -6,6 +6,7 @@
 import { almacen } from '../almacen';
 import { config } from '../config';
 import { borrarLote } from '../ia/lotes';
+import { ajustesIa } from '../ia/ajustes';
 import { ErrorIA } from '../ia/openrouter';
 
 export const claveTrabajo = (ruta: string) => ruta.replace(/\//g, '~');
@@ -22,9 +23,12 @@ export async function quitarTrabajo(ruta: string): Promise<void> {
   await (await almacen()).borrar(`trabajos/${claveTrabajo(ruta)}`).catch(() => undefined);
 }
 
-/** Lotes solo si la app tiene una dirección pública a la que OpenRouter pueda avisar (en local y en demo, no). */
-export function usarLotes(): boolean {
-  return config.ia.lotes && /^https:\/\//.test(config.appUrl) && !/localhost|127\.0\.0\.1/.test(config.appUrl);
+/** La app tiene una dirección pública a la que OpenRouter pueda avisar al terminar un lote (en local y en demo, no). */
+export const lotesPosibles = () => /^https:\/\//.test(config.appUrl) && !/localhost|127\.0\.0\.1/.test(config.appUrl);
+
+/** Por lotes si así está en Ajustes de IA y se puede; si no, por la vía directa. */
+export async function usarLotes(): Promise<boolean> {
+  return (await ajustesIa()).modo === 'lotes' && lotesPosibles();
 }
 
 /** Dirección a la que OpenRouter avisa al terminar un lote. */

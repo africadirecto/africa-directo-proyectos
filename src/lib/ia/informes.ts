@@ -12,6 +12,7 @@ import { IDIOMAS_ES } from '../formulario/textos';
 import { sinContactos } from '../dominio/informesComun';
 import { parteImagen, pedirJson, pedirTexto } from './openrouter';
 import { iaDisponible } from './index';
+import { ajustesIa } from './ajustes';
 import type { CampoPlantilla, FormatoPlantilla, Idioma } from '../tipos';
 import type { PeticionLote } from './lotes';
 
@@ -87,7 +88,7 @@ export async function redactarDirecto(p: PeticionLote): Promise<string> {
 
 /** Traduce los textos fijos de una plantilla. Conserva los {{marcadores}}; devuelve original → traducción. */
 export async function traducirTextos(textos: string[], de: Idioma, a: Idioma): Promise<Record<string, string>> {
-  if (!textos.length || !iaDisponible()) return {};
+  if (!textos.length || !(await iaDisponible())) return {};
   const salida: Record<string, string> = {};
   for (let i = 0; i < textos.length; i += 120) {
     const tanda = textos.slice(i, i + 120);
@@ -118,7 +119,7 @@ export const IMAGEN_LEGIBLE = ['image/jpeg', 'image/png', 'image/webp', 'image/g
  * un plano…): se transcribe su texto. La foto va en base64, nunca como enlace.
  */
 export async function describirImagen(bytes: Buffer, mime: string, o: { pista: string; documento?: boolean }): Promise<string> {
-  if (!iaDisponible() || !IMAGEN_LEGIBLE.includes(mime)) return '';
+  if (!IMAGEN_LEGIBLE.includes(mime) || !(await iaDisponible()) || !(await ajustesIa()).fotos) return '';
   const r = await pedirJson<{ descripcion: string }>({
     tarea: 'vision',
     nombre: 'descripcion_imagen',
@@ -160,7 +161,7 @@ export async function asignarFotos(fotos: FotoDisponible[], huecos: HuecoFoto[],
     return r;
   };
   if (!fotos.length || !huecos.length) return {};
-  if (!iaDisponible() || fotos.every((f) => !f.descripcion)) return enOrden();
+  if (fotos.every((f) => !f.descripcion) || !(await iaDisponible())) return enOrden();
   try {
     const r = await pedirJson<{ huecos: { clave: string; fotos: { id: string; pie: string }[] }[] }>({
       tarea: 'rapida',
@@ -210,7 +211,7 @@ export async function asignarFotos(fotos: FotoDisponible[], huecos: HuecoFoto[],
 /** Resumen en español del informe, para la lista y para dar continuidad al siguiente. */
 export async function resumirInforme(textos: string[]): Promise<string> {
   const todo = textos.join('\n\n').slice(0, 8000);
-  if (!todo.trim() || !iaDisponible()) return '';
+  if (!todo.trim() || !(await iaDisponible())) return '';
   try {
     const r = await pedirJson<{ resumen: string }>({
       tarea: 'rapida',

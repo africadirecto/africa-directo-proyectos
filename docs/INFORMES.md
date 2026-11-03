@@ -28,7 +28,9 @@ Para qué sirve cada plantilla (seguimiento, final, presentación para buscar fi
 
 3. **Generar.** El informe se hace **en segundo plano**:
    - Con la Batch API (en producción) suele tardar unos minutos, y como mucho un día. Puedes cerrar la ventana: aparece en **Archivos › Informes** con su progreso y se avisa en Google Chat al terminar.
-   - Sin lotes (en local o con `IA_LOTES=0`) tarda segundos o pocos minutos.
+   - En modo directo (o en local) suele estar en menos de un minuto.
+
+   Se elige en **Administración › Ajustes de IA** (ver [Modo de los informes](#modo-de-los-informes-lotes-o-directo)).
    
    Si algo falla, el informe muestra el motivo y un botón **Reintentar**. Lo ya redactado no se repite.
 4. Ábrelo en Google Docs o Slides y revísalo:
@@ -65,12 +67,48 @@ Solo los del proyecto (o de los proyectos), y sin datos de contacto:
 
 **Fotos.** Las fotos **no van a la IA que redacta**. Para repartirlas por los huecos, otra llamada (sin retención de datos) describe cada foto publicable una vez, sin identificar a nadie; la descripción se guarda para no repetirla. Google las descarga para insertarlas desde la app, con un enlace que caduca en minutos: nunca se hacen públicas en Drive.
 
-**Privacidad.** En producción, la redacción va en **lotes** de OpenRouter (Batch API): a mitad de precio y sin límite de tiempo, pero sin retención cero y por servidores de EE. UU. Por eso:
+**Privacidad.** Con el modo **por lotes**, la redacción va en lotes de OpenRouter (Batch API): a mitad de precio y sin límite de tiempo, pero sin retención cero y por servidores de EE. UU. Por eso:
 - solo se envía ese texto ya limpio (también el de los archivos que marques), sin fotos;
 - la app **borra cada lote en cuanto lo lee**;
 - lo demás (traducir, resumir, «Cambiar con IA») va por la vía normal, a proveedores que no guardan los datos.
 
+Con el modo **directo**, todo va por la vía normal, sin retención.
+
 Detalles: [DESPLIEGUE.md › Paso 8](DESPLIEGUE.md#paso-8-ia-con-openrouter).
+
+## Modo de los informes: lotes o directo
+
+Se elige en **Administración › Ajustes de IA**, junto con la clave de OpenRouter, el modelo de cada función, el límite de gasto del mes y si se eligen las fotos con IA. Lo que no se guarde allí sale de las variables de entorno.
+
+| | Por lotes (Batch API) | Directo |
+| --- | --- | --- |
+| Precio | La mitad | Normal (céntimos por informe) |
+| Tiempo | Minutos; como mucho, un día | Normalmente menos de un minuto |
+| Privacidad | Sin retención cero, por EE. UU. (la app borra el lote al leerlo) | Solo proveedores sin retención (ZDR) |
+| Necesita | Una `APP_URL` pública (https) para el aviso de OpenRouter | Nada más |
+
+**Cómo funciona el modo directo.** Lo hace la propia app en Vercel: al pedir el informe se redactan todos los apartados a la vez (con `after()`, dentro de los 300 s de la función) y se compone el documento. Si algo se corta (un proveedor caído, un límite de peticiones), el informe sigue al mirarlo en la app o con el cron nocturno. Para que siga solo en pocos minutos aunque nadie lo mire, programa una llamada a `/api/cron/pulso` cada 5 minutos, por ejemplo con un activador de Apps Script de la cuenta técnica:
+
+```js
+// Apps Script › Activadores › Por tiempo › Cada 5 minutos
+function pulso() {
+  UrlFetchApp.fetch('https://proyectos.africadirecto.org/api/cron/pulso', {
+    headers: { Authorization: 'Bearer ' + PropertiesService.getScriptProperties().getProperty('CRON_SECRET') },
+    muteHttpExceptions: true,
+  });
+}
+```
+
+Si no hay nada a medias, cada pulso solo cuesta una consulta a la base de datos.
+
+**Otras formas que se valoraron** para el modo directo:
+
+| Opción | A favor | En contra |
+| --- | --- | --- |
+| **Vercel, en la propia app** (la elegida) | Sin piezas nuevas ni cuentas; ya existía | Cada paso tiene que caber en 300 s (sobra: los apartados van en paralelo) |
+| Vercel Workflow / Queues | Reintentos y pasos duraderos | Más código y dependencias, cuotas propias en Hobby (Workflow: 50.000 eventos al mes) y atado a Vercel |
+| Cloudflare Workers + Workflows o Queues | Plan gratuito con colas y flujos duraderos | Otra cuenta, otro despliegue y otro entorno que mantener: va contra «poco código, una sola pieza» |
+| Pulso externo (Apps Script, cron-job.org, GitHub Actions) | Gratis, cada pocos minutos | Solo hace avanzar lo que la app ya sabe hacer; recomendado como complemento (`/api/cron/pulso`) |
 
 ## Plantillas
 
@@ -81,8 +119,9 @@ Todas las plantillas están en la sección **Plantillas** de la app y funcionan 
 En la ficha de cada plantilla:
 - **Abrir en Google**: el formato y los marcadores se cambian en el documento.
 - **Volver a leer el documento**: la app comprueba qué marcadores tiene y **avisa** de lo que no va a salir bien (un marcador desconocido, un dato que no vale para ese tipo de informe, una galería en mal sitio…). Lo hace sola al abrir la plantilla si el documento ha cambiado.
-- **Cambiar con IA**: escribe lo que quieres («más formal», «que el resumen hable siempre del número de alumnos») y la IA propone las instrucciones nuevas. Ves qué cambia, la pasas al formulario y la guardas tú.
-- **Activar, archivar y duplicar**. Solo las **activas** se ofrecen al generar informes. Administración elige la que se propone **por defecto** para cada tipo y formato, y puede borrar plantillas.
+- **Cambiar con IA**: escribe lo que quieres («añade un apartado de sostenibilidad antes de las fotos», «quita el de próximos pasos», «más formal», «llámala Informe breve») y la IA propone cambios en el **documento** (añadir, quitar o renombrar apartados, poner o quitar marcadores y datos, cambiar el texto fijo), en las **instrucciones** y en el **nombre y la descripción**. Ves cada cambio (+ añade, − quita, → cambia) y **Aplicar los cambios** los escribe en Google y guarda las instrucciones como una versión nueva. Parte de lo que haya en el formulario, aunque no esté guardado. Si alguien ha cambiado el documento entretanto, no se aplica y hay que volver a pedirla. Los cambios del documento se deshacen en Google (Archivo › Historial de versiones). En Slides no crea diapositivas: cambia, añade o quita texto en los recuadros que hay. No cambia colores ni el diseño.
+- **Más** (menú con iconos): volver a leer el documento, editar datos, duplicar, proponer por defecto (administración), **archivar** o recuperar y **borrar** (administración).
+- Una plantilla se puede usar en cuanto está lista: **no hay borradores ni hay que activarla**. Para dejar de ofrecerla al generar informes, **Archívala** (se puede recuperar). Administración elige la que se propone **por defecto** para cada tipo y formato.
 
 Para empezar, administración pulsa **Crear las plantillas de la ONG**: crea en `AD · Plantillas / ONG`, en documento y en presentación, tres de proyecto (seguimiento, final y presentación para buscar financiación) y una de resumen. Son un punto de partida: se pueden cambiar, duplicar o archivar.
 
@@ -96,15 +135,13 @@ Para tener otra plantilla hay dos caminos.
    - Convierte el ejemplo en un documento de Google y lo deja en `ONG` o en `Donantes / <donante>`. El original queda en `_Ejemplos`.
    - La IA decide qué es texto fijo, qué datos de la app hay (título, presupuesto…) y qué apartados redactará en cada informe, y los marca.
    - Escribe las instrucciones imitando el estilo del ejemplo, sin copiar sus datos.
-4. La plantilla queda en **borrador**, con los avisos y las dudas de la IA para revisar. Ábrela en Google, ajusta lo que haga falta y pruébala.
+4. La plantilla queda lista, con los avisos y las dudas de la IA para revisar. Ábrela en Google, ajusta lo que haga falta y pruébala antes de usarla.
 
 **Añadir desde Drive:** para un documento que ya tiene los marcadores escritos a mano. Déjalo en la unidad (si es un Word, ábrelo antes con Google Docs) y pulsa **Añadir desde Drive**.
 
-**Probar con un proyecto** (en la ficha de la plantilla, también en borrador):
+**Probar con un proyecto** (en la ficha de la plantilla):
 - hace un informe con los datos del proyecto que elijas, para ver cómo queda;
 - va a `AD · Plantillas / _Pruebas` y aparece en la ficha de la plantilla, no en la del proyecto.
-
-Cuando la plantilla esté bien, **Activar**.
 
 Hace falta:
 

@@ -41,6 +41,8 @@ export interface Drive {
   crearCarpeta(nombre: string, padreId: string): Promise<string>;
   renombrar(id: string, nombre: string): Promise<void>;
   subir(carpetaId: string, nombre: string, mime: string, contenido: Buffer): Promise<ArchivoDrive>;
+  /** Cambia el contenido de un archivo que no es de Google (p. ej. una plantilla HTML de la demo). */
+  reemplazarContenido(id: string, mime: string, contenido: Buffer): Promise<void>;
   /** Abre una sesión de subida reanudable y devuelve su URL. `origen` habilita CORS para el navegador. */
   iniciarSubida(o: { carpetaId: string; nombre: string; mime: string; tamano: number; origen: string }): Promise<string>;
   enviarTrozo(url: string, trozo: Uint8Array, inicio: number, total: number): Promise<EstadoSubida>;

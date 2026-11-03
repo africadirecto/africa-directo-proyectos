@@ -5,7 +5,8 @@ import { usePathname } from 'next/navigation';
 
 const SECCIONES = [
   ['/admin', 'Usuarios y permisos'],
-  ['/admin/ajustes', 'Ajustes'],
+  ['/admin/integraciones', 'Integraciones'],
+  ['/admin/ia', 'Ajustes de IA'],
 ] as const;
 
 export function MenuAdmin() {

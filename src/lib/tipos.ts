@@ -322,8 +322,11 @@ export type ExtensionInforme = 'breve' | 'normal' | 'detallado';
 export type FormatoInforme = 'docs' | 'slides' | 'sheets';
 
 export type FormatoPlantilla = 'docs' | 'slides';
-/** procesando: se está creando desde un ejemplo. borrador: aún no se ofrece al generar informes. */
-export type EstadoPlantilla = 'procesando' | 'borrador' | 'activa' | 'archivada' | 'error';
+/**
+ * activa: se ofrece al generar informes. archivada: ya no, pero se conserva. procesando: se está
+ * creando desde un ejemplo. (Antes había «borrador»: ahora se lee como activa.)
+ */
+export type EstadoPlantilla = 'procesando' | 'activa' | 'archivada' | 'error';
 
 /** Lo que se le pide a la IA en una plantilla: en general y en cada campo ({{ia:…}}, {{foto:…}}). */
 export interface InstruccionesPlantilla {

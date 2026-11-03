@@ -4,13 +4,17 @@
 //
 // Privacidad: a la IA solo se envían datos del proyecto, nunca nombres ni datos de contacto.
 
-import { config } from '../config';
 import { nombrePais } from '../paises';
 import { IDIOMAS_ES, nombreSector } from '../formulario/textos';
 import type { AnalisisSolicitud, Idioma, RespuestasSolicitud, TraduccionSolicitud } from '../tipos';
 import { pedirJson } from './openrouter';
+import { ajustesIa } from './ajustes';
 
-export const iaDisponible = () => !!config.ia.clave;
+/** Hay clave y la IA está encendida (el límite de gasto se comprueba en cada llamada). */
+export async function iaDisponible(): Promise<boolean> {
+  const a = await ajustesIa();
+  return a.activa && !!a.clave;
+}
 
 const ESQUEMA_ANALISIS = {
   type: 'object',
@@ -49,7 +53,7 @@ export async function analizarSolicitud(
     falta: avisos,
     hechoPorIA: false,
   };
-  if (!iaDisponible()) return sinIA;
+  if (!(await iaDisponible())) return sinIA;
 
   const entrada = {
     idioma: IDIOMAS_ES[idioma],
@@ -100,7 +104,7 @@ export async function analizarSolicitud(
 
 /** Traduce un mensaje de un voluntario al idioma de la contraparte. Sin IA, lo devuelve igual. */
 export async function traducir(texto: string, idioma: Idioma): Promise<{ texto: string; traducido: boolean }> {
-  if (!texto.trim() || idioma === 'es' || !iaDisponible()) return { texto, traducido: false };
+  if (!texto.trim() || idioma === 'es' || !(await iaDisponible())) return { texto, traducido: false };
   try {
     const res = await pedirJson<{ texto: string }>({
       tarea: 'rapida',

@@ -21,7 +21,7 @@ vi.mock('../dominio/plantillas', async (original) => {
 });
 
 describe.skipIf(!activa)('plantilla desde un ejemplo', () => {
-  it('convierte, analiza con IA, escribe los marcadores y la deja en borrador', async () => {
+  it('convierte, analiza con IA, escribe los marcadores y la deja lista', async () => {
     const { driveGoogle } = await import('../drive/google');
     const { almacen } = await import('../almacen');
     const { crearDesdeEjemplo, avanzarPlantilla } = await import('./plantilla');
@@ -42,7 +42,7 @@ describe.skipIf(!activa)('plantilla desde un ejemplo', () => {
     console.log('Plantilla:', p?.url);
     console.log(JSON.stringify({ instrucciones: p?.instrucciones, campos: p?.estructura.campos, avisos: p?.sincronizado?.avisos }, null, 1));
     expect(p?.error ?? '').toBe('');
-    expect(p?.estado).toBe('borrador');
+    expect(p?.estado).toBe('activa');
     expect(p?.version).toBe(1);
     expect(p?.instrucciones.general.length).toBeGreaterThan(20);
     const ia = p!.estructura.campos.filter((c) => c.tipo === 'ia');

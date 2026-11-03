@@ -7,8 +7,9 @@
 
 import { config } from '../config';
 import { almacen } from '../almacen';
+import { ajustesIa, gastoDelMes, type AjustesIaEfectivos, type TareaIa } from './ajustes';
 
-type Tarea = 'rapida' | 'redaccion' | 'vision';
+type Tarea = TareaIa;
 
 /** Parte de un mensaje con imágenes. Las imágenes van en base64 (data:…), nunca como enlace público. */
 export type Parte = { type: 'text'; text: string } | { type: 'image_url'; image_url: { url: string } };
@@ -36,11 +37,27 @@ export class ErrorIA extends Error {
   }
 }
 
-const MODELO: Record<Tarea, () => string> = {
-  rapida: () => config.ia.modeloRapido,
-  redaccion: () => config.ia.modeloRedaccion,
-  vision: () => config.ia.modeloVision,
-};
+/**
+ * Los ajustes de la IA, si se puede usar: con clave, encendida y por debajo del límite de gasto
+ * del mes. Si no, un error que no se reintenta.
+ */
+export async function ajustesParaLlamar(): Promise<AjustesIaEfectivos> {
+  const a = await ajustesIa();
+  if (!a.activa) throw new ErrorIA('La IA está desactivada (Administración › Ajustes de IA).', 0, false);
+  if (!a.clave) throw new ErrorIA('La IA no está configurada: falta la clave de OpenRouter.', 0, false);
+  if (a.limiteMensual > 0 && (await gastoDelMes()) >= a.limiteMensual) {
+    throw new ErrorIA(`Se ha llegado al límite de gasto de la IA de este mes (${a.limiteMensual} $). Se puede subir en Administración › Ajustes de IA.`, 0, false);
+  }
+  return a;
+}
+
+const cabeceras = (clave: string) => ({
+  Authorization: `Bearer ${clave}`,
+  'Content-Type': 'application/json',
+  // Identifican la app en el panel de OpenRouter (opcional).
+  'HTTP-Referer': config.appUrl,
+  'X-Title': 'Africa Directo - Gestion de proyectos',
+});
 
 type Respuesta = {
   choices?: { message?: { content?: string | null }; finish_reason?: string }[];
@@ -48,16 +65,17 @@ type Respuesta = {
   error?: { message?: string; code?: number };
 };
 
-export async function pedirJson<T>(p: Peticion): Promise<T> {
+export async function pedirJson<T>(p: Peticion & { modelo?: string }): Promise<T> {
+  const a = await ajustesParaLlamar();
   const cuerpo = {
-    model: MODELO[p.tarea](),
+    model: p.modelo || a.modelos[p.tarea],
     messages: [
       { role: 'system', content: p.instrucciones },
       { role: 'user', content: p.entrada },
     ],
     response_format: { type: 'json_schema', json_schema: { name: p.nombre, strict: true, schema: p.esquema } },
-    // Para estas tareas basta con poco razonamiento, que además gasta menos.
-    reasoning: { effort: 'low' },
+    // Para estas tareas basta con poco razonamiento, que además gasta menos (se cambia en los ajustes).
+    reasoning: { effort: a.razonamiento },
     ...(p.maxTokens ? { max_tokens: p.maxTokens } : {}),
     provider: { zdr: true, data_collection: 'deny', require_parameters: true },
   };
@@ -66,13 +84,7 @@ export async function pedirJson<T>(p: Peticion): Promise<T> {
   try {
     res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${config.ia.clave}`,
-        'Content-Type': 'application/json',
-        // Identifican la app en el panel de OpenRouter (opcional).
-        'HTTP-Referer': config.appUrl,
-        'X-Title': 'Africa Directo - Gestion de proyectos',
-      },
+      headers: cabeceras(a.clave),
       body: JSON.stringify(cuerpo),
       signal: AbortSignal.timeout(p.timeoutMs ?? 170_000),
     });
@@ -105,18 +117,19 @@ export async function pedirJson<T>(p: Peticion): Promise<T> {
  * mismo formato que en los lotes (ver lotes.ts), así el resultado se lee igual.
  */
 export async function pedirTexto(p: { tarea: Tarea; instrucciones: string; entrada: string; maxTokens?: number; timeoutMs?: number }): Promise<string> {
+  const a = await ajustesParaLlamar();
   let res: Response;
   try {
     res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${config.ia.clave}`, 'Content-Type': 'application/json', 'HTTP-Referer': config.appUrl, 'X-Title': 'Africa Directo - Gestion de proyectos' },
+      headers: cabeceras(a.clave),
       body: JSON.stringify({
-        model: MODELO[p.tarea](),
+        model: a.modelos[p.tarea],
         messages: [
           { role: 'system', content: p.instrucciones },
           { role: 'user', content: p.entrada },
         ],
-        reasoning: { effort: 'low' },
+        reasoning: { effort: a.razonamiento },
         ...(p.maxTokens ? { max_tokens: p.maxTokens } : {}),
         provider: { zdr: true, data_collection: 'deny', require_parameters: true },
       }),
@@ -139,7 +152,7 @@ export async function pedirTexto(p: { tarea: Tarea; instrucciones: string; entra
 /** Una imagen como parte de un mensaje (en base64: la imagen no queda accesible desde fuera). */
 export const parteImagen = (bytes: Buffer, mime: string): Parte => ({ type: 'image_url', image_url: { url: `data:${mime};base64,${bytes.toString('base64')}` } });
 
-/** Cuenta llamadas, tokens y coste por mes para vigilar el gasto (Administración › Ajustes). */
+/** Cuenta llamadas, tokens y coste por mes para vigilar el gasto (Administración › Ajustes de IA). */
 export async function anotarUso(entrada: number, salida: number, coste: number) {
   const mes = new Date().toISOString().slice(0, 7);
   const db = await almacen();

@@ -1,20 +1,25 @@
 'use client';
 
-// Botón que abre un diálogo modal (elemento <dialog> nativo, accesible con teclado).
+// Botón que abre un diálogo modal (elemento <dialog> nativo, accesible con teclado). Sin `boton`,
+// solo el diálogo: lo abre otro elemento con abrirDialogo(id) (p. ej. una opción de un menú).
 
 import { createContext, useCallback, useMemo, useRef } from 'react';
 
 export const ContextoDialogo = createContext<{ cerrar: () => void } | null>(null);
 
+export const abrirDialogo = (id: string) => (document.getElementById(id) as HTMLDialogElement | null)?.showModal();
+
 export function Dialogo({
   boton,
   claseBoton = 'btn btn-s',
   titulo,
+  id,
   children,
 }: {
-  boton: React.ReactNode;
+  boton?: React.ReactNode;
   claseBoton?: string;
   titulo: string;
+  id?: string;
   children: React.ReactNode;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -23,10 +28,12 @@ export function Dialogo({
 
   return (
     <>
-      <button type="button" className={claseBoton} onClick={() => ref.current?.showModal()}>
-        {boton}
-      </button>
-      <dialog ref={ref} className="dialogo" aria-label={titulo}>
+      {boton ? (
+        <button type="button" className={claseBoton} onClick={() => ref.current?.showModal()}>
+          {boton}
+        </button>
+      ) : null}
+      <dialog ref={ref} id={id} className="dialogo" aria-label={titulo}>
         <div className="cuerpo">
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
             <h2>{titulo}</h2>

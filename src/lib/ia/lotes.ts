@@ -13,8 +13,8 @@
 //   ejemplo (plantillas) va en su propio lote, con salida JSON.
 
 import crypto from 'node:crypto';
-import { config } from '../config';
-import { anotarUso, ErrorIA } from './openrouter';
+import { ajustesIa } from './ajustes';
+import { ajustesParaLlamar, anotarUso, ErrorIA } from './openrouter';
 
 const API = 'https://openrouter.ai/api/v1/batches';
 
@@ -29,9 +29,11 @@ export interface PeticionLote {
 const MAX_TOKENS = 12_000;
 
 async function llamar<T>(url: string, init: RequestInit = {}): Promise<{ status: number; datos: T }> {
+  // Leer y borrar lotes ya enviados se hace aunque la IA esté apagada o sin saldo: solo hace falta la clave.
+  const { clave } = await ajustesIa();
   let res: Response;
   try {
-    res = await fetch(url, { ...init, headers: { Authorization: `Bearer ${config.ia.clave}`, 'Content-Type': 'application/json', 'X-Title': 'Africa Directo - Gestion de proyectos', ...(init.headers ?? {}) }, signal: AbortSignal.timeout(60_000) });
+    res = await fetch(url, { ...init, headers: { Authorization: `Bearer ${clave}`, 'Content-Type': 'application/json', 'X-Title': 'Africa Directo - Gestion de proyectos', ...(init.headers ?? {}) }, signal: AbortSignal.timeout(60_000) });
   } catch (e) {
     throw new ErrorIA(`OpenRouter no respondió: ${e instanceof Error ? e.message : e}`, 0, true);
   }
@@ -52,14 +54,15 @@ export async function enviarLote(peticiones: PeticionLote[], aviso?: string, for
     if (!p.instrucciones.trim() || !p.entrada.trim()) throw new Error(`La petición «${p.id}» está vacía.`);
     ids.add(p.id);
   }
+  const a = await ajustesParaLlamar();
   const { datos } = await llamar<{ id?: string }>(API, {
     method: 'POST',
     body: JSON.stringify({
       endpoint: '/v1/chat/completions',
-      model: config.ia.modeloLotes,
+      model: a.modelos.lotes,
       completion_window: '24h',
       ...(aviso ? { callback_url: aviso } : {}),
-      ...(config.ia.proveedoresLotes.length ? { provider: { only: config.ia.proveedoresLotes, allow_fallbacks: false } } : {}),
+      ...(a.proveedoresLotes.length ? { provider: { only: a.proveedoresLotes, allow_fallbacks: false } } : {}),
       requests: peticiones.map((p) => ({
         custom_id: p.id,
         body: {

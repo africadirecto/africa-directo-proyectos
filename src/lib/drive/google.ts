@@ -109,6 +109,10 @@ export const driveGoogle: Drive = {
     });
   },
 
+  async reemplazarContenido(id, mime, contenido) {
+    await api(`${SUBIDA}/files/${id}?uploadType=media&${TODAS}`, { method: 'PATCH', headers: { 'Content-Type': mime }, body: new Uint8Array(contenido) });
+  },
+
   async subir(carpetaId, nombre, mime, contenido) {
     const limite = `limite${Date.now()}`;
     const cuerpo = Buffer.concat([

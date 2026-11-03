@@ -56,6 +56,8 @@ export const config = {
     modeloRedaccion: texto('IA_MODELO_REDACCION') || 'google/gemini-3.7-flash',
     /** Para describir fotos (tiene que admitir imágenes). Por defecto, el rápido. */
     modeloVision: texto('IA_MODELO_VISION') || texto('IA_MODELO_RAPIDO') || 'anthropic/claude-haiku-5.5',
+    /** Para crear plantillas desde un ejemplo y cambiarlas con IA. Por defecto, el de redacción. */
+    modeloPlantillas: texto('IA_MODELO_PLANTILLAS') || texto('IA_MODELO_REDACCION') || 'google/gemini-3.7-flash',
     /**
      * Informes por lotes (Batch API de OpenRouter): mitad de precio y sin límite de tiempo, pero
      * sin retención cero y por EE. UU.; la app borra cada lote al leerlo. Con IA_LOTES=0, o sin
@@ -74,7 +76,10 @@ export const config = {
   },
 };
 
-/** Qué integraciones están configuradas (se muestra en Administración › Ajustes). */
+/**
+ * Qué integraciones están configuradas (se muestra en Administración › Integraciones). La de
+ * la IA solo mira la variable: la clave también se puede guardar en Ajustes de IA.
+ */
 export function estadoIntegraciones() {
   return {
     firestore: modoDemo ? 'demo' : config.google.proyectoId && config.google.clavePrivada ? 'ok' : 'falta',

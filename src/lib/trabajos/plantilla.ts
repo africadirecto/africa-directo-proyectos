@@ -1,15 +1,15 @@
 // Plantilla a partir de un informe de ejemplo, en segundo plano como los informes. El estado va en
 // la propia plantilla (estado «procesando» y proceso.paso):
 //
-//   convertir ──▶ analizar ──▶ (esperando el lote) ──▶ escribir ──▶ borrador   (o error)
+//   convertir ──▶ analizar ──▶ (esperando el lote) ──▶ escribir ──▶ activa   (o error)
 //
 // - convertir: copia el ejemplo como Google Doc o Slides en «AD · Plantillas / ONG» (o en la
 //   carpeta del donante). El original se queda donde estaba.
 // - analizar: la IA decide, bloque a bloque, qué es texto fijo, qué datos de la app hay y qué
 //   apartados redactará la IA, y escribe las instrucciones (ia/plantillas.ts). En un lote de
 //   OpenRouter si hay dirección pública; si no, por la vía directa.
-// - escribir: pone los marcadores en la copia, guarda las instrucciones (versión 1) y la deja en
-//   borrador para que una persona la revise, la pruebe y la active.
+// - escribir: pone los marcadores en la copia y guarda las instrucciones (versión 1). Queda lista,
+//   con avisos para que una persona la revise y la pruebe antes de usarla.
 // Probado contra Google y OpenRouter con un .docx de ejemplo (src/lib/drive/plantillas.google.test.ts).
 
 import { almacen } from '../almacen';
@@ -152,7 +152,7 @@ async function analizar(id: string, p: PlantillaEnProceso) {
   const bloques = await bloquesDe(p);
   if (!bloques.some((b) => b.texto.trim())) throw new Error('No se ha podido leer texto en el ejemplo. Si es un PDF escaneado de mala calidad, prueba con el Word original.');
   const pet = peticionEjemplo({ bloques, tipo: p.tipo, formato: p.formato, donante: p.donante?.nombre ?? '' });
-  if (usarLotes()) {
+  if (await usarLotes()) {
     const lote = await enviarLote([{ id: 'ejemplo', ...pet }], urlAviso(), FORMATO_EJEMPLO);
     const ahora = new Date().toISOString();
     await apuntarLote(ruta(id), lote);
@@ -205,7 +205,7 @@ async function escribir(id: string, p: PlantillaEnProceso) {
         : await aplicarAnalisisDoc(p.archivoId, bloquesDoc(await leerDoc(p.archivoId)), analisis);
   }
   const autor = p.actualizadoPor;
-  await db.guardar(ruta(id), { idioma: analisis.idioma, estado: 'borrador', proceso: null, error: '' }, { fusionar: true });
+  await db.guardar(ruta(id), { idioma: analisis.idioma, estado: 'activa', proceso: null, error: '' }, { fusionar: true });
   await guardarInstrucciones(id, analisis.instrucciones, `Creada a partir del ejemplo «${p.ejemplo?.nombre ?? ''}»`, autor);
   const s = await sincronizarPlantilla(id, autor, true);
   const word = /\.(docx?|odt|rtf)$/i.test(p.ejemplo?.nombre ?? '');
@@ -219,7 +219,7 @@ async function escribir(id: string, p: PlantillaEnProceso) {
           ...avisos,
           ...analisis.dudas.map((d) => `Duda de la IA: ${d}`),
           ...(word ? ['Si el Word original tenía cuadros de texto, la app no puede leerlos ni rellenarlos: revisa en Google que no falte nada.'] : []),
-          'Revisa la plantilla en Google y sus instrucciones, pruébala con un proyecto y actívala.',
+          'Revisa la plantilla en Google y sus instrucciones, y pruébala con un proyecto antes de usarla.',
         ],
       },
     },

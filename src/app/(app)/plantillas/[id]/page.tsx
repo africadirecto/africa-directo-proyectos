@@ -31,6 +31,8 @@ import { fechaHora } from '@/lib/formato';
 import { Dialogo } from '@/componentes/Dialogo';
 import { FormAccion, Enviar } from '@/componentes/FormAccion';
 import { Etiqueta } from '@/componentes/Basicos';
+import { MenuAcciones, type OpcionMenu } from '@/componentes/MenuAcciones';
+import { IconoArchivar, IconoBorrar, IconoCopiar, IconoEditar, IconoEstrella, IconoProbar, IconoRecargar, IconoRecuperar, IconoVolver, LogoDocs, LogoSlides } from '@/componentes/Iconos';
 import { FormPlantilla } from '../FormPlantilla';
 import { Instrucciones } from './Instrucciones';
 import { ProbarPlantilla } from './ProbarPlantilla';
@@ -78,6 +80,39 @@ export default async function Plantilla({ params }: { params: Promise<{ id: stri
     listarPruebas(id),
     edicion && deProyecto ? leerIndice() : Promise.resolve([]),
   ]);
+  // Acciones secundarias, en el menú «Más» con su icono. Borrar y elegir la de por defecto, solo administración.
+  const campo = { id: p.id };
+  const opciones: OpcionMenu[] = [
+    ...(p.archivoId ? [{ texto: 'Volver a leer el documento', icono: <IconoRecargar />, accion: sincronizarAccion, campos: campo }] : []),
+    { texto: 'Editar datos', icono: <IconoEditar />, dialogo: 'dialogo-datos' },
+    { texto: 'Duplicar', icono: <IconoCopiar />, dialogo: 'dialogo-duplicar' },
+    ...(admin && p.estado === 'activa' && !p.porDefecto ? [{ texto: 'Proponer por defecto', icono: <IconoEstrella />, accion: porDefectoAccion, campos: campo }] : []),
+    p.estado === 'archivada'
+      ? { texto: 'Recuperar', icono: <IconoRecuperar />, accion: estadoPlantillaAccion, campos: { ...campo, estado: 'activa' }, separada: true }
+      : {
+          texto: 'Archivar',
+          icono: <IconoArchivar />,
+          accion: estadoPlantillaAccion,
+          campos: { ...campo, estado: 'archivada' },
+          confirmar: '¿Archivar esta plantilla? Deja de ofrecerse al generar informes; se puede recuperar.',
+          separada: true,
+        },
+    ...(admin
+      ? [
+          {
+            texto: 'Borrar',
+            icono: <IconoBorrar />,
+            accion: borrarPlantillaAccion,
+            campos: campo,
+            peligro: true,
+            confirmar:
+              p.origen === 'drive'
+                ? '¿Quitar esta plantilla de la app? El documento se queda en Drive.'
+                : '¿Borrar esta plantilla? Se quita de la app y el documento va a la papelera de Drive.',
+          },
+        ]
+      : []),
+  ];
   const avisos = [...(errorLectura ? [`No se pudo leer el documento: ${errorLectura}`] : []), ...(p.sincronizado?.avisos ?? [])];
   const sin = camposSinInstruccion(p);
 
@@ -100,20 +135,50 @@ export default async function Plantilla({ params }: { params: Promise<{ id: stri
         </div>
         <div className="botones">
           {p.url ? (
-            <a className="btn btn-p" href={p.url} target="_blank" rel="noopener noreferrer">
+            <a className="btn btn-s" href={p.url} target="_blank" rel="noopener noreferrer">
+              {p.formato === 'slides' ? <LogoSlides /> : <LogoDocs />}
               Abrir en Google {p.formato === 'slides' ? 'Slides' : 'Docs'}
             </a>
           ) : null}
-          {edicion && p.archivoId && !preparando ? (
-            <FormAccion accion={sincronizarAccion}>
-              <input type="hidden" name="id" value={p.id} />
-              <Enviar clase="btn btn-s" pendiente="Leyendo…">
-                Volver a leer el documento
-              </Enviar>
-            </FormAccion>
+          {edicion && deProyecto && p.estado === 'activa' ? (
+            <Dialogo
+              boton={
+                <>
+                  <IconoProbar tamano={18} />
+                  Probar con un proyecto
+                </>
+              }
+              claseBoton="btn btn-s"
+              titulo="Probar la plantilla"
+            >
+              <ProbarPlantilla id={p.id} idioma={p.idioma} proyectos={proyectos.map((f) => ({ codigo: f.codigo, titulo: f.titulo }))} />
+            </Dialogo>
           ) : null}
+          {edicion && !preparando ? <MenuAcciones opciones={opciones} /> : null}
         </div>
       </div>
+      {edicion ? (
+        <>
+          <Dialogo id="dialogo-datos" titulo="Datos de la plantilla">
+            <FormPlantilla p={p} donantes={donantes.map((d) => ({ id: d.id, nombre: d.nombre }))} />
+          </Dialogo>
+          <Dialogo id="dialogo-duplicar" titulo="Duplicar la plantilla">
+            <FormAccion accion={duplicarPlantillaAccion} className="pila">
+              <input type="hidden" name="id" value={p.id} />
+              <p className="nota" style={{ margin: 0 }}>
+                Se copia el documento en la misma carpeta de Drive, con las mismas instrucciones.
+              </p>
+              <label className="field">
+                Nombre de la copia
+                <input name="nombre" required defaultValue={`${p.nombre} (copia)`} />
+              </label>
+              <div className="botones">
+                <Enviar pendiente="Copiando…">Duplicar</Enviar>
+              </div>
+            </FormAccion>
+          </Dialogo>
+        </>
+      ) : null}
       {p.descripcion ? <p style={{ margin: 0 }}>{p.descripcion}</p> : null}
       {preparando ? (
         <div className="nota" role="status">
@@ -155,98 +220,30 @@ export default async function Plantilla({ params }: { params: Promise<{ id: stri
           </div>
           {preparando ? (
             <p className="vacio">La IA está escribiendo las instrucciones a partir del ejemplo.</p>
-          ) : p.estructura.campos.length ? (
-            <Instrucciones
-              key={`${p.id}-${p.version}`}
-              id={p.id}
-              editable={edicion}
-              formato={p.formato}
-              campos={p.estructura.campos}
-              actuales={p.instrucciones}
-              iaDisponible={iaDisponible()}
-            />
+          ) : p.estructura.campos.length || (edicion && p.archivoId) ? (
+            <>
+              {!p.estructura.campos.length ? (
+                <p className="vacio">El documento no tiene campos para la IA: pídeselos a «Cambiar con IA» o escribe en él marcadores como {'{{ia:avance}}'}.</p>
+              ) : null}
+              <Instrucciones
+                // Al cambiar el documento o las instrucciones, el formulario empieza de nuevo.
+                key={`${p.id}-${p.version}-${p.sincronizado?.modificado ?? ''}`}
+                id={p.id}
+                editable={edicion}
+                formato={p.formato}
+                campos={p.estructura.campos}
+                actuales={p.instrucciones}
+                iaDisponible={await iaDisponible()}
+                nombre={p.nombre}
+                descripcion={p.descripcion}
+              />
+            </>
           ) : (
             <p className="vacio">El documento no tiene campos para la IA. Escribe en él marcadores como {'{{ia:avance}}'} y vuelve a leerlo.</p>
           )}
         </section>
 
         <aside className="pila" style={{ flex: '1 1 280px', gap: 20 }}>
-          {edicion ? (
-            <section className="card pila">
-              <h2 className="h3">Acciones</h2>
-              <div className="botones">
-                {deProyecto && (p.estado === 'borrador' || p.estado === 'activa') ? (
-                  <Dialogo boton="Probar con un proyecto" claseBoton="btn btn-p btn-peq" titulo="Probar la plantilla">
-                    <ProbarPlantilla id={p.id} idioma={p.idioma} proyectos={proyectos.map((f) => ({ codigo: f.codigo, titulo: f.titulo }))} />
-                  </Dialogo>
-                ) : null}
-                {p.estado !== 'activa' && !preparando ? (
-                  <FormAccion accion={estadoPlantillaAccion}>
-                    <input type="hidden" name="id" value={p.id} />
-                    <Enviar clase="btn btn-p btn-peq" name="estado" value="activa">
-                      Activar
-                    </Enviar>
-                  </FormAccion>
-                ) : null}
-                {admin && p.estado === 'activa' && !p.porDefecto ? (
-                  <FormAccion accion={porDefectoAccion}>
-                    <input type="hidden" name="id" value={p.id} />
-                    <Enviar clase="btn btn-s btn-peq">Proponer por defecto</Enviar>
-                  </FormAccion>
-                ) : null}
-                {p.estado === 'activa' ? (
-                  <FormAccion accion={estadoPlantillaAccion}>
-                    <input type="hidden" name="id" value={p.id} />
-                    <Enviar clase="btn btn-s btn-peq" name="estado" value="borrador">
-                      Pasar a borrador
-                    </Enviar>
-                  </FormAccion>
-                ) : null}
-                {p.estado !== 'archivada' ? (
-                  <FormAccion accion={estadoPlantillaAccion}>
-                    <input type="hidden" name="id" value={p.id} />
-                    <Enviar clase="btn btn-s btn-peq" name="estado" value="archivada">
-                      Archivar
-                    </Enviar>
-                  </FormAccion>
-                ) : null}
-                <Dialogo boton="Editar datos" claseBoton="btn btn-s btn-peq" titulo="Datos de la plantilla">
-                  <FormPlantilla p={p} donantes={donantes.map((d) => ({ id: d.id, nombre: d.nombre }))} />
-                </Dialogo>
-                <Dialogo boton="Duplicar" claseBoton="btn btn-s btn-peq" titulo="Duplicar la plantilla">
-                  <FormAccion accion={duplicarPlantillaAccion} className="pila">
-                    <input type="hidden" name="id" value={p.id} />
-                    <p className="nota" style={{ margin: 0 }}>
-                      Se copia el documento en la misma carpeta de Drive, con las mismas instrucciones, como borrador.
-                    </p>
-                    <label className="field">
-                      Nombre de la copia
-                      <input name="nombre" required defaultValue={`${p.nombre} (copia)`} />
-                    </label>
-                    <div className="botones">
-                      <Enviar pendiente="Copiando…">Duplicar</Enviar>
-                    </div>
-                  </FormAccion>
-                </Dialogo>
-                {admin ? (
-                  <FormAccion
-                    accion={borrarPlantillaAccion}
-                    confirmar={
-                      p.origen === 'drive'
-                        ? '¿Quitar esta plantilla de la app? El documento se queda en Drive.'
-                        : '¿Borrar esta plantilla? Se quita de la app y el documento va a la papelera de Drive.'
-                    }
-                  >
-                    <input type="hidden" name="id" value={p.id} />
-                    <Enviar clase="btn btn-s btn-peq" pendiente="Borrando…">
-                      Borrar
-                    </Enviar>
-                  </FormAccion>
-                ) : null}
-              </div>
-            </section>
-          ) : null}
-
           <section className="card pila">
             <h2 className="h3">Datos y tablas</h2>
             {p.estructura.datos.length || p.estructura.tablas.length ? (
@@ -308,6 +305,7 @@ export default async function Plantilla({ params }: { params: Promise<{ id: stri
                         <input type="hidden" name="id" value={p.id} />
                         <input type="hidden" name="version" value={v.version} />
                         <Enviar clase="btn btn-s btn-peq" pendiente="Recuperando…">
+                          <IconoVolver />
                           Volver a esta
                         </Enviar>
                       </FormAccion>

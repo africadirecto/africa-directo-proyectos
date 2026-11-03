@@ -94,6 +94,7 @@ Firestore guarda documentos JSON en colecciones. Las fechas se guardan como text
 | `indices/proyectos` | **Índice del panel:** una fila por proyecto en un único documento |
 | `contadores/proyectos-AAAA` | Último número de proyecto del año |
 | `ajustes/drive`, `ajustes/ia` | Carpetas de año y de copias, y uso mensual de la IA |
+| `ajustes/configIa` | Ajustes de IA de Administración: modo, modelos, límite de gasto, opciones y claves cifradas (`lib/ia/ajustes.ts`) |
 
 **El índice del panel.** El inicio, el mapa, los avisos y el contador de solicitudes salen de un solo documento: una lectura por visita en vez de una por proyecto. Así no se agota la cuota gratuita de 50.000 lecturas al día. Se actualiza con cada cambio de proyecto y se reconstruye cada noche por si se desincroniza.
 
@@ -170,13 +171,14 @@ Uso y lista de marcadores: [INFORMES.md](INFORMES.md). Por dentro hay tres pieza
   - el idioma del texto fijo;
   - las **instrucciones para la IA**: una general y una por campo. Se guardan por versiones en `plantillas/{id}/versiones`.
 - Las de la ONG (`plantillasApp.ts`) las crea la app una vez y luego son plantillas como las demás.
-- **Desde un informe de ejemplo** (`lib/trabajos/plantilla.ts`), en segundo plano como los informes: `convertir → analizar → escribir → borrador`.
+- **Desde un informe de ejemplo** (`lib/trabajos/plantilla.ts`), en segundo plano como los informes: `convertir → analizar → escribir → activa`.
   - **Convertir:** copia el ejemplo como Google Doc o Slides.
   - **Analizar:** lee el ejemplo en bloques numerados y una sola petición a la IA (un lote con salida JSON, o directa) decide qué es fijo, qué datos y qué campos hay, y escribe las instrucciones. La respuesta se valida antes de usarla.
-  - **Escribir:** pone los marcadores, guarda las instrucciones como versión 1 y deja la plantilla en borrador con las dudas de la IA.
-- **«Probar»** hace un informe con una plantilla en borrador y los datos de un proyecto. Se guarda en `informes` con `prueba: {codigo}` y en `AD · Plantillas / _Pruebas`, no en la ficha del proyecto.
+  - **Escribir:** pone los marcadores, guarda las instrucciones como versión 1 y deja la plantilla lista, con las dudas de la IA como avisos.
+- **«Probar»** hace un informe con una plantilla y los datos de un proyecto. Se guarda en `informes` con `prueba: {codigo}` y en `AD · Plantillas / _Pruebas`, no en la ficha del proyecto.
 - «Sincronizar» lee el documento: qué campos, datos y tablas tiene, y avisa de lo que no va a salir bien.
-- «Cambiar con IA» propone instrucciones nuevas a partir de una petición; se revisan antes de guardarlas.
+- **«Cambiar con IA»** (`lib/dominio/cambiosPlantilla.ts`): la IA recibe el documento en bloques numerados (como al analizar un ejemplo) y devuelve cambios sobre ellos (`reemplazar` un texto dentro de un bloque, `insertar` un párrafo tras un bloque, `borrar` un bloque), además de las instrucciones, el nombre y la descripción. La app los valida, guarda la propuesta con la revisión del documento en `plantillas/{id}/trabajo/propuesta` y, al aplicarla, los escribe (Docs, Slides o el HTML de la demo) solo si el documento no ha cambiado, lo vuelve a leer y guarda las instrucciones como versión nueva.
+- **Estados:** `activa` (se ofrece al generar), `archivada`, y `procesando`/`error` mientras se crea desde un ejemplo. Ya no hay `borrador`: las que lo estaban se leen como activas.
 
 **Composición** (`lib/drive/plantillaDocs.ts`, `plantillaSlides.ts` y, en demo, `plantillaHtml.ts`):
 
@@ -218,7 +220,7 @@ Las decisiones y las pruebas con los servicios reales (Batch API, fotos, convers
 
 ### Coste
 
-Con `anthropic/claude-haiku-5.5` en lotes, un informe de unas 6 secciones cuesta del orden de **0,02 $**. Cada campo es una petición con los mismos datos, pero los lotes van a mitad de precio. El presupuesto de 1 $ al mes da para decenas de informes además de las traducciones. El gasto del mes se ve en Administración › Ajustes.
+Con `anthropic/claude-haiku-5.5` en lotes, un informe de unas 6 secciones cuesta del orden de **0,02 $**. Cada campo es una petición con los mismos datos, pero los lotes van a mitad de precio. El presupuesto de 1 $ al mes da para decenas de informes además de las traducciones. El gasto del mes se ve en Administración › Ajustes de IA, donde también se pone un límite.
 
 ## Qué falta (siguientes fases)
 

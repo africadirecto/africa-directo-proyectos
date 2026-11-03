@@ -308,8 +308,9 @@ La IA traduce y resume las solicitudes, traduce los comentarios del revisor y re
 3. **Keys › Create key**:
    - Nombre: "vercel-produccion".
    - **Credit limit**: un tope para esa clave, por ejemplo 5 $.
-   - Copia la clave (`sk-or-v1-…`) → `OPENROUTER_API_KEY`. Solo se muestra una vez.
-4. Modelos (opcional): por defecto, `anthropic/claude-haiku-5.5` para lo rápido (traducir, resumir) y `google/gemini-3.7-flash` para redactar informes. Se cambian con `IA_MODELO_RAPIDO` e `IA_MODELO_REDACCION`. Tienen que admitir salida JSON (*structured outputs*) y tener proveedores sin retención de datos: búscalos en <https://openrouter.ai/models>.
+   - Copia la clave (`sk-or-v1-…`) → `OPENROUTER_API_KEY`. Solo se muestra una vez. También se puede pegar después en **Administración › Ajustes de IA**: allí se guarda cifrada (con `ENLACES_SECRETO`) y manda sobre la variable. Si `ENLACES_SECRETO` cambia, hay que volver a escribirla.
+4. Modelos (opcional): por defecto, `anthropic/claude-haiku-5.5` para lo rápido (traducir, resumir) y `google/gemini-3.7-flash` para redactar informes y para las plantillas. Se eligen en **Administración › Ajustes de IA** (con su precio y un botón para probarlos) o con `IA_MODELO_RAPIDO`, `IA_MODELO_REDACCION`, `IA_MODELO_VISION` e `IA_MODELO_PLANTILLAS`. Tienen que admitir salida JSON (*structured outputs*) y tener proveedores sin retención de datos.
+   En la misma pantalla: un **límite de gasto al mes** (al llegar, la IA se para hasta el mes siguiente), si se **eligen las fotos** con IA y si la IA está **activada**.
 5. **Privacidad:**
    - Cada petición exige proveedores **sin retención de datos** (`zdr`) y que **no los usen para entrenar** (`data_collection: deny`). Si un modelo no tiene proveedores así, la petición falla en vez de enviarse a otro sitio.
    - La app no envía datos de contacto: quita correos y teléfonos de los textos, y no manda nombres de personas de contacto.
@@ -324,7 +325,7 @@ La IA traduce y resume las solicitudes, traduce los comentarios del revisor y re
      - lo que sí se envía por la vía normal, con retención cero: describir fotos, traducir el texto fijo, resumir y «Cambiar con IA».
      
      Hay que contarlo en el registro de tratamientos.
-   - Para no usar lotes: `IA_LOTES=0`. Entonces los informes se redactan por la vía normal (con retención cero), en llamadas de pocos minutos. Es lo que pasa siempre en local, porque OpenRouter no puede avisar a `localhost`.
+   - Para no usar lotes: elige **Directo** en **Administración › Ajustes de IA** (o `IA_LOTES=0`). Entonces los informes se redactan por la vía normal (con retención cero). Es lo que pasa siempre en local, porque OpenRouter no puede avisar a `localhost`. Para que un informe a medias siga solo en pocos minutos, programa el pulso de `/api/cron/pulso` (ver [INFORMES.md › Modo de los informes](INFORMES.md#modo-de-los-informes-lotes-o-directo)).
 
 Sin `OPENROUTER_API_KEY`, la app funciona igual: no traduce, el resumen es el principio del texto de la contraparte y los informes se crean con los apartados sin redactar (como huecos resaltados).
 
@@ -370,7 +371,7 @@ Cada cambio en `main` se publica solo. Las ramas y *pull requests* generan una v
 
 1. Pon en `ONG_ADMINS_INICIALES` el correo de dos administradores, por ejemplo `ana.lopez@africadirecto.org,luis.gomez@africadirecto.org`.
 2. Abre `https://proyectos.africadirecto.org` y **Entrar con Google** con una de esas cuentas. Entra directamente como administrador.
-3. **Administración › Ajustes**: todas las integraciones deberían estar en verde ("Configurado"). Si alguna está en rojo, revisa su variable.
+3. **Administración › Integraciones**: todas deberían estar en verde ("Configurado"). Si alguna está en rojo, revisa su variable. En **Administración › Ajustes de IA**, pulsa **Probar los modelos guardados**.
 4. **Prueba de punta a punta** con una contraparte de prueba (tu correo personal):
    1. **Nueva solicitud** → contraparte nueva → Crear. Comprueba que en `AD · Proyectos/2026/` aparece la carpeta `P-2026-001 …` con sus 7 subcarpetas.
    2. Con el correo configurado, marca "Enviar ya el formulario" y comprueba que llega, y que no va a spam. Si no, copia el enlace.
@@ -427,7 +428,7 @@ Cada cambio en `main` se publica solo. Las ramas y *pull requests* generan una v
 
 ### Vigilar el gasto y las cuotas
 
-- **IA:** **Administración › Ajustes** muestra llamadas, tokens y coste por mes; el saldo se ve en openrouter.ai › Credits.
+- **IA:** **Administración › Ajustes de IA** muestra llamadas, tokens y coste por mes, y deja poner un límite de gasto; **Comprobar** la clave dice lo gastado con ella y su límite. El saldo se ve en openrouter.ai › Credits.
 - **Firestore:** Firebase › Firestore › Uso. El límite es de 50.000 lecturas al día; la app gasta muy poco gracias al índice del panel.
 - **Vercel:** Settings › Usage.
 
@@ -455,9 +456,10 @@ Se ponen en Vercel (**Settings › Environment Variables**) y, para probar en lo
 | `DRIVE_UNIDAD_PLANTILLAS_ID` | Paso 5 (opcional) | No | `0AnMa…` |
 | `ENLACES_SECRETO` | `openssl rand -base64 32` | **Sí** | — |
 | `CRON_SECRET` | `openssl rand -base64 32` | **Sí** | — |
-| `OPENROUTER_API_KEY` | Paso 8 | **Sí** | `sk-or-v1-…` |
+| `OPENROUTER_API_KEY` | Paso 8 (o en Ajustes de IA) | **Sí** | `sk-or-v1-…` |
 | `IA_MODELO_RAPIDO` | Paso 8.4 (opcional) | No | `anthropic/claude-haiku-5.5` |
 | `IA_MODELO_REDACCION` | Paso 8.4 (opcional) | No | `google/gemini-3.7-flash` |
+| `IA_MODELO_VISION`, `IA_MODELO_PLANTILLAS` | Paso 8.4 (opcional) | No | — |
 | `GOOGLE_CHAT_WEBHOOK_URL` | Paso 7 | **Sí** | `https://chat.googleapis.com/v1/spaces/…` |
 | `MODO_DEMO` | Solo en local | — | `1` (nunca en Vercel) |
 

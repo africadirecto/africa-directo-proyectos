@@ -96,3 +96,103 @@ export function IconoHecho({ tamano = 16 }: { tamano?: number }) {
     </Linea>
   );
 }
+
+// Iconos de las acciones de una plantilla (Tabler, MIT).
+
+export function IconoRecargar({ tamano = 16 }: { tamano?: number }) {
+  return (
+    <Linea tamano={tamano}>
+      <path d="M20 11A8.1 8.1 0 0 0 4.5 9M4 5v4h4" />
+      <path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4" />
+    </Linea>
+  );
+}
+
+export function IconoEditar({ tamano = 16 }: { tamano?: number }) {
+  return (
+    <Linea tamano={tamano}>
+      <path d="M4 20h4L18.5 9.5a2.83 2.83 0 0 0-4-4L4 16v4" />
+      <path d="m13.5 6.5 4 4" />
+    </Linea>
+  );
+}
+
+export function IconoCopiar({ tamano = 16 }: { tamano?: number }) {
+  return (
+    <Linea tamano={tamano}>
+      <path d="M8 10a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-8a2 2 0 0 1-2-2z" />
+      <path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" />
+    </Linea>
+  );
+}
+
+export function IconoEstrella({ tamano = 16 }: { tamano?: number }) {
+  return (
+    <Linea tamano={tamano}>
+      <path d="m12 17.75-6.17 3.24 1.18-6.87-5-4.86 6.9-1L12 2l3.09 6.26 6.9 1-5 4.86 1.18 6.87z" />
+    </Linea>
+  );
+}
+
+export function IconoArchivar({ tamano = 16 }: { tamano?: number }) {
+  return (
+    <Linea tamano={tamano}>
+      <path d="M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8M10 12h4" />
+    </Linea>
+  );
+}
+
+export function IconoRecuperar({ tamano = 16 }: { tamano?: number }) {
+  return (
+    <Linea tamano={tamano}>
+      <path d="M3 6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v0a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+      <path d="M5 8v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8" />
+      <path d="m10 14 2-2 2 2M12 12v5" />
+    </Linea>
+  );
+}
+
+export function IconoBorrar({ tamano = 16 }: { tamano?: number }) {
+  return (
+    <Linea tamano={tamano}>
+      <path d="M4 7h16M10 11v6M14 11v6" />
+      <path d="m5 7 1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v3" />
+    </Linea>
+  );
+}
+
+export function IconoMas({ tamano = 16 }: { tamano?: number }) {
+  return (
+    <Linea tamano={tamano}>
+      <path d="M5 12h.01M12 12h.01M19 12h.01" strokeWidth="3" />
+    </Linea>
+  );
+}
+
+/** Probar (un matraz). */
+export function IconoProbar({ tamano = 16 }: { tamano?: number }) {
+  return (
+    <Linea tamano={tamano}>
+      <path d="M9 3h6M10 9h4M10 3v6L6 18a2 2 0 0 0 1.8 3h8.4a2 2 0 0 0 1.8-3l-4-9V3" />
+    </Linea>
+  );
+}
+
+/** IA (destellos). */
+export function IconoIa({ tamano = 16 }: { tamano?: number }) {
+  return (
+    <Linea tamano={tamano}>
+      <path d="M16 18a2 2 0 0 1 2 2 2 2 0 0 1 2-2 2 2 0 0 1-2-2 2 2 0 0 1-2 2zm0-12a2 2 0 0 1 2 2 2 2 0 0 1 2-2 2 2 0 0 1-2-2 2 2 0 0 1-2 2zM9 18a6 6 0 0 1 6-6 6 6 0 0 1-6-6 6 6 0 0 1-6 6 6 6 0 0 1 6 6z" />
+    </Linea>
+  );
+}
+
+export function IconoVolver({ tamano = 16 }: { tamano?: number }) {
+  return (
+    <Linea tamano={tamano}>
+      <path d="m9 14-4-4 4-4" />
+      <path d="M5 10h11a4 4 0 1 1 0 8h-1" />
+    </Linea>
+  );
+}

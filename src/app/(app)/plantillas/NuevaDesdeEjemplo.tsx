@@ -51,7 +51,7 @@ export function NuevaDesdeEjemplo({ ejemplos, donantes, demo }: { ejemplos: { id
   return (
     <form className="pila" onSubmit={enviar}>
       <p className="meta" style={{ margin: 0 }}>
-        La app convierte el ejemplo en un documento de Google, la IA decide qué es texto fijo y qué cambia en cada informe (y lo marca), y escribe las instrucciones copiando su estilo. Queda en borrador para que lo revises, lo pruebes con un proyecto y lo actives. Suele tardar unos minutos.
+        La app convierte el ejemplo en un documento de Google, la IA decide qué es texto fijo y qué cambia en cada informe (y lo marca), y escribe las instrucciones copiando su estilo. Queda lista para usar, con avisos de lo que conviene revisar; pruébala con un proyecto antes. Suele tardar unos minutos.
       </p>
       {demo ? <p className="aviso" style={{ margin: 0 }}>En el modo demo no se pueden convertir archivos de Word, PowerPoint ni PDF: esto solo funciona con Google Drive.</p> : null}
       <div className="campos">

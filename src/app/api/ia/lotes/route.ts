@@ -1,11 +1,11 @@
 // Aviso de OpenRouter cuando termina un lote (callback_url de la Batch API). Solo trae el id del
 // lote: la app lee el lote ella misma, con su clave, así que un aviso falso no puede colar
 // resultados; como mucho, hace que se compruebe antes. Si OPENROUTER_WEBHOOK_SECRETO está
-// configurado, además se exige la firma.
+// configurado (variable o Ajustes de IA), además se exige la firma.
 
 import { NextResponse, after } from 'next/server';
-import { config } from '@/lib/config';
 import { firmaValida } from '@/lib/ia/lotes';
+import { ajustesIa } from '@/lib/ia/ajustes';
 import { dentroDelLimite, ipDe } from '@/lib/limites';
 import { avanzarTrabajo, trabajosDelLote } from '@/lib/trabajos';
 
@@ -14,7 +14,8 @@ export const maxDuration = 300;
 export async function POST(req: Request) {
   if (!dentroDelLimite(`lotes:${ipDe(req)}`, 60)) return NextResponse.json({ error: 'Demasiadas peticiones' }, { status: 429 });
   const cuerpo = await req.text();
-  if (config.ia.secretoWebhook && !firmaValida(req.headers.get('x-openrouter-signature'), cuerpo, config.ia.secretoWebhook)) {
+  const { secretoWebhook } = await ajustesIa();
+  if (secretoWebhook && !firmaValida(req.headers.get('x-openrouter-signature'), cuerpo, secretoWebhook)) {
     return NextResponse.json({ error: 'Firma no válida' }, { status: 401 });
   }
   let lote = '';

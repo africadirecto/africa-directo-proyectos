@@ -106,7 +106,7 @@ export default async function FichaProyecto({
                 donantes={(await listarDonantes()).map((d) => ({ id: d.id, nombre: d.nombre }))}
                 desde={desdePropuesto(p, await listarInformes(p.codigo))}
                 hoy={new Date().toISOString().slice(0, 10)}
-                ia={iaDisponible()}
+                ia={await iaDisponible()}
               />
             ) : null}
             {editor && opciones.length ? (

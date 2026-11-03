@@ -25,7 +25,7 @@ import {
 } from '../dominio/plantillas';
 import { crearPlantillasDeLaApp } from '../dominio/plantillasApp';
 import { avanzarPlantilla, crearDesdeEjemplo, reintentarPlantilla } from '../trabajos/plantilla';
-import { editarInstrucciones, type PropuestaInstrucciones } from '../ia/plantillas';
+import { aplicarPropuesta, descartarPropuesta, proponerCambioPlantilla, type PropuestaPlantilla } from '../dominio/cambiosPlantilla';
 import type { Idioma, TipoInforme } from '../tipos';
 
 const IDIOMAS: Idioma[] = ['es', 'fr', 'en', 'pt'];
@@ -63,7 +63,7 @@ export async function anadirDesdeDriveAccion(_: Resultado, fd: FormData): Promis
     const yo = await permitido('edicion');
     const archivoId = texto(fd, 'archivo', 100);
     if (!archivoId) throw new Error('Elige el documento de Drive.');
-    const p = await registrarPlantilla(archivoId, { ...(await datosDe(fd)), origen: 'drive', estado: 'borrador' }, persona(yo));
+    const p = await registrarPlantilla(archivoId, { ...(await datosDe(fd)), origen: 'drive', estado: 'activa' }, persona(yo));
     revalidar();
     redirect(`/plantillas/${p.id}`);
   });
@@ -112,21 +112,35 @@ export async function guardarInstruccionesAccion(_: Resultado, fd: FormData): Pr
 }
 
 export interface ResultadoPropuesta extends Resultado {
-  propuesta?: PropuestaInstrucciones;
-  peticion?: string;
+  propuesta?: PropuestaPlantilla;
 }
 
+/** «Cambiar con IA»: la propuesta, para revisarla. Parte de las instrucciones del formulario, aunque no estén guardadas. */
 export async function proponerCambioAccion(_: ResultadoPropuesta, fd: FormData): Promise<ResultadoPropuesta> {
-  let propuesta: PropuestaInstrucciones | undefined;
-  const peticion = texto(fd, 'peticion', 2000);
+  let propuesta: PropuestaPlantilla | undefined;
   const r = await intentar(async () => {
-    await permitido('edicion');
+    const yo = await permitido('edicion');
+    const peticion = texto(fd, 'peticion', 2000);
     if (!peticion) throw new Error('Escribe qué quieres cambiar.');
-    const p = await leerPlantilla(texto(fd, 'id', 100));
-    if (!p) throw new Error('Plantilla no encontrada.');
-    propuesta = await editarInstrucciones({ nombre: p.nombre, tipo: p.tipo, formato: p.formato, actuales: p.instrucciones, campos: p.estructura.campos, peticion });
+    propuesta = await proponerCambioPlantilla(texto(fd, 'id', 100), peticion, instruccionesDe(fd), persona(yo));
   });
-  return { ...r, propuesta, peticion };
+  return { ...r, propuesta };
+}
+
+export async function aplicarPropuestaAccion(_: Resultado, fd: FormData): Promise<Resultado> {
+  return intentar(async () => {
+    const yo = await permitido('edicion');
+    const mensaje = await aplicarPropuesta(texto(fd, 'id', 100), persona(yo));
+    revalidar();
+    return mensaje;
+  });
+}
+
+export async function descartarPropuestaAccion(_: Resultado, fd: FormData): Promise<Resultado> {
+  return intentar(async () => {
+    await permitido('edicion');
+    await descartarPropuesta(texto(fd, 'id', 100));
+  });
 }
 
 export async function restaurarVersionAccion(_: Resultado, fd: FormData): Promise<Resultado> {
@@ -142,10 +156,10 @@ export async function estadoPlantillaAccion(_: Resultado, fd: FormData): Promise
   return intentar(async () => {
     const yo = await permitido('edicion');
     const estado = texto(fd, 'estado', 20);
-    if (estado !== 'activa' && estado !== 'borrador' && estado !== 'archivada') throw new Error('Estado no válido.');
+    if (estado !== 'activa' && estado !== 'archivada') throw new Error('Estado no válido.');
     await cambiarEstadoPlantilla(texto(fd, 'id', 100), estado, persona(yo));
     revalidar();
-    return { activa: 'Activada: ya se puede elegir al generar informes.', borrador: 'Vuelve a borrador.', archivada: 'Archivada.' }[estado];
+    return { activa: 'Recuperada: vuelve a ofrecerse al generar informes.', archivada: 'Archivada: ya no se ofrece al generar informes.' }[estado];
   });
 }
 
