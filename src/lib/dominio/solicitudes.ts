@@ -278,7 +278,15 @@ export function htmlSolicitud(p: Proyecto, v: VersionSolicitud): string {
       : '';
   const lineas = r.lineas
     .filter((l) => l.concepto || l.importe)
-    .map((l, i) => `<tr><td>${escapar(l.concepto)}${t?.conceptos[i] && t.conceptos[i] !== l.concepto ? ` <i>(${escapar(t.conceptos[i])})</i>` : ''}</td><td style="text-align:right">${l.importe ?? ''} ${r.moneda}</td></tr>`)
+    .map((l, i) => {
+      const concepto = `${escapar(l.concepto)}${t?.conceptos[i] && t.conceptos[i] !== l.concepto ? ` <i>(${escapar(t.conceptos[i])})</i>` : ''}`;
+      const desc = t?.descripciones?.[i];
+      const conSaltos = (x: string) => escapar(x).replace(/\n/g, '<br>');
+      const descripcion = l.descripcion
+        ? `<br><span style="color:#5E5D57">${conSaltos(l.descripcion)}</span>${desc && desc !== l.descripcion ? `<br><span style="color:#5E5D57"><i>${conSaltos(desc)}</i></span>` : ''}`
+        : '';
+      return `<tr><td>${concepto}${descripcion}</td><td style="text-align:right;vertical-align:top">${l.importe ?? ''} ${r.moneda}</td></tr>`;
+    })
     .join('');
   return `<html><head><meta charset="utf-8"><style>
 body{font-family:Arial,sans-serif;font-size:11pt;color:#1B1B18}th{text-align:left;vertical-align:top;width:32%;color:#5E5D57;font-weight:normal;padding:4px 8px 4px 0}td{padding:4px 0}table{border-collapse:collapse;width:100%}

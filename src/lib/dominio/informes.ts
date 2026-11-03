@@ -109,8 +109,11 @@ export async function contextoProyecto(codigo: string, o: OpcionesProyecto): Pro
     .map((e, i) => ({ id: `E${i + 1}`, fecha: e.fecha.slice(0, 10), tipo: e.tipo, categoria: e.categoria ?? '', texto: sinContactos(e.texto).slice(0, 1500) }));
   const anterior = informes.find((i) => (i.estado ?? 'listo') === 'listo');
   const v = versiones[0];
-  const conceptos = v?.analisis?.traduccion?.conceptos ?? [];
-  const lineas = (v?.respuestas.lineas ?? []).map((l, i) => ({ concepto: conceptos[i] || l.concepto, importe: l.importe })).filter((l) => l.concepto || l.importe);
+  // En castellano si la IA lo tradujo. La traducción va en el orden de las líneas con concepto o importe.
+  const tr = v?.analisis?.traduccion;
+  const lineas = (v?.respuestas.lineas ?? [])
+    .filter((l) => l.concepto || l.importe)
+    .map((l, i) => ({ concepto: tr?.conceptos[i] || l.concepto, descripcion: sinContactos(tr?.descripciones?.[i] || l.descripcion || ''), importe: l.importe }));
   const otros = indice.filter((f) => f.contraparteId === p.contraparte.id && f.codigo !== p.codigo);
 
   const contexto = {

@@ -22,8 +22,8 @@ export const VACIAS: RespuestasSolicitud = {
   aportacionLocal: '',
   moneda: 'EUR',
   lineas: [
-    { concepto: '', importe: null },
-    { concepto: '', importe: null },
+    { concepto: '', descripcion: '', importe: null },
+    { concepto: '', descripcion: '', importe: null },
   ],
 };
 
@@ -81,6 +81,7 @@ export function normalizar(entrada: unknown): RespuestasSolicitud {
         r[clave] = (Array.isArray(v) ? v : []).slice(0, 40).map(
           (l): LineaPresupuesto => ({
             concepto: textoLimpio((l as LineaPresupuesto)?.concepto, 200),
+            descripcion: textoLimpio((l as LineaPresupuesto)?.descripcion, 1000),
             importe: numero((l as LineaPresupuesto)?.importe, 0, 1e10),
           }),
         );

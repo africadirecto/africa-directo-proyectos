@@ -110,7 +110,7 @@ describe('formulario', () => {
     expect(r.titulo.length).toBe(300);
     expect(r.lat).toBeNull();
     expect(r.numBeneficiarios).toBe(45);
-    expect(r.lineas).toEqual([{ concepto: 'Cemento', importe: 1200.5 }]);
+    expect(r.lineas).toEqual([{ concepto: 'Cemento', descripcion: '', importe: 1200.5 }]);
     expect('otro' in r).toBe(false);
   });
 

@@ -59,17 +59,22 @@ export async function VistaSolicitud({ v, mostrarContacto = true }: { v: Version
             {lineas.length ? (
               <table className="tbl" style={{ marginTop: 4 }}>
                 <tbody>
-                  {lineas.map((l, i) => (
+                  {lineas.map((l, i) => {
+                    const desc = t?.descripciones?.[i];
+                    return (
                     <tr key={i}>
                       <td style={{ padding: '6px 0' }}>
                         {t?.conceptos[i] && t.conceptos[i] !== l.concepto ? t.conceptos[i] : l.concepto || '—'}
                         {t?.conceptos[i] && t.conceptos[i] !== l.concepto ? <span className="original">{l.concepto}</span> : null}
+                        {l.descripcion ? <span className="desc-concepto">{desc || l.descripcion}</span> : null}
+                        {l.descripcion && desc && desc !== l.descripcion ? <span className="original">{l.descripcion}</span> : null}
                       </td>
-                      <td className="der" style={{ padding: '6px 0' }}>
+                      <td className="der" style={{ padding: '6px 0', verticalAlign: 'top' }}>
                         {dinero(l.importe, r.moneda)}
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                   <tr>
                     <td style={{ padding: '6px 0', fontWeight: 700 }}>Total</td>
                     <td className="der" style={{ padding: '6px 0', fontWeight: 700 }}>

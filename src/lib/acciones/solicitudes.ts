@@ -84,7 +84,8 @@ export async function altaManual(_: Resultado, fd: FormData): Promise<Resultado>
     if (!PAISES[pais]) throw new Error('Elige el país del proyecto.');
     if (!MONEDAS.includes(moneda)) throw new Error('Elige la moneda del presupuesto.');
     const importes = fd.getAll('importe');
-    const lineas = fd.getAll('concepto').map((concepto, i) => ({ concepto, importe: importes[i] }));
+    const descripciones = fd.getAll('descripcionConcepto');
+    const lineas = fd.getAll('concepto').map((concepto, i) => ({ concepto, descripcion: descripciones[i], importe: importes[i] }));
     const respuestas = normalizar({
       ...Object.fromEntries(['titulo', 'lugar', 'indicaciones', 'necesidad', 'beneficiarios', 'numBeneficiarios', 'plazoMeses', 'aportacionLocal'].map((c) => [c, fd.get(c) ?? ''])),
       sector,

@@ -156,6 +156,8 @@ export interface FilaPanel {
 
 export interface LineaPresupuesto {
   concepto: string;
+  /** Qué incluye el concepto. Falta en las solicitudes anteriores a este campo. */
+  descripcion?: string;
   importe: number | null;
 }
 
@@ -206,6 +208,8 @@ export interface TraduccionSolicitud {
   aportacionLocal: string;
   indicaciones: string;
   conceptos: string[];
+  /** Las descripciones de los conceptos, en el mismo orden. Falta en los análisis anteriores. */
+  descripciones?: string[];
 }
 
 /** Resultado del análisis con IA de una solicitud. */

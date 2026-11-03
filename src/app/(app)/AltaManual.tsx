@@ -18,7 +18,7 @@ type OpcionContraparte = Awaited<ReturnType<typeof opcionesContrapartes>>[number
 
 const IDIOMAS = (Object.keys(IDIOMAS_ES) as Idioma[]).map((i) => ({ valor: i, texto: IDIOMAS_ES[i] }));
 const SECTORES_OPC = Object.entries(SECTORES).map(([valor, n]) => ({ valor, texto: n.es }));
-const LINEA = { concepto: '', importe: '' };
+const LINEA = { concepto: '', descripcion: '', importe: '' };
 
 export function AltaManual() {
   const [contrapartes, setContrapartes] = useState<OpcionContraparte[] | null>(null);
@@ -43,7 +43,7 @@ export function AltaManual() {
     const c = contrapartes?.find((x) => x.id === id);
     if (c?.pais && !pais) elegirPais(c.pais);
   };
-  const cambiarLinea = (i: number, campo: 'concepto' | 'importe', valor: string) =>
+  const cambiarLinea = (i: number, campo: keyof typeof LINEA, valor: string) =>
     setLineas((ls) => ls.map((l, j) => (j === i ? { ...l, [campo]: valor } : l)));
 
   return (
@@ -174,6 +174,18 @@ export function AltaManual() {
               <button type="button" className="btn btn-s" onClick={() => setLineas((ls) => ls.filter((_, j) => j !== i))} disabled={lineas.length <= 1}>
                 Quitar
               </button>
+              <label className="field linea-desc">
+                <span>
+                  Descripción <span className="ayuda">opcional</span>
+                </span>
+                <textarea
+                  name="descripcionConcepto"
+                  rows={2}
+                  placeholder="Qué incluye: cantidades, calidades, proveedor…"
+                  value={l.descripcion}
+                  onChange={(e) => cambiarLinea(i, 'descripcion', e.target.value)}
+                />
+              </label>
             </div>
           ))}
           <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>

@@ -26,7 +26,7 @@ const ESQUEMA_ANALISIS = {
     traduccion: {
       type: 'object',
       additionalProperties: false,
-      required: ['titulo', 'necesidad', 'beneficiarios', 'aportacionLocal', 'indicaciones', 'conceptos'],
+      required: ['titulo', 'necesidad', 'beneficiarios', 'aportacionLocal', 'indicaciones', 'conceptos', 'descripciones'],
       properties: {
         titulo: { type: 'string' },
         necesidad: { type: 'string' },
@@ -34,6 +34,7 @@ const ESQUEMA_ANALISIS = {
         aportacionLocal: { type: 'string' },
         indicaciones: { type: 'string' },
         conceptos: { type: 'array', items: { type: 'string' } },
+        descripciones: { type: 'array', items: { type: 'string' } },
       },
     },
     falta: { type: 'array', items: { type: 'string' } },
@@ -68,7 +69,7 @@ export async function analizarSolicitud(
     plazoMeses: r.plazoMeses,
     aportacionLocal: r.aportacionLocal,
     moneda: r.moneda,
-    presupuesto: r.lineas.filter((l) => l.concepto || l.importe).map((l) => ({ concepto: l.concepto, importe: l.importe })),
+    presupuesto: r.lineas.filter((l) => l.concepto || l.importe).map((l) => ({ concepto: l.concepto, descripcion: l.descripcion ?? '', importe: l.importe })),
     comprobacionesYaHechas: avisos,
   };
 
@@ -82,7 +83,7 @@ export async function analizarSolicitud(
         'Recibes en JSON una solicitud de proyecto escrita por una contraparte local, a menudo en francés, inglés o portugués. Devuelve, en castellano (español de España):',
         '- tituloEs: un título breve (máximo 8 palabras).',
         '- resumen: 3 a 5 frases claras y neutras. No inventes datos ni cifras que no estén en la solicitud.',
-        '- traduccion: traducción fiel al castellano de cada campo de texto, con un estilo natural y claro; si ya está en castellano, cópialo. "conceptos" son los conceptos del presupuesto traducidos, en el mismo orden.',
+        '- traduccion: traducción fiel al castellano de cada campo de texto, con un estilo natural y claro; si ya está en castellano, cópialo. "conceptos" y "descripciones" son los conceptos del presupuesto y sus descripciones traducidos, en el mismo orden (texto vacío si una línea no tiene descripción).',
         '- falta: lista breve de información importante que falta o es confusa para valorar el proyecto (desglose, beneficiarios, plazos, aportación local, permisos, mantenimiento…). Máximo 6 puntos, sin suposiciones. No incluyas nada de comprobacionesYaHechas, ni siquiera para decir que ya está señalado.',
         'No incluyas nombres de personas ni datos de contacto.',
       ].join('\n'),

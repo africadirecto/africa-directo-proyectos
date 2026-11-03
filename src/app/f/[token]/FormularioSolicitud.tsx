@@ -457,10 +457,21 @@ export function FormularioSolicitud({
             <button type="button" className="btn btn-s" onClick={() => cambiar('lineas', r.lineas.filter((_, j) => j !== i))} disabled={r.lineas.length <= 1}>
               {t.quitar}
             </button>
+            <label className="field linea-desc">
+              <span>
+                {t.descripcionConcepto} <span className="ayuda">({t.opcional})</span>
+              </span>
+              <textarea
+                rows={2}
+                placeholder={t.ejemploDescripcion}
+                value={l.descripcion ?? ''}
+                onChange={(e) => cambiar('lineas', r.lineas.map((x, j) => (j === i ? { ...x, descripcion: e.target.value } : x)))}
+              />
+            </label>
           </div>
         ))}
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
-          <button type="button" className="btn btn-s" onClick={() => cambiar('lineas', [...r.lineas, { concepto: '', importe: null }])}>
+          <button type="button" className="btn btn-s" onClick={() => cambiar('lineas', [...r.lineas, { concepto: '', descripcion: '', importe: null }])}>
             ＋ {t.anadirLinea}
           </button>
           <div className="total-ppto">
