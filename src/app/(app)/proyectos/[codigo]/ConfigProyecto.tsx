@@ -61,12 +61,12 @@ export function ConfigProyecto({ codigo, nombre }: { codigo: string; nombre: str
         <FormAccion
           accion={eliminarProyectoAccion}
           className="pila"
-          confirmar={`¿Eliminar el proyecto ${codigo}? Dejará de verse en la app y su carpeta de Drive pasará a «Proyectos eliminados».`}
+          confirmar={`¿Eliminar el proyecto ${codigo}? Dejará de verse en la app y su carpeta de Drive pasará a «4. Eliminados».`}
         >
           <input type="hidden" name="codigo" value={codigo} />
           <p style={{ margin: 0, fontSize: 15 }}>
             El proyecto <strong>{codigo}</strong> dejará de verse en Proyectos, Solicitudes, donantes e informes, y el formulario de la contraparte dejará de funcionar. Su
-            carpeta de Drive se mueve a «Proyectos eliminados».
+            carpeta de Drive se mueve a «4. Eliminados».
           </p>
           <p className="meta" style={{ margin: 0 }}>
             No se borra nada: un administrador puede recuperarlo en Administración › Proyectos eliminados.

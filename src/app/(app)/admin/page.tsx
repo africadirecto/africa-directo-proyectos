@@ -104,6 +104,11 @@ export default async function Usuarios() {
                       {u.email}
                       {u.email === yo.email ? ' · tú' : ''}
                     </span>
+                    {u.drive && !u.drive.ok ? (
+                      <span className="warn" style={{ display: 'block', fontSize: 13 }}>
+                        Drive sin actualizar. {u.drive.error}
+                      </span>
+                    ) : null}
                   </td>
                   <td>
                     <SelectorPermiso email={u.email} nombre={u.nombre} permiso={u.permiso} propio={u.email === yo.email} />

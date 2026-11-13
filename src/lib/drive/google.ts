@@ -4,7 +4,7 @@
 
 import { JWT } from 'google-auth-library';
 import { config } from '../config';
-import { ES_CARPETA, ES_DOC, ES_PRESENTACION, ErrorDrive, type ArchivoDrive, type Drive, type EstadoSubida } from './tipos';
+import { ES_CARPETA, ES_DOC, ES_PRESENTACION, ErrorDrive, type ArchivoDrive, type Drive, type EstadoSubida, type MiembroUnidad, type RolUnidad } from './tipos';
 
 const API = 'https://www.googleapis.com/drive/v3';
 const SUBIDA = 'https://www.googleapis.com/upload/drive/v3';
@@ -107,6 +107,37 @@ export const driveGoogle: Drive = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: nombre }),
     });
+  },
+
+  async miembros(unidadId) {
+    type Permiso = { id: string; type: string; role: RolUnidad; emailAddress?: string };
+    const lista: MiembroUnidad[] = [];
+    let pagina = '';
+    do {
+      const params = new URLSearchParams({ supportsAllDrives: 'true', pageSize: '100', fields: 'nextPageToken,permissions(id,type,role,emailAddress)' });
+      if (pagina) params.set('pageToken', pagina);
+      const datos = (await (await api(`${API}/files/${unidadId}/permissions?${params}`)).json()) as { permissions?: Permiso[]; nextPageToken?: string };
+      lista.push(...(datos.permissions ?? []).map((p) => ({ id: p.id, tipo: p.type, rol: p.role, email: (p.emailAddress ?? '').toLowerCase() })));
+      pagina = datos.nextPageToken ?? '';
+    } while (pagina);
+    return lista;
+  },
+
+  async ponerMiembro(unidadId, email, rol, miembroId) {
+    const json = { 'Content-Type': 'application/json' };
+    if (miembroId) {
+      await api(`${API}/files/${unidadId}/permissions/${miembroId}?${TODAS}`, { method: 'PATCH', headers: json, body: JSON.stringify({ role: rol }) });
+    } else {
+      await api(`${API}/files/${unidadId}/permissions?${TODAS}&sendNotificationEmail=false`, {
+        method: 'POST',
+        headers: json,
+        body: JSON.stringify({ type: 'user', role: rol, emailAddress: email }),
+      });
+    }
+  },
+
+  async quitarMiembro(unidadId, miembroId) {
+    await api(`${API}/files/${unidadId}/permissions/${miembroId}?${TODAS}`, { method: 'DELETE' });
   },
 
   async mover(id, de, a) {

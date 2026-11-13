@@ -3,7 +3,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
-import { ES_CARPETA, type ArchivoDrive, type Drive } from './tipos';
+import { ES_CARPETA, type ArchivoDrive, type Drive, type RolUnidad } from './tipos';
 
 const DIR = path.join(process.cwd(), '.datos', 'drive');
 const META = path.join(DIR, '_meta.json');
@@ -11,6 +11,8 @@ const META = path.join(DIR, '_meta.json');
 type Meta = {
   archivos: Record<string, ArchivoDrive & { papelera?: boolean }>;
   subidas: Record<string, { carpetaId: string; nombre: string; mime: string; tamano: number }>;
+  /** unidad → correo → rol */
+  miembros?: Record<string, Record<string, RolUnidad>>;
 };
 
 function leerMeta(): Meta {
@@ -64,6 +66,22 @@ export const driveLocal: Drive = {
   async renombrar(id, nombre) {
     const m = leerMeta();
     if (m.archivos[id]) m.archivos[id].nombre = nombre;
+    guardarMeta(m);
+  },
+
+  async miembros(unidadId) {
+    return Object.entries(leerMeta().miembros?.[unidadId] ?? {}).map(([email, rol]) => ({ id: email, tipo: 'user', email, rol }));
+  },
+
+  async ponerMiembro(unidadId, email, rol) {
+    const m = leerMeta();
+    m.miembros = { ...m.miembros, [unidadId]: { ...m.miembros?.[unidadId], [email]: rol } };
+    guardarMeta(m);
+  },
+
+  async quitarMiembro(unidadId, miembroId) {
+    const m = leerMeta();
+    delete m.miembros?.[unidadId]?.[miembroId];
     guardarMeta(m);
   },
 

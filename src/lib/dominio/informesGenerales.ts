@@ -13,6 +13,7 @@ import { ES_HOJA } from '../drive/tipos';
 import { rellenarLibro, type Celda, type Hoja } from '../drive/sheets';
 import { eurDe as eurFila } from '../panel';
 import { leerProyecto } from './proyectos';
+import { carpetaFija } from './carpetas';
 import { sinContactos, type EventoContexto, type InformeConId } from './informesComun';
 import { datosDelInforme, ETIQUETAS, formateadores, type ContextoInforme } from './informes';
 import type { EstadoProyecto, FilaPanel, Idioma, Informe, Persona } from '../tipos';
@@ -28,11 +29,6 @@ export interface OpcionesResumen {
 /** Máximo de proyectos que se mandan con detalle a la IA (el resto entra en las cifras). */
 const MAX_PROYECTOS = 30;
 
-/** Carpeta de los resúmenes y las hojas de cálculo, junto a las de los proyectos. */
-async function carpetaResumenes(): Promise<string> {
-  const d = await drive();
-  return d.carpetaHija('_Resúmenes', d.raizProyectos);
-}
 
 /** Los resúmenes ya hechos (en «informes» también están las pruebas de plantillas, que no cuentan). */
 export async function listarResumenes(): Promise<InformeConId[]> {
@@ -144,7 +140,7 @@ export async function contextoResumen(o: OpcionesResumen & { plantilla: string }
     datos,
     tablas,
     tablasSinCabecera: ['cifras'],
-    carpetaId: await carpetaResumenes(),
+    carpetaId: await carpetaFija('resumenes'),
     nombre: o.plantilla,
   };
 }
@@ -234,7 +230,7 @@ async function libroDeProyectos(filas: FilaPanel[], o: Pick<OpcionesResumen, 'es
   ];
 
   const d = await drive();
-  const carpeta = await carpetaResumenes();
+  const carpeta = await carpetaFija('hojas');
   const nombre = conFecha('Análisis de proyectos');
   const { id } = await d.crearVacio(nombre, ES_HOJA, carpeta);
   await rellenarLibro(id, hojas);

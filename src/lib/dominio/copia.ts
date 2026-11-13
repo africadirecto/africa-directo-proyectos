@@ -5,6 +5,7 @@ import { config } from '../config';
 import { drive, conFecha } from '../drive';
 import { avisarChat } from '../avisos';
 import { leerIndice, reconstruirIndice } from './indice';
+import { sincronizarAccesosDrive } from './accesosDrive';
 import { avanzarPendientes, borrarLotesAbandonados } from '../trabajos';
 import { requiereAtencion, DIAS_SIN_NOTICIAS, DIAS_SIN_RESPONDER } from './atencion';
 
@@ -53,6 +54,8 @@ export async function tareasNocturnas() {
   }
   resultado.indice = await reconstruirIndice();
   resultado.recordatorios = await recordatorios();
+  // Los permisos de la app, aplicados en Drive: pone al día a todos y reintenta lo que falló.
+  resultado.accesosDrive = await sincronizarAccesosDrive().catch((e) => `error: ${(e as Error).message}`);
   // Informes y plantillas a medias (si se perdió algún aviso de OpenRouter) y lo que lleva días sin terminar.
   resultado.informes = await avanzarPendientes().catch((e) => `error: ${(e as Error).message}`);
   resultado.lotesBorrados = await borrarLotesAbandonados().catch((e) => `error: ${(e as Error).message}`);

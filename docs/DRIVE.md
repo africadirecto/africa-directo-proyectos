@@ -18,21 +18,28 @@ Una carpeta por proyecto, agrupadas por año. **La crea la app** al registrar un
 
 ```
 AD · Proyectos/
-├── 2026/                                      ← la app crea una por año
-│   ├── P-2026-014 Aula escuela primaria/      ← una por proyecto (código + título)
-│   │   ├── 01_Solicitud/        Lo que envía la contraparte con el formulario
-│   │   │                        (presupuesto, planos, fotos) y el PDF de cada versión
-│   │   ├── 02_Seguimiento/      Fotos, documentos y correos que llegan durante la obra
-│   │   ├── 03_Informes/         Lo que va a los donantes: presentación para buscar
-│   │   │                        financiación e informes de seguimiento y final
-│   │   └── 04_Administración/   Convenios y cartas de los donantes, transferencias a la
-│   │                            contraparte, facturas, justificantes y acta de cierre
-│   └── P-2026-015 Dormitorio del internado/
-├── 2025/
-├── _Resúmenes/                ← resúmenes de varios proyectos y hojas de cálculo
-├── Proyectos eliminados/      ← carpetas de los proyectos eliminados (vuelven a su año al recuperarlos)
-└── _Sin asignar/              ← fase 2: adjuntos de correos aún sin proyecto
+├── 1. Proyectos/
+│   ├── 2026/                                      ← la app crea una por año
+│   │   ├── P-2026-014 Aula escuela primaria/      ← una por proyecto (código + título)
+│   │   │   ├── 01_Solicitud/        Lo que envía la contraparte con el formulario
+│   │   │   │                        (presupuesto, planos, fotos) y el PDF de cada versión
+│   │   │   ├── 02_Seguimiento/      Fotos, documentos y correos que llegan durante la obra
+│   │   │   ├── 03_Informes/         Lo que va a los donantes: presentación para buscar
+│   │   │   │                        financiación e informes de seguimiento y final
+│   │   │   └── 04_Administración/   Convenios y cartas de los donantes, transferencias a la
+│   │   │                            contraparte, facturas, justificantes y acta de cierre
+│   │   └── P-2026-015 Dormitorio del internado/
+│   └── 2025/
+├── 2. Solicitudes/            ← reservada: la app todavía no la usa
+├── 3. Reportes/               ← lo que se genera desde Proyectos, de varios proyectos a la vez
+│   ├── Resúmenes/             resúmenes en Docs o Slides («Generar resumen»)
+│   └── Hojas de cálculo/      libros de análisis en Google Sheets
+└── 4. Eliminados/             ← carpetas de los proyectos eliminados (vuelven a su año al recuperarlos)
 ```
+
+Estas carpetas numeradas las crea la app la primera vez que las necesita y guarda su identificador (`lib/dominio/carpetas.ts`), así que después se pueden renombrar. Para pasar una unidad con la estructura anterior a esta: `node scripts/drive/reorganizar.mjs` (simula) y `--aplicar` (lo hace).
+
+Un proyecto eliminado sigue en la unidad de proyectos, visible para los voluntarios en Drive: la app no puede sacar carpetas a otra unidad siendo Gestor de contenido (haría falta ser Gestor).
 
 **Qué hace la app en cada carpeta:**
 
@@ -116,16 +123,32 @@ Asignación recomendada (en cada unidad, **Gestionar miembros**):
 | `gestion@` (cuenta técnica) | Gestor | Gestor | Gestor |
 | `coordinacion@` (grupo de administradores) | Gestor | Gestor | Gestor |
 | `voluntarios-proyectos@` (grupo) | **Colaborador** | Lector | — |
-| Cuenta de servicio de la app | **Gestor de contenido** | **Gestor de contenido** (crea y copia las plantillas de informe) | **Gestor de contenido** |
+| Cuenta de servicio de la app | **Gestor** | **Gestor** (crea y copia las plantillas de informe) | **Gestor** |
+
+Si la app gestiona los accesos (apartado siguiente), los voluntarios no hace falta añadirlos por grupo: los añade ella uno a uno.
 
 **Por qué así:**
 
 - Los voluntarios son **Colaboradores**: pueden subir y editar (también los borradores de informe en Google Docs), pero **no pueden borrar ni mover**. Así se evita que un despiste rompa la estructura. Si alguien necesita ordenar carpetas a menudo, súbelo a Gestor de contenido de forma individual.
-- La **app** necesita ser Gestor de contenido: crea carpetas y manda a la papelera los archivos que la contraparte quita del formulario. La papelera de una unidad compartida se puede recuperar durante 30 días.
+- La **app** necesita al menos ser Gestor de contenido: crea carpetas y manda a la papelera los archivos que la contraparte quita del formulario. Para gestionar además los accesos de los voluntarios tiene que ser **Gestor**. La papelera de una unidad compartida se puede recuperar durante 30 días.
 - En `AD · Sistema` solo entra coordinación: contiene todos los datos.
-- Los permisos de la app (lectura, edición, administración) y los de Drive van por separado. Al dar de alta a un voluntario en la app, añádelo también al grupo `voluntarios-proyectos@`. Ver [DESPLIEGUE.md › Mantenimiento](DESPLIEGUE.md#paso-11-mantenimiento).
+### La app aplica sus permisos en Drive
 
-> **¿Y los voluntarios con permiso de lectura en la app?** Si se quiere que en Drive tampoco puedan editar, crea un segundo grupo `voluntarios-lectura@` con rol **Lector** en `AD · Proyectos`.
+Si la cuenta de servicio de la app es **Gestor** de las tres unidades (y no solo Gestor de contenido), la app añade, cambia y quita a cada voluntario como miembro al darle acceso, cambiarle el permiso o quitárselo en **Administración › Usuarios** (`lib/dominio/accesosDrive.ts`). No envía correos de aviso.
+
+| Permiso en la app | `AD · Proyectos` y `AD · Plantillas` | `AD · Sistema` |
+| --- | --- | --- |
+| Lectura | Lector | — |
+| Edición | Colaborador | — |
+| Administración | Gestor de contenido | Gestor de contenido |
+| Sin acceso | se le quita | se le quita |
+
+- **Cada noche** la app repasa a todos los usuarios (con las tareas nocturnas): así se ponen al día los que ya existían y se reintenta lo que falló. Mientras tanto, el usuario aparece en Administración › Usuarios como «Drive sin actualizar».
+- **Lo que la app no toca:** a quien es **Gestor** de la unidad, a los grupos, a quien no es usuario de la app y a quien está pendiente de aprobar.
+- **El rol de Drive sigue al de la app.** Si a alguien se le sube a mano en Drive, vuelve a su rol esa misma noche (salvo que sea Gestor).
+- **Grupos:** quien esté además en un grupo con acceso (`voluntarios-proyectos@`) conserva el del grupo. Con este sistema el grupo sobra: quítalo de las unidades.
+- **Mientras la app no sea Gestor,** los permisos de la app se guardan igual y Drive hay que llevarlo a mano; la app lo avisa en cada cambio.
+- **Riesgo que se asume:** con el rol de Gestor, quien tuviera la clave de la cuenta de servicio podría dar acceso a las unidades a terceros. La clave solo debe estar en Vercel y en el gestor de contraseñas.
 
 ## Configuración de cada unidad
 

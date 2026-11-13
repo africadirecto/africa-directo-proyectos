@@ -15,6 +15,8 @@ export interface Usuario {
   creado: string;
   ultimoAcceso?: string;
   invitadoPor?: string;
+  /** Cómo fue la última vez que se aplicó su permiso en Drive (ver dominio/accesosDrive.ts). */
+  drive?: { ok: boolean; fecha: string; error?: string };
 }
 
 export type Idioma = 'es' | 'fr' | 'en' | 'pt';
@@ -113,7 +115,7 @@ export interface Proyecto {
   /**
    * Eliminado por administración: deja de verse en toda la app, pero se conserva entero y se puede
    * recuperar en Administración › Proyectos eliminados. `carpetaAnterior`: de dónde se sacó su
-   * carpeta de Drive al moverla a «Proyectos eliminados».
+   * carpeta de Drive al moverla a «4. Eliminados».
    */
   eliminado?: { fecha: string; por: Persona; carpetaAnterior?: string };
 }

@@ -6,6 +6,7 @@ import { ANTES_DE_EMPEZAR, ESTADOS, antesDeEmpezar, esFinal, normalizarEstado, p
 import { nuevoIdEnlace } from '../enlaces';
 import { actualizarIndice, quitarDelIndice } from './indice';
 import { anotarEvento } from './eventos';
+import { carpetaFija, nombreCarpetaFija } from './carpetas';
 import { estaCubierto, marcarAportacionesEliminadas } from './aportaciones';
 import type { CambioEstado, Contraparte, Enlace, EstadoProyecto, OrigenCambio, Persona, Proyecto } from '../tipos';
 
@@ -42,14 +43,14 @@ export function nombreCarpeta(p: Pick<Proyecto, 'codigo' | 'titulo' | 'contrapar
   return `${p.codigo} ${p.titulo || p.contraparte.nombre}`.replace(/[\\/]+/g, '-').slice(0, 120);
 }
 
-/** Carpeta del año dentro de la unidad de proyectos (se crea la primera vez). */
+/** Carpeta del año dentro de «1. Proyectos» (se crea la primera vez). */
 async function carpetaAnio(anio: number): Promise<string> {
   const db = await almacen();
   const ajustes = (await db.leer<{ anios?: Record<string, string> }>('ajustes/drive')) ?? {};
   const existente = ajustes.anios?.[anio];
   if (existente) return existente;
   const d = await drive();
-  const id = await d.crearCarpeta(String(anio), d.raizProyectos);
+  const id = await d.crearCarpeta(String(anio), await carpetaFija('proyectos'));
   await db.guardar('ajustes/drive', { anios: { [anio]: id } }, { fusionar: true });
   return id;
 }
@@ -255,21 +256,11 @@ export async function deshacerCambio(codigo: string, autor: Persona): Promise<Es
 
 // ── Eliminar y recuperar ────────────────────────────────────────────────────
 // Eliminar no borra nada: marca el proyecto (`eliminado`), lo quita del panel y mueve su carpeta
-// de Drive a «Proyectos eliminados». Como leerProyecto ya no lo devuelve, desaparece de toda la
+// de Drive a «4. Eliminados». Como leerProyecto ya no lo devuelve, desaparece de toda la
 // app. Recuperarlo deshace las tres cosas.
 
-const CARPETA_ELIMINADOS = 'Proyectos eliminados';
-
-/** Carpeta «Proyectos eliminados» de la unidad de proyectos (se crea la primera vez). */
-async function carpetaEliminados(): Promise<string> {
-  const db = await almacen();
-  const existente = (await db.leer<{ eliminados?: string }>('ajustes/drive'))?.eliminados;
-  if (existente) return existente;
-  const d = await drive();
-  const id = await d.carpetaHija(CARPETA_ELIMINADOS, d.raizProyectos);
-  await db.guardar('ajustes/drive', { eliminados: id }, { fusionar: true });
-  return id;
-}
+const CARPETA_ELIMINADOS = nombreCarpetaFija('eliminados');
+const carpetaEliminados = () => carpetaFija('eliminados');
 
 export async function listarEliminados(): Promise<Proyecto[]> {
   const lista = await (await almacen()).consultar<Proyecto>('proyectos', { donde: [['eliminado.fecha', '>', '']] });
@@ -297,7 +288,7 @@ export async function eliminarProyecto(codigo: string, autor: Persona): Promise<
     }
     return {};
   } catch (e) {
-    console.error('Drive: no se pudo mover la carpeta a «Proyectos eliminados»', codigo, e);
+    console.error('Drive: no se pudo mover la carpeta a la de eliminados', codigo, e);
     return { aviso: `El proyecto se ha eliminado, pero su carpeta de Drive no se pudo mover a «${CARPETA_ELIMINADOS}»: sigue donde estaba.` };
   }
 }
@@ -316,7 +307,7 @@ export async function recuperarProyecto(codigo: string, autor: Persona): Promise
   try {
     const d = await drive();
     const origen = (await d.metadatos(proyecto.drive.carpetaId))?.carpetaId;
-    // Solo se mueve si sigue en «Proyectos eliminados» (alguien pudo recolocarla a mano).
+    // Solo se mueve si sigue en la carpeta de eliminados (alguien pudo recolocarla a mano).
     if (origen && origen === (await carpetaEliminados())) {
       await d.mover(proyecto.drive.carpetaId, origen, eliminado.carpetaAnterior ?? (await carpetaAnio(proyecto.anio)));
     }

@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { permitido } from '../sesion';
 import { aprobarUsuario, cambiarPermiso, invitarUsuario, quitarAcceso } from '../dominio/usuarios';
 import { actualizarContraparte, crearContraparte } from '../dominio/contrapartes';
+import { aplicarAccesoDrive } from '../dominio/accesosDrive';
 import { esIdioma } from '../formulario/textos';
 import { PAISES } from '../paises';
 import { intentar, texto, type Resultado } from './resultado';
@@ -11,21 +12,31 @@ import type { Permiso } from '../tipos';
 
 const PERMISOS: Permiso[] = ['lectura', 'edicion', 'admin'];
 
+/** Aplica en Drive el permiso recién guardado; si Drive falla, el mensaje lo dice (y queda anotado en el usuario). */
+async function conDrive(email: string, mensaje: string): Promise<string> {
+  const { error } = await aplicarAccesoDrive(email.trim().toLowerCase());
+  return error ? `${mensaje} En Drive no se ha podido aplicar: ${error}` : mensaje;
+}
+
 export async function aprobarAccion(_: Resultado, fd: FormData): Promise<Resultado> {
   return intentar(async () => {
     await permitido('admin');
-    await aprobarUsuario(texto(fd, 'email', 200));
+    const email = texto(fd, 'email', 200);
+    await aprobarUsuario(email);
+    const mensaje = await conDrive(email, 'Acceso de lectura concedido.');
     revalidatePath('/admin');
-    return 'Acceso de lectura concedido.';
+    return mensaje;
   });
 }
 
 export async function quitarAccesoAccion(_: Resultado, fd: FormData): Promise<Resultado> {
   return intentar(async () => {
     const yo = await permitido('admin');
-    await quitarAcceso(texto(fd, 'email', 200), yo.email);
+    const email = texto(fd, 'email', 200);
+    await quitarAcceso(email, yo.email);
+    const mensaje = await conDrive(email, 'Acceso retirado.');
     revalidatePath('/admin');
-    return 'Acceso retirado.';
+    return mensaje;
   });
 }
 
@@ -34,9 +45,11 @@ export async function cambiarPermisoAccion(_: Resultado, fd: FormData): Promise<
     const yo = await permitido('admin');
     const permiso = texto(fd, 'permiso', 20) as Permiso;
     if (!PERMISOS.includes(permiso)) throw new Error('Permiso no válido.');
-    await cambiarPermiso(texto(fd, 'email', 200), permiso, yo.email);
+    const email = texto(fd, 'email', 200);
+    await cambiarPermiso(email, permiso, yo.email);
+    const mensaje = await conDrive(email, 'Permiso cambiado.');
     revalidatePath('/admin');
-    return 'Permiso cambiado.';
+    return mensaje;
   });
 }
 
@@ -45,9 +58,11 @@ export async function invitarAccion(_: Resultado, fd: FormData): Promise<Resulta
     const yo = await permitido('admin');
     const permiso = texto(fd, 'permiso', 20) as Permiso;
     if (!PERMISOS.includes(permiso)) throw new Error('Permiso no válido.');
-    await invitarUsuario(texto(fd, 'email', 200), permiso, yo.email);
+    const email = texto(fd, 'email', 200);
+    await invitarUsuario(email, permiso, yo.email);
+    const mensaje = await conDrive(email, 'Acceso concedido. Ya puede entrar con su cuenta de Google.');
     revalidatePath('/admin');
-    return 'Acceso concedido. Ya puede entrar con su cuenta de Google.';
+    return mensaje;
   });
 }
 

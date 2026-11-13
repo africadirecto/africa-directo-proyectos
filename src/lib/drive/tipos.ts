@@ -35,7 +35,24 @@ export interface EstadoSubida {
   archivo?: ArchivoDrive;
 }
 
+/** Rol en una unidad compartida: Gestor, Gestor de contenido, Colaborador, Comentador o Lector. */
+export type RolUnidad = 'organizer' | 'fileOrganizer' | 'writer' | 'commenter' | 'reader';
+
+export interface MiembroUnidad {
+  /** Identificador del permiso en Drive (para cambiarlo o quitarlo). */
+  id: string;
+  /** user, group, domain… La app solo gestiona los «user». */
+  tipo: string;
+  email: string;
+  rol: RolUnidad;
+}
+
 export interface Drive {
+  /** Miembros de una unidad compartida. */
+  miembros(unidadId: string): Promise<MiembroUnidad[]>;
+  /** Añade a una persona a la unidad o, con `miembroId`, le cambia el rol. No envía correo. */
+  ponerMiembro(unidadId: string, email: string, rol: RolUnidad, miembroId?: string): Promise<void>;
+  quitarMiembro(unidadId: string, miembroId: string): Promise<void>;
   readonly raizProyectos: string;
   readonly raizSistema: string;
   crearCarpeta(nombre: string, padreId: string): Promise<string>;

@@ -86,7 +86,7 @@ Configura cada grupo así:
 - **Permitir miembros externos:** no.
 - **Quién puede publicar:** "Propietarios del grupo" (no son listas de correo; solo sirven para permisos).
 
-> La app y Drive tienen permisos separados. Al aprobar a alguien en la app, añádelo también al grupo `voluntarios-proyectos@` para que pueda abrir las carpetas. Ver [Mantenimiento](#paso-11-mantenimiento).
+> Si la cuenta de servicio de la app es Gestor de las unidades, la app da y quita el acceso a Drive ella sola y este grupo no hace falta. Ver [Mantenimiento](#paso-11-mantenimiento).
 
 ### 1.4. Google Chat y webhooks
 
@@ -393,9 +393,11 @@ Cada cambio en `main` se publica solo. Las ramas y *pull requests* generan una v
 
 | Qué | Dónde |
 | --- | --- |
-| **Alta** | La persona entra con Google y queda pendiente (llega un aviso a Chat). En **Administración › Usuarios**: "Dar acceso de lectura" y, si hace falta, cambiar a Edición. **Añadirla al grupo `voluntarios-proyectos@`** en la consola de Workspace, para Drive. |
-| **Alta por adelantado** | **Administración › Dar acceso por correo** (no tendrá que esperar) y el grupo. |
-| **Baja** | "Quitar acceso" en la app **y** sacarla del grupo. Si deja la ONG, suspende su cuenta de Workspace: lo que creó en las unidades compartidas sigue siendo de la ONG. |
+| **Alta** | La persona entra con Google y queda pendiente (llega un aviso a Chat). En **Administración › Usuarios**: "Dar acceso de lectura" y, si hace falta, cambiar a Edición. La app le da el mismo acceso en Drive. |
+| **Alta por adelantado** | **Administración › Dar acceso por correo** (no tendrá que esperar). |
+| **Baja** | "Quitar acceso" en la app: también se le quita de Drive. Si deja la ONG, suspende su cuenta de Workspace: lo que creó en las unidades compartidas sigue siendo de la ONG. |
+
+El acceso a Drive lo aplica la app si su cuenta de servicio es **Gestor** de las unidades; si no, hay que añadir y quitar a cada persona a mano en Drive. Ver [DRIVE.md › La app aplica sus permisos en Drive](DRIVE.md#la-app-aplica-sus-permisos-en-drive).
 
 ### Rotar secretos (una vez al año o si se filtran)
 

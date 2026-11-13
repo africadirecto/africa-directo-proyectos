@@ -18,7 +18,7 @@ export default async function Eliminados() {
       <h1>Proyectos eliminados</h1>
       <section className="card">
         <p className="meta" style={{ margin: '0 0 8px' }}>
-          No se ven en el resto de la app, pero se conservan enteros, con su carpeta en «Proyectos eliminados» de Drive. Al recuperar uno, vuelve a Proyectos tal como
+          No se ven en el resto de la app, pero se conservan enteros, con su carpeta en «4. Eliminados» de Drive. Al recuperar uno, vuelve a Proyectos tal como
           estaba.
         </p>
         {proyectos.map((p) => (
@@ -35,7 +35,7 @@ export default async function Eliminados() {
                     <a href={d.urlCarpeta(p.drive.carpetaId)} target="_blank" rel="noreferrer">
                       Carpeta en Drive
                     </a>
-                    {p.eliminado!.carpetaAnterior ? '' : ' (no se pudo mover a «Proyectos eliminados»)'}
+                    {p.eliminado!.carpetaAnterior ? '' : ' (no se pudo mover a «4. Eliminados»)'}
                   </>
                 ) : null}
               </p>

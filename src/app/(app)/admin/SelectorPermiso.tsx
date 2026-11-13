@@ -44,7 +44,7 @@ export function SelectorPermiso({ email, nombre, permiso, propio }: { email: str
         />
       </div>
       {pendiente ? <span className="meta">Guardando…</span> : null}
-      {!pendiente && res.vez && res.ok ? <span className="meta">Guardado</span> : null}
+      {!pendiente && res.vez && res.ok ? <span className="meta">{res.mensaje?.includes('Drive') ? res.mensaje : 'Guardado'}</span> : null}
       {res.vez && !res.ok ? <span className="warn">{res.mensaje}</span> : null}
     </div>
   );
