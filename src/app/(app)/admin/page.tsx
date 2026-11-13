@@ -116,7 +116,7 @@ export default async function Usuarios() {
                   <td>{u.ultimoAcceso ? haceDias(u.ultimoAcceso) : '—'}</td>
                   <td className="der">
                     {u.email !== yo.email ? (
-                      <FormAccion accion={quitarAccesoAccion} confirmar={`¿Quitar el acceso a ${u.nombre || u.email}?`}>
+                      <FormAccion accion={quitarAccesoAccion} peligro confirmar={`¿Quitar el acceso a ${u.nombre || u.email}?`}>
                         <input type="hidden" name="email" value={u.email} />
                         <Enviar clase="btn btn-d btn-peq">Quitar acceso</Enviar>
                       </FormAccion>

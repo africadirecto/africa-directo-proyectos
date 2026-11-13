@@ -6,6 +6,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { abrirDialogo } from './Dialogo';
+import { confirmar } from './confirmar';
 import { IconoMas } from './Iconos';
 import type { Resultado } from '@/lib/acciones/resultado';
 
@@ -68,10 +69,10 @@ export function MenuAcciones({ opciones, texto = 'Más' }: { opciones: OpcionMen
     return () => clearTimeout(t);
   }, [resultado]);
 
-  const elegir = (o: OpcionMenu) => {
+  const elegir = async (o: OpcionMenu) => {
     setAbierto(false);
     if (o.dialogo) return abrirDialogo(o.dialogo);
-    if (!o.accion || enMarcha || (o.confirmar && !window.confirm(o.confirmar))) return;
+    if (!o.accion || enMarcha || (o.confirmar && !(await confirmar(o.confirmar, { peligro: o.peligro })))) return;
     const fd = new FormData();
     for (const [k, v] of Object.entries(o.campos ?? {})) fd.set(k, v);
     setResultado(null);

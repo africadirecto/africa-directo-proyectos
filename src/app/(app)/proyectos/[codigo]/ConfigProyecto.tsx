@@ -61,6 +61,7 @@ export function ConfigProyecto({ codigo, nombre }: { codigo: string; nombre: str
         <FormAccion
           accion={eliminarProyectoAccion}
           className="pila"
+          peligro
           confirmar={`¿Eliminar el proyecto ${codigo}? Dejará de verse en la app y su carpeta de Drive pasará a «4. Eliminados».`}
         >
           <input type="hidden" name="codigo" value={codigo} />

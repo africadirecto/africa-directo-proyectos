@@ -14,7 +14,7 @@ const dia = (fecha: string) => fechaCorta(`${fecha}T12:00:00Z`);
 /** Botón ✕ para quitar un registro hecho por error. */
 export function Quitar({ accion, campos, pregunta }: { accion: typeof quitarCobroAccion; campos: Record<string, string>; pregunta: string }) {
   return (
-    <FormAccion accion={accion} confirmar={pregunta} className="fin-quitar">
+    <FormAccion accion={accion} confirmar={pregunta} peligro className="fin-quitar">
       {Object.entries(campos).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}

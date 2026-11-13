@@ -13,6 +13,7 @@ import { Desplegable } from '@/componentes/Desplegable';
 import { opcionesMonedas, opcionesPaises } from '@/componentes/opciones';
 import type { ArchivoSubido, Idioma, RespuestasSolicitud } from '@/lib/tipos';
 import { prepararArchivo, subirArchivo } from '@/componentes/subida';
+import { confirmar } from '@/componentes/confirmar';
 
 type EstadoGuardado = '' | 'guardando' | 'guardado' | 'sinConexion';
 interface Subida {
@@ -222,7 +223,7 @@ export function FormularioSolicitud({
       return;
     }
     if (subidas.some((s) => s.estado !== 'error')) return setAviso(t.esperaSubidas);
-    if (!window.confirm(t.confirmarEnvio)) return;
+    if (!(await confirmar(t.confirmarEnvio, { aceptar: t.enviar, cancelar: t.cancelar }))) return;
     setEnviando(true);
     try {
       const res = await fetch(`/api/f/${token}/enviar`, {

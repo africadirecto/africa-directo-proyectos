@@ -10,6 +10,7 @@ import { createContext, startTransition, useActionState, useContext, useEffect, 
 import { useFormStatus } from 'react-dom';
 import { INICIAL, type Resultado } from '@/lib/acciones/resultado';
 import { ContextoDialogo } from './Dialogo';
+import { confirmar as preguntar } from './confirmar';
 
 type Accion = (previo: Resultado, fd: FormData) => Promise<Resultado>;
 
@@ -21,6 +22,7 @@ export function FormAccion({
   children,
   className,
   confirmar,
+  peligro = false,
   limpiar = false,
   ocultarOk = false,
 }: {
@@ -29,6 +31,8 @@ export function FormAccion({
   className?: string;
   /** Pregunta antes de enviar (para acciones que no se deshacen fácilmente). */
   confirmar?: string;
+  /** Con `confirmar`: el botón de aceptar en rojo (para lo que elimina o quita algo). */
+  peligro?: boolean;
   /** Vacía el formulario tras un envío correcto. */
   limpiar?: boolean;
   ocultarOk?: boolean;
@@ -48,11 +52,12 @@ export function FormAccion({
     <form
       ref={form}
       className={className}
-      onSubmit={(e) => {
+      onSubmit={async (e) => {
         e.preventDefault();
-        if (pendiente || (confirmar && !window.confirm(confirmar))) return;
+        if (pendiente) return;
         // El botón pulsado va en los datos (por ejemplo, name="decision" value="validar").
         const fd = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
+        if (confirmar && !(await preguntar(confirmar, { peligro }))) return;
         setDatos(fd);
         startTransition(() => ejecutar(fd));
       }}

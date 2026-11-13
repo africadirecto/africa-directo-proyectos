@@ -48,7 +48,7 @@ export function ClavesIa({ origen, final }: Pick<AjustesIaEfectivos, 'origen' | 
               </FormAccion>
             </Dialogo>
             {origen[c.nombre] === 'app' || origen[c.nombre] === 'ilegible' ? (
-              <FormAccion accion={quitarClaveAccion} confirmar="¿Quitar esta clave de la app? Si hay variable de entorno, se usará esa.">
+              <FormAccion accion={quitarClaveAccion} peligro confirmar="¿Quitar esta clave de la app? Si hay variable de entorno, se usará esa.">
                 <input type="hidden" name="nombre" value={c.nombre} />
                 <Enviar clase="btn btn-d btn-peq" pendiente="Quitando…">
                   Quitar
