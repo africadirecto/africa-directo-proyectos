@@ -5,7 +5,20 @@
 
 import { useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 
-export function Globo({ texto, children }: { texto: string; children: React.ReactNode }) {
+export function Globo({
+  texto,
+  children,
+  clase = 'globo-boton',
+  etiqueta,
+  alPulsar,
+}: {
+  texto: string;
+  children: React.ReactNode;
+  /** Para un botón de solo icono que además hace algo: su aspecto, su nombre accesible y su acción. */
+  clase?: string;
+  etiqueta?: string;
+  alPulsar?: () => void;
+}) {
   const [abierta, setAbierta] = useState(false);
   const [izquierda, setIzquierda] = useState(0);
   const raiz = useRef<HTMLSpanElement>(null);
@@ -49,11 +62,13 @@ export function Globo({ texto, children }: { texto: string; children: React.Reac
     >
       <button
         type="button"
-        className="globo-boton"
-        aria-describedby={id}
+        className={clase}
+        aria-label={etiqueta}
+        aria-describedby={etiqueta ? undefined : id}
         onPointerDown={(e) => (puntero.current = e.pointerType)}
         onClick={() => {
-          if (puntero.current !== 'mouse') setAbierta((a) => !a);
+          if (alPulsar) alPulsar();
+          else if (puntero.current !== 'mouse') setAbierta((a) => !a);
           puntero.current = '';
         }}
         onFocus={(e) => e.currentTarget.matches(':focus-visible') && setAbierta(true)}

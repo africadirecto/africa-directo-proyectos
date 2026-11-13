@@ -493,3 +493,11 @@ summary.enlace { color: var(--enlace); font-size: 14px; font-weight: 500; }
 .cambio[data-tipo='cambia'] > span:first-child { background: var(--aviso-fondo); color: var(--aviso-texto); }
 .cambio s { color: var(--texto-2); }
 .sub-linea { color: var(--texto-2); font-size: 13px; }
+
+/* Botón de solo icono (quitar filtros) y cabeceras de tabla que ordenan al pulsarlas. */
+.btn-solo-icono { width: 44px; padding: 0; flex: none; color: var(--texto-2); }
+.th-orden { display: inline-flex; align-items: center; gap: 6px; margin: 0; padding: 0; border: 0; background: none; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; cursor: pointer; }
+.th-orden:hover, th[aria-sort] .th-orden { color: var(--texto); }
+.th-flecha { display: inline-block; width: 8px; font-size: 8px; }
+.tbl .der .th-orden { flex-direction: row-reverse; }
+.desplegable-opcion .dot, .desplegable-boton .dot { width: 10px; height: 10px; }

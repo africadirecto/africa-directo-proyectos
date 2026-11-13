@@ -13,6 +13,10 @@ import { nombreSector } from '@/lib/formulario/textos';
 import { DIAS_SIN_NOTICIAS } from '@/lib/dominio/atencion';
 import { Estado } from '@/componentes/Basicos';
 import { Bandera, Desplegable } from '@/componentes/Desplegable';
+import { Globo } from '@/componentes/Globo';
+import { IconoQuitarFiltros } from '@/componentes/Iconos';
+import { ThOrden, useOrden } from '@/componentes/Ordenar';
+import { alElegir, marcadas, pasa, resumenDe, type Eleccion } from '@/componentes/filtros';
 import type { EstadoProyecto, FilaPanel } from '@/lib/tipos';
 import type { PuntoMapa } from './Mapa';
 import { AnaliticasProyectos } from './AnaliticasProyectos';
@@ -25,14 +29,37 @@ const Mapa = dynamic(() => import('./Mapa'), {
 
 const ORDEN: EstadoProyecto[] = ['ejecucion', 'parado', 'aprobado', 'financiacion', 'revision', 'solicitud', 'completado', 'cerrado', 'rechazada', 'cancelado'];
 
-const OPCIONES_ESTADO = ORDEN.map((e) => ({ valor: e, texto: ESTADOS[e].nombre }));
-const ATAJOS_ESTADO = [
-  { texto: 'Activos', valores: [...ACTIVOS] },
-  { texto: 'Todos', valores: [] },
-];
+// Cada estado, con el color de su etiqueta.
+const OPCIONES_ESTADO = ORDEN.map((e) => ({ valor: e, texto: ESTADOS[e].nombre, icono: <span className="dot" style={{ background: ESTADOS[e].color }} /> }));
+const ATAJOS_ESTADO = [{ texto: 'Activos', valores: [...ACTIVOS] }];
 const mismos = (a: string[], b: string[]) => a.length === b.length && a.every((x) => b.includes(x));
 const resumenEstado = (sel: string[]) =>
-  !sel.length ? 'Todos' : mismos(sel, ACTIVOS) ? 'Activos' : sel.length === 1 ? ESTADOS[sel[0] as EstadoProyecto].nombre : `${sel.length} estados`;
+  !sel.length
+    ? 'Ninguno'
+    : sel.length === ORDEN.length
+      ? 'Todos'
+      : mismos(sel, ACTIVOS)
+        ? 'Activos'
+        : sel.length === 1
+          ? ESTADOS[sel[0] as EstadoProyecto].nombre
+          : `${sel.length} estados`;
+
+/** Al pulsar una barra de las analíticas: se filtra por ese valor, se suma a los elegidos o se quita (sin ninguno, vuelven todos). */
+function alternarEn(x: Eleccion, valor: string): Eleccion {
+  if (!x) return [valor];
+  const sin = x.filter((y) => y !== valor);
+  return sin.length === x.length ? [...x, valor] : sin.length ? sin : null;
+}
+
+/** Por qué se ordena al pulsar la cabecera de cada columna. */
+const COLUMNAS = {
+  proyecto: (f: FilaPanel) => f.titulo || `Solicitud de ${f.contraparte}`,
+  contraparte: (f: FilaPanel) => f.contraparte,
+  ubicacion: (f: FilaPanel) => `${nombrePais(f.pais)} ${f.lugar}`,
+  estado: (f: FilaPanel) => ORDEN.indexOf(f.estado),
+  inicio: (f: FilaPanel) => f.inicio,
+  presupuesto: (f: FilaPanel) => eurDe(f) || null,
+};
 
 /** Desplazamiento fijo por proyecto para que los que no tienen coordenadas no caigan todos en el centro del país. */
 function desplazamiento(codigo: string): [number, number] {
@@ -58,9 +85,9 @@ export function PanelProyectos({
 }) {
   const [buscar, setBuscar] = useState('');
   const [estados, setEstados] = useState<string[]>([...ACTIVOS]);
-  const [paises, setPaises] = useState<string[]>([]);
-  const [contrapartes, setContrapartes] = useState<string[]>([]);
-  const [anios, setAnios] = useState<string[]>([]);
+  const [paises, setPaises] = useState<Eleccion>(null);
+  const [contrapartes, setContrapartes] = useState<Eleccion>(null);
+  const [anios, setAnios] = useState<Eleccion>(null);
   const [soloSinNoticias, setSoloSinNoticias] = useState(false);
 
   const opcionesPais = useMemo(
@@ -81,16 +108,17 @@ export function PanelProyectos({
     return filas
       .filter((f) => {
         if (soloSinNoticias && !sinNoticias.includes(f.codigo)) return false;
-        // Sin nada elegido en un filtro, no se filtra por él.
-        if (estados.length && !estados.includes(f.estado)) return false;
-        if (paises.length && !paises.includes(f.pais)) return false;
-        if (contrapartes.length && !contrapartes.includes(f.contraparteId)) return false;
-        if (anios.length && !anios.includes(String(f.anio))) return false;
+        if (!estados.includes(f.estado)) return false;
+        if (!pasa(paises, f.pais) || !pasa(contrapartes, f.contraparteId) || !pasa(anios, String(f.anio))) return false;
         if (q && ![f.titulo, f.codigo, f.contraparte, f.lugar, nombrePais(f.pais)].some((t) => t.toLowerCase().includes(q))) return false;
         return true;
       })
       .sort((a, b) => ORDEN.indexOf(a.estado) - ORDEN.indexOf(b.estado) || b.codigo.localeCompare(a.codigo));
   }, [filas, buscar, estados, paises, contrapartes, anios, soloSinNoticias, sinNoticias]);
+
+  // Pulsando una cabecera se ordena por esa columna; sin ninguna, por estado y código.
+  const { ordenadas, orden, alternar } = useOrden(visibles, COLUMNAS);
+  const th = { orden, alternar };
 
   const puntos = useMemo<PuntoMapa[]>(
     () =>
@@ -114,9 +142,9 @@ export function PanelProyectos({
   const limpiar = () => {
     setBuscar('');
     setEstados([...ACTIVOS]);
-    setPaises([]);
-    setContrapartes([]);
-    setAnios([]);
+    setPaises(null);
+    setContrapartes(null);
+    setAnios(null);
     setSoloSinNoticias(false);
   };
 
@@ -161,19 +189,39 @@ export function PanelProyectos({
         </label>
         <label className="field" style={{ flex: '1 1 160px' }}>
           País
-          <Desplegable multiple value={paises} onChange={setPaises} opciones={opcionesPais} placeholder="Todos" textoBuscar="Buscar país…" />
+          <Desplegable
+            multiple
+            value={marcadas(paises, opcionesPais)}
+            onChange={alElegir(setPaises, opcionesPais)}
+            opciones={opcionesPais}
+            resumen={resumenDe('Todos', 'Ninguno', opcionesPais)}
+            textoBuscar="Buscar país…"
+          />
         </label>
         <label className="field" style={{ flex: '1 1 200px' }}>
           Contraparte
-          <Desplegable multiple value={contrapartes} onChange={setContrapartes} opciones={opcionesContraparte} placeholder="Todas" textoBuscar="Buscar contraparte…" />
+          <Desplegable
+            multiple
+            value={marcadas(contrapartes, opcionesContraparte)}
+            onChange={alElegir(setContrapartes, opcionesContraparte)}
+            opciones={opcionesContraparte}
+            resumen={resumenDe('Todas', 'Ninguna', opcionesContraparte)}
+            textoBuscar="Buscar contraparte…"
+          />
         </label>
         <label className="field" style={{ flex: '1 1 110px' }}>
           Año
-          <Desplegable multiple value={anios} onChange={setAnios} opciones={opcionesAnio} placeholder="Todos" />
+          <Desplegable
+            multiple
+            value={marcadas(anios, opcionesAnio)}
+            onChange={alElegir(setAnios, opcionesAnio)}
+            opciones={opcionesAnio}
+            resumen={resumenDe('Todos', 'Ninguno', opcionesAnio)}
+          />
         </label>
-        <button type="button" className="btn btn-s" style={{ flex: '0 0 auto' }} onClick={limpiar}>
-          Limpiar
-        </button>
+        <Globo texto="Quitar filtros" clase="btn btn-s btn-solo-icono" etiqueta="Quitar filtros" alPulsar={limpiar}>
+          <IconoQuitarFiltros tamano={20} />
+        </Globo>
       </form>
 
       <div className="fila">
@@ -182,18 +230,28 @@ export function PanelProyectos({
             <table className="tbl">
               <thead>
                 <tr>
-                  <th scope="col">Proyecto</th>
-                  <th scope="col">Contraparte</th>
-                  <th scope="col">Ubicación</th>
-                  <th scope="col">Estado</th>
-                  <th scope="col">Inicio</th>
-                  <th scope="col" className="der">
+                  <ThOrden columna="proyecto" {...th}>
+                    Proyecto
+                  </ThOrden>
+                  <ThOrden columna="contraparte" {...th}>
+                    Contraparte
+                  </ThOrden>
+                  <ThOrden columna="ubicacion" {...th}>
+                    Ubicación
+                  </ThOrden>
+                  <ThOrden columna="estado" {...th}>
+                    Estado
+                  </ThOrden>
+                  <ThOrden columna="inicio" {...th}>
+                    Inicio
+                  </ThOrden>
+                  <ThOrden columna="presupuesto" className="der" {...th}>
                     Presupuesto
-                  </th>
+                  </ThOrden>
                 </tr>
               </thead>
               <tbody>
-                {visibles.map((f) => (
+                {ordenadas.map((f) => (
                   <tr key={f.codigo}>
                     <td>
                       <Link className="fuerte" href={`/proyectos/${f.codigo}`}>
@@ -245,11 +303,11 @@ export function PanelProyectos({
       <AnaliticasProyectos
         filas={visibles}
         estados={mismos(estados, ACTIVOS) ? [] : estados}
-        paises={paises}
-        contrapartes={contrapartes}
+        paises={paises ?? []}
+        contrapartes={contrapartes ?? []}
         onEstado={(e) => setEstados((x) => (x.length === 1 && x[0] === e ? [...ACTIVOS] : [e]))}
-        onPais={(p) => setPaises((x) => (x.includes(p) ? x.filter((y) => y !== p) : [...x, p]))}
-        onContraparte={(c) => setContrapartes((x) => (x.includes(c) ? x.filter((y) => y !== c) : [...x, c]))}
+        onPais={(p) => setPaises((x) => alternarEn(x, p))}
+        onContraparte={(c) => setContrapartes((x) => alternarEn(x, c))}
       />
     </>
   );

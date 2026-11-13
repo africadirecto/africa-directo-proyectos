@@ -51,7 +51,7 @@ interface DeVarias extends Comunes {
   value?: string[];
   defaultValue?: string[];
   onChange?: (valores: string[]) => void;
-  /** Botones rápidos arriba de la lista (por ejemplo, «Activos» o «Todos»). */
+  /** Botones rápidos arriba de la lista (por ejemplo, «Activos»), junto a «Seleccionar todos». */
   atajos?: { texto: string; valores: string[] }[];
   /** Texto del botón según lo elegido; por defecto, la opción o «X y N más». */
   resumen?: (valores: string[]) => string;
@@ -255,6 +255,10 @@ export function Desplegable(props: PropsDesplegable) {
     }
   };
 
+  // Para «Seleccionar todos» / «Quitar todos» en los de varias opciones.
+  const elegibles = opciones.filter((o) => !o.desactivada).map((o) => o.valor);
+  const todas = elegibles.length > 0 && elegibles.every((v) => elegidos.includes(v));
+
   const delMapa = new Map(opciones.map((o) => [o.valor, o]));
   const primera = elegidos.length ? delMapa.get(elegidos[0]) : undefined;
   let texto: string;
@@ -334,18 +338,16 @@ export function Desplegable(props: PropsDesplegable) {
               onKeyDown={teclas}
             />
           ) : null}
-          {props.multiple === true && (props.atajos?.length || elegidos.length) ? (
+          {props.multiple === true ? (
             <div className="desplegable-atajos">
+              <button type="button" onClick={() => cambiar(todas ? [] : elegibles)}>
+                {todas ? 'Quitar todos' : 'Seleccionar todos'}
+              </button>
               {props.atajos?.map((a) => (
                 <button key={a.texto} type="button" onClick={() => cambiar(a.valores)}>
                   {a.texto}
                 </button>
               ))}
-              {!props.atajos?.length && elegidos.length ? (
-                <button type="button" onClick={() => cambiar([])}>
-                  Quitar selección
-                </button>
-              ) : null}
             </div>
           ) : null}
           <ul ref={lista} id={idLista} role="listbox" className="desplegable-lista" aria-multiselectable={multiple || undefined} tabIndex={-1}>

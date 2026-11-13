@@ -228,3 +228,13 @@ export function IconoAjustes({ tamano = 16 }: { tamano?: number }) {
     </Linea>
   );
 }
+
+/** Quitar filtros (un embudo tachado). */
+export function IconoQuitarFiltros({ tamano = 16 }: { tamano?: number }) {
+  return (
+    <Linea tamano={tamano}>
+      <path d="M8 4h12v2.2l-5.4 5.9M14 14v5l-4-3v-4L4.5 6.3" />
+      <path d="m3 3 18 18" />
+    </Linea>
+  );
+}

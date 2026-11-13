@@ -46,10 +46,7 @@ export function GenerarResumen({ plantillas, paises }: { plantillas: OpcionPlant
               name="estados"
               defaultValue={[...ACTIVOS]}
               opciones={OPCIONES_ESTADO}
-              atajos={[
-                { texto: 'Activos', valores: [...ACTIVOS] },
-                { texto: 'Todos', valores: OPCIONES_ESTADO.map((o) => o.valor) },
-              ]}
+              atajos={[{ texto: 'Activos', valores: [...ACTIVOS] }]}
               placeholder="Activos"
             />
           </label>
