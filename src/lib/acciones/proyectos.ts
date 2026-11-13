@@ -1,8 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { permitido, persona } from '../sesion';
-import { actualizarProyecto, asegurarCarpetas, cambiarEstado, cambioDeshacible, deshacerCambio, leerProyecto } from '../dominio/proyectos';
+import { actualizarProyecto, asegurarCarpetas, cambiarEstado, cambioDeshacible, deshacerCambio, eliminarProyecto, leerProyecto, recuperarProyecto } from '../dominio/proyectos';
 import { decisionAbierta, deshacerDecision } from '../dominio/solicitudes';
 import { estaCubierto, recalcularFinanciacion } from '../dominio/aportaciones';
 import { anotarEvento } from '../dominio/eventos';
@@ -152,5 +153,33 @@ export async function marcarPublicableAccion(codigo: string, id: string, nombre:
     if (!(await leerProyecto(codigo))) throw new Error('Proyecto no encontrado');
     await marcarPublicable(codigo, id, nombre.slice(0, 200), publicable, persona(yo));
     revalidatePath(`/proyectos/${codigo}`);
+  });
+}
+
+/** Lo que hay que escribir para confirmar que se elimina: el título o, si aún no tiene, el código. */
+const nombreParaEliminar = (p: Pick<Proyecto, 'titulo' | 'codigo'>) => p.titulo.trim() || p.codigo;
+const igual = (a: string, b: string) => a.trim().replace(/\s+/g, ' ').toLowerCase() === b.trim().replace(/\s+/g, ' ').toLowerCase();
+
+/** Solo administración. No borra nada: se recupera en Administración › Proyectos eliminados. */
+export async function eliminarProyectoAccion(_: Resultado, fd: FormData): Promise<Resultado> {
+  return intentar(async () => {
+    const yo = await permitido('admin');
+    const codigo = texto(fd, 'codigo', 20);
+    const p = await leerProyecto(codigo);
+    if (!p) throw new Error('Proyecto no encontrado');
+    if (!igual(texto(fd, 'nombre', 300), nombreParaEliminar(p))) throw new Error('El nombre escrito no coincide con el del proyecto.');
+    await eliminarProyecto(codigo, persona(yo));
+    revalidatePath('/', 'layout');
+    redirect('/admin/eliminados');
+  });
+}
+
+export async function recuperarProyectoAccion(_: Resultado, fd: FormData): Promise<Resultado> {
+  return intentar(async () => {
+    const yo = await permitido('admin');
+    const { proyecto, aviso } = await recuperarProyecto(texto(fd, 'codigo', 20), persona(yo));
+    revalidatePath('/', 'layout');
+    if (aviso) throw new Error(aviso);
+    return `${proyecto.codigo} recuperado: vuelve a estar en Proyectos.`;
   });
 }

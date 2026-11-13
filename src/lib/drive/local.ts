@@ -67,6 +67,13 @@ export const driveLocal: Drive = {
     guardarMeta(m);
   },
 
+  async mover(id, _de, a) {
+    const m = leerMeta();
+    if (!m.archivos[id]) throw new Error('Archivo no encontrado');
+    m.archivos[id].carpetaId = a;
+    guardarMeta(m);
+  },
+
   async reemplazarContenido(id, mime, contenido) {
     const m = leerMeta();
     const a = m.archivos[id];

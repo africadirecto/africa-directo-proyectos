@@ -89,6 +89,8 @@ function normalizar(a: Guardada): AportacionConId {
 }
 
 const conDinero = (a: AportacionConId) => a.compromisos.length > 0 || a.cobros.length > 0;
+/** Para las listas de donantes: sin las de proyectos eliminados. */
+const visible = (a: AportacionConId) => conDinero(a) && !a.proyectoEliminado;
 
 /** Presupuesto que se financia, en euros. */
 export function presupuestoEnEuros(p: Pick<Proyecto, 'presupuestoEur' | 'presupuesto' | 'moneda'>): number | null {
@@ -111,17 +113,26 @@ export async function aportacionesDeProyecto(codigo: string): Promise<Aportacion
 
 export async function aportacionesDeDonante(donanteId: string): Promise<AportacionConId[]> {
   const lista = await (await almacen()).consultar<Guardada>('aportaciones', { donde: [['donanteId', '==', donanteId]] });
-  return lista.map(normalizar).filter(conDinero).sort((a, b) => b.actualizado.localeCompare(a.actualizado));
+  return lista.map(normalizar).filter(visible).sort((a, b) => b.actualizado.localeCompare(a.actualizado));
 }
 
 /** Todas las aportaciones (para el panel de donantes). */
 export async function todasLasAportaciones(): Promise<AportacionConId[]> {
-  return (await (await almacen()).consultar<Guardada>('aportaciones')).map(normalizar).filter(conDinero);
+  return (await (await almacen()).consultar<Guardada>('aportaciones')).map(normalizar).filter(visible);
+}
+
+/** Al eliminar o recuperar un proyecto: esconde o vuelve a mostrar sus aportaciones en los donantes. */
+export async function marcarAportacionesEliminadas(codigo: string, eliminado: boolean): Promise<void> {
+  const db = await almacen();
+  for (const a of await db.consultar<Guardada>('aportaciones', { donde: [['proyecto', '==', codigo]] })) {
+    if (eliminado) await db.guardar(`aportaciones/${a.id}`, { proyectoEliminado: true }, { fusionar: true });
+    else if (a.proyectoEliminado) await db.borrarCampo(`aportaciones/${a.id}`, ['proyectoEliminado']);
+  }
 }
 
 async function leerAportacion(id: string): Promise<AportacionConId> {
   const a = await (await almacen()).leer<Guardada>(`aportaciones/${id}`);
-  if (!a) throw new Error('Donante no encontrado en este proyecto.');
+  if (!a || a.proyectoEliminado) throw new Error('Donante no encontrado en este proyecto.');
   return normalizar({ ...a, id });
 }
 

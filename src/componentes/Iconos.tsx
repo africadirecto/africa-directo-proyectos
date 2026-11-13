@@ -218,3 +218,13 @@ export function IconoVolver({ tamano = 16 }: { tamano?: number }) {
     </Linea>
   );
 }
+
+/** Configuración (una rueda dentada). */
+export function IconoAjustes({ tamano = 16 }: { tamano?: number }) {
+  return (
+    <Linea tamano={tamano}>
+      <path d="M10.3 4.3c.4-1.8 3-1.8 3.4 0a1.7 1.7 0 0 0 2.6 1.1c1.5-1 3.3.8 2.3 2.3a1.7 1.7 0 0 0 1.1 2.6c1.8.4 1.8 3 0 3.4a1.7 1.7 0 0 0-1.1 2.6c1 1.5-.8 3.3-2.3 2.3a1.7 1.7 0 0 0-2.6 1.1c-.4 1.8-3 1.8-3.4 0a1.7 1.7 0 0 0-2.6-1.1c-1.5 1-3.3-.8-2.3-2.3a1.7 1.7 0 0 0-1.1-2.6c-1.8-.4-1.8-3 0-3.4a1.7 1.7 0 0 0 1.1-2.6c-1-1.5.8-3.3 2.3-2.3a1.7 1.7 0 0 0 2.6-1.1z" />
+      <path d="M9 12a3 3 0 1 0 6 0a3 3 0 0 0-6 0" />
+    </Linea>
+  );
+}

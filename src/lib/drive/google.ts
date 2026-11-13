@@ -109,6 +109,14 @@ export const driveGoogle: Drive = {
     });
   },
 
+  async mover(id, de, a) {
+    await api(`${API}/files/${id}?${TODAS}&addParents=${encodeURIComponent(a)}&removeParents=${encodeURIComponent(de)}&fields=id`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+  },
+
   async reemplazarContenido(id, mime, contenido) {
     await api(`${SUBIDA}/files/${id}?uploadType=media&${TODAS}`, { method: 'PATCH', headers: { 'Content-Type': mime }, body: new Uint8Array(contenido) });
   },

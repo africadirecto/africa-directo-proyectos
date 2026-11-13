@@ -39,6 +39,10 @@ export async function actualizarIndice(p: Proyecto): Promise<void> {
   await (await almacen()).guardar(RUTA, { items: { [p.codigo]: filaDe(p) } }, { fusionar: true });
 }
 
+export async function quitarDelIndice(codigo: string): Promise<void> {
+  await (await almacen()).borrarCampo(RUTA, ['items', codigo]);
+}
+
 export async function leerIndice(): Promise<FilaPanel[]> {
   const doc = await (await almacen()).leer<{ items?: Record<string, FilaPanel> }>(RUTA);
   return Object.values(doc?.items ?? {})
@@ -48,7 +52,8 @@ export async function leerIndice(): Promise<FilaPanel[]> {
 
 export async function reconstruirIndice(): Promise<number> {
   const db = await almacen();
-  const proyectos = await db.consultar<Proyecto>('proyectos');
+  // Los eliminados no están en el panel (ver eliminarProyecto).
+  const proyectos = (await db.consultar<Proyecto>('proyectos')).filter((p) => !p.eliminado);
   const items = Object.fromEntries(proyectos.map((p) => [p.codigo, filaDe(p)]));
   await db.guardar(RUTA, { items, reconstruido: new Date().toISOString() });
   return proyectos.length;

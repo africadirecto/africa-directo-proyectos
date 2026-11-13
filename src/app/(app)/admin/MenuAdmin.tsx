@@ -7,6 +7,7 @@ const SECCIONES = [
   ['/admin', 'Usuarios y permisos'],
   ['/admin/integraciones', 'Integraciones'],
   ['/admin/ia', 'Ajustes de IA'],
+  ['/admin/eliminados', 'Proyectos eliminados'],
 ] as const;
 
 export function MenuAdmin() {

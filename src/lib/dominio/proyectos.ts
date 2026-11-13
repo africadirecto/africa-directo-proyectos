@@ -4,9 +4,9 @@ import { almacen } from '../almacen';
 import { drive, SUBCARPETAS, type Subcarpeta } from '../drive';
 import { ANTES_DE_EMPEZAR, ESTADOS, antesDeEmpezar, esFinal, normalizarEstado, puedePasar } from '../estados';
 import { nuevoIdEnlace } from '../enlaces';
-import { actualizarIndice } from './indice';
+import { actualizarIndice, quitarDelIndice } from './indice';
 import { anotarEvento } from './eventos';
-import { estaCubierto } from './aportaciones';
+import { estaCubierto, marcarAportacionesEliminadas } from './aportaciones';
 import type { CambioEstado, Contraparte, Enlace, EstadoProyecto, OrigenCambio, Persona, Proyecto } from '../tipos';
 
 const CODIGO = /^P-\d{4}-\d{3,}$/;
@@ -14,10 +14,17 @@ const DIAS_ENLACE = 180;
 
 export const esCodigo = (c: string) => CODIGO.test(c);
 
-export async function leerProyecto(codigo: string): Promise<Proyecto | null> {
+/** El proyecto tal como está guardado, también si está eliminado. */
+async function leerGuardado(codigo: string): Promise<Proyecto | null> {
   if (!esCodigo(codigo)) return null;
   const p = await (await almacen()).leer<Proyecto>(`proyectos/${codigo}`);
   return p && { ...p, estado: normalizarEstado(p.estado) };
+}
+
+/** Un proyecto eliminado no existe para el resto de la app: ni ficha, ni formulario, ni cambios. */
+export async function leerProyecto(codigo: string): Promise<Proyecto | null> {
+  const p = await leerGuardado(codigo);
+  return p?.eliminado ? null : p;
 }
 
 /** Código legible P-AAAA-NNN con un contador por año (en transacción para no repetir). */
@@ -244,4 +251,78 @@ export async function deshacerCambio(codigo: string, autor: Persona): Promise<Es
     restaurar: c.antes,
   });
   return destino;
+}
+
+// ── Eliminar y recuperar ────────────────────────────────────────────────────
+// Eliminar no borra nada: marca el proyecto (`eliminado`), lo quita del panel y mueve su carpeta
+// de Drive a «Proyectos eliminados». Como leerProyecto ya no lo devuelve, desaparece de toda la
+// app. Recuperarlo deshace las tres cosas.
+
+const CARPETA_ELIMINADOS = 'Proyectos eliminados';
+
+/** Carpeta «Proyectos eliminados» de la unidad de proyectos (se crea la primera vez). */
+async function carpetaEliminados(): Promise<string> {
+  const db = await almacen();
+  const existente = (await db.leer<{ eliminados?: string }>('ajustes/drive'))?.eliminados;
+  if (existente) return existente;
+  const d = await drive();
+  const id = await d.carpetaHija(CARPETA_ELIMINADOS, d.raizProyectos);
+  await db.guardar('ajustes/drive', { eliminados: id }, { fusionar: true });
+  return id;
+}
+
+export async function listarEliminados(): Promise<Proyecto[]> {
+  const lista = await (await almacen()).consultar<Proyecto>('proyectos', { donde: [['eliminado.fecha', '>', '']] });
+  return lista.sort((a, b) => b.eliminado!.fecha.localeCompare(a.eliminado!.fecha));
+}
+
+/** Devuelve un aviso si el proyecto se eliminó pero su carpeta no se pudo mover en Drive. */
+export async function eliminarProyecto(codigo: string, autor: Persona): Promise<{ aviso?: string }> {
+  const db = await almacen();
+  const p = await leerProyecto(codigo);
+  if (!p) throw new Error('Proyecto no encontrado');
+  await db.guardar(`proyectos/${codigo}`, { eliminado: { fecha: new Date().toISOString(), por: autor } }, { fusionar: true });
+  await quitarDelIndice(codigo);
+  await marcarAportacionesEliminadas(codigo, true);
+  await anotarEvento(codigo, { tipo: 'sistema', autor, texto: 'Proyecto eliminado.' });
+  if (!p.drive) return {};
+  try {
+    const d = await drive();
+    const destino = await carpetaEliminados();
+    const origen = (await d.metadatos(p.drive.carpetaId))?.carpetaId;
+    if (!origen) throw new Error('No se encuentra la carpeta del proyecto');
+    if (origen !== destino) {
+      await d.mover(p.drive.carpetaId, origen, destino);
+      await db.guardar(`proyectos/${codigo}`, { eliminado: { carpetaAnterior: origen } }, { fusionar: true });
+    }
+    return {};
+  } catch (e) {
+    console.error('Drive: no se pudo mover la carpeta a «Proyectos eliminados»', codigo, e);
+    return { aviso: `El proyecto se ha eliminado, pero su carpeta de Drive no se pudo mover a «${CARPETA_ELIMINADOS}»: sigue donde estaba.` };
+  }
+}
+
+/** Devuelve un aviso si el proyecto se recuperó pero su carpeta no se pudo devolver a su sitio. */
+export async function recuperarProyecto(codigo: string, autor: Persona): Promise<{ proyecto: Proyecto; aviso?: string }> {
+  const db = await almacen();
+  const guardado = await leerGuardado(codigo);
+  if (!guardado?.eliminado) throw new Error('Este proyecto no está eliminado.');
+  const { eliminado, ...proyecto } = guardado;
+  await db.borrarCampo(`proyectos/${codigo}`, ['eliminado']);
+  await actualizarIndice(proyecto);
+  await marcarAportacionesEliminadas(codigo, false);
+  await anotarEvento(codigo, { tipo: 'sistema', autor, texto: 'Proyecto recuperado.' });
+  if (!proyecto.drive) return { proyecto };
+  try {
+    const d = await drive();
+    const origen = (await d.metadatos(proyecto.drive.carpetaId))?.carpetaId;
+    // Solo se mueve si sigue en «Proyectos eliminados» (alguien pudo recolocarla a mano).
+    if (origen && origen === (await carpetaEliminados())) {
+      await d.mover(proyecto.drive.carpetaId, origen, eliminado.carpetaAnterior ?? (await carpetaAnio(proyecto.anio)));
+    }
+    return { proyecto };
+  } catch (e) {
+    console.error('Drive: no se pudo devolver la carpeta a su sitio', codigo, e);
+    return { proyecto, aviso: `El proyecto se ha recuperado, pero su carpeta de Drive sigue en «${CARPETA_ELIMINADOS}»: muévela a mano a la carpeta del año.` };
+  }
 }

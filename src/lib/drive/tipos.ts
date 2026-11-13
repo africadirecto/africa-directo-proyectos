@@ -40,6 +40,8 @@ export interface Drive {
   readonly raizSistema: string;
   crearCarpeta(nombre: string, padreId: string): Promise<string>;
   renombrar(id: string, nombre: string): Promise<void>;
+  /** Mueve un archivo o carpeta de una carpeta a otra (dentro de la misma unidad). */
+  mover(id: string, de: string, a: string): Promise<void>;
   subir(carpetaId: string, nombre: string, mime: string, contenido: Buffer): Promise<ArchivoDrive>;
   /** Cambia el contenido de un archivo que no es de Google (p. ej. una plantilla HTML de la demo). */
   reemplazarContenido(id: string, mime: string, contenido: Buffer): Promise<void>;

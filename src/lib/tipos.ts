@@ -110,6 +110,12 @@ export interface Proyecto {
   anio: number;
   /** El último cambio de estado, para poder deshacerlo. Falta en los proyectos anteriores. */
   ultimoCambio?: CambioEstado;
+  /**
+   * Eliminado por administración: deja de verse en toda la app, pero se conserva entero y se puede
+   * recuperar en Administración › Proyectos eliminados. `carpetaAnterior`: de dónde se sacó su
+   * carpeta de Drive al moverla a «Proyectos eliminados».
+   */
+  eliminado?: { fecha: string; por: Persona; carpetaAnterior?: string };
 }
 
 /**
@@ -318,6 +324,8 @@ export interface Aportacion {
   /** Sumas de compromisos y cobros, en euros, copiadas para las listas y los informes. */
   importe: number;
   recibido: number;
+  /** Su proyecto está eliminado: no se muestra en los donantes hasta que se recupere. */
+  proyectoEliminado?: boolean;
   creado: string;
   actualizado: string;
   actualizadoPor: Persona;

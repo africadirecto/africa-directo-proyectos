@@ -16,6 +16,7 @@ import { FormAccion, Enviar } from '@/componentes/FormAccion';
 import { Desplegable } from '@/componentes/Desplegable';
 import { cambiarEstadoAccion, crearCarpetaAccion, deshacerCambioAccion } from '@/lib/acciones/proyectos';
 import { EditarProyecto } from './EditarProyecto';
+import { ConfigProyecto } from './ConfigProyecto';
 import { GenerarInforme } from './GenerarInforme';
 import { IconoCambiarEstado, LogoDrive } from '@/componentes/Iconos';
 import { desdePropuesto, listarInformes } from '@/lib/dominio/informes';
@@ -175,6 +176,7 @@ export default async function FichaProyecto({
                 </FormAccion>
               </Dialogo>
             ) : null}
+            {tienePermiso(yo, 'admin') ? <ConfigProyecto codigo={p.codigo} nombre={p.titulo.trim() || p.codigo} /> : null}
           </div>
         </div>
 

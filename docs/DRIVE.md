@@ -30,6 +30,7 @@ AD · Proyectos/
 │   └── P-2026-015 Dormitorio del internado/
 ├── 2025/
 ├── _Resúmenes/                ← resúmenes de varios proyectos y hojas de cálculo
+├── Proyectos eliminados/      ← carpetas de los proyectos eliminados (vuelven a su año al recuperarlos)
 └── _Sin asignar/              ← fase 2: adjuntos de correos aún sin proyecto
 ```
 
